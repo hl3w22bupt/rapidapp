@@ -1,4 +1,4 @@
 rapidapp
 ========
 
-a rapid platform-crossed server application framework
+a rapid platform-crossed libevent based server application framework
