@@ -1,8 +1,10 @@
 import os
 
+env = Environment(CCFLAGS='-Werror -g -pg',
+                 LIBPATH=['/usr/local/libevent/lib'],
+                 CPPPATH=['/usr/local/libevent/include/'])
+#LINKFLAGS
 frame_src = Glob('*.cpp')
-SharedLibrary('rapidapp',
-              frame_src,
-              LIBPATH=['/usr/local/libevent/lib'],
-              CPPPATH=['/usr/local/libevent/include/'],
-              CCFLAGS='-Werror -g -pg')
+
+env.SharedLibrary('rapidapp', frame_src)
+env.StaticLibrary('rapidapp', frame_src)
