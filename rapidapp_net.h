@@ -10,9 +10,14 @@ class EasyNet {
         static EasyNet* CreateFrontEnd(const char* url);
         static EasyNet* CreateBackEnd(const char* url);
 
+        static void DestroyFrontEnd(EasyNet** net);
+        static void DestroyBackEnd(EasyNet** net);
+
     public:
         int SendToFrontEnd(const char* buf, size_t buf_size);
         int SendToBackEnd(const char* buf, size_t buf_size);
+
+        // TODO SendvTo
 
     private:
         EasyNet();
