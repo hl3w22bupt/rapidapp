@@ -12,6 +12,7 @@ const int MAX_URL_LEN = 128;
 const int MAX_FILE_NAME_LEN = 128;
 
 struct AppSetting {
+    int  fps;       // 每秒帧率
     char listen_url[MAX_URL_LEN];
     char log_conf_file[MAX_FILE_NAME_LEN];
 };

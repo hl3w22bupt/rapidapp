@@ -5,6 +5,7 @@
 
 DEFINE_string(url, "0.0.0.0:80", "server listen url, format: [ip:port]");
 DEFINE_string(log_conf, "./logging.setting", "logging setting file");
+DEFINE_int32(fps, 1000, "frame-per-second, MUST >= 1, associated with reload and timer");
 
 namespace rapidapp {
 
@@ -72,10 +73,10 @@ int AppLauncher::Init()
         return -1;
     }
 
-    // TODO, 可配置，通过此项配置控制后台服务的帧率
+    // 可配置，通过此项配置控制后台服务的帧率
     struct timeval tv;
     tv.tv_sec = 0;
-    tv.tv_usec = 1000;
+    tv.tv_usec = 1000000 / setting_.fps;
     if (event_add(internal_timer_, &tv) != 0)
     {
         return -1;
@@ -143,11 +144,13 @@ int AppLauncher::CtrlKeeper()
 
 int AppLauncher::ParseCmdLine(int argc, char** argv)
 {
-    assert(argc > 0 && argv != NULL);
-
     gflags::SetVersionString(app_->GetAppVersion());
     gflags::SetUsageMessage("server application based on rapidapp");
-    gflags::ParseCommandLineFlags(&argc, &argv, true);
+
+    if (argc > 0 && argv != NULL)
+    {
+        gflags::ParseCommandLineFlags(&argc, &argv, true);
+    }
 
     // listen url
     if (FLAGS_url.length() >= sizeof(setting_.listen_url))
@@ -165,6 +168,13 @@ int AppLauncher::ParseCmdLine(int argc, char** argv)
     }
     strcpy(setting_.log_conf_file, FLAGS_log_conf.c_str());
 
+    if (FLAGS_fps < 1)
+    {
+        fprintf(stderr, "fps MUST >= 1");
+        return -1;
+    }
+    setting_.fps = FLAGS_fps;
+
     return 0;
 }
 
@@ -177,12 +187,9 @@ int AppLauncher::Run(RapidApp* app, int argc, char** argv)
 
     app_ = app;
 
-    if (argc > 0 && argv != NULL)
+    if (ParseCmdLine(argc, argv) != 0)
     {
-        if (ParseCmdLine(argc, argv) != 0)
-        {
-            return -1;
-        }
+        return -1;
     }
 
     // 1. Init
