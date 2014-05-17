@@ -29,9 +29,6 @@ class RapidApp {
 
     public:
         virtual const char* GetAppVersion() = 0;
-
-    public:
-        int Run();
 };
 
 }

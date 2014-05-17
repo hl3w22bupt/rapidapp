@@ -8,9 +8,4 @@ RapidApp::RapidApp()
 RapidApp::~RapidApp()
 {}
 
-int RapidApp::Run()
-{
-    return 0;
-}
-
 }
