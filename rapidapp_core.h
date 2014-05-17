@@ -4,6 +4,7 @@
 #include "rapidapp_base.h"
 #include "event2/event.h"
 #include <cstdio>
+#include <csignal>
 
 namespace rapidapp {
 
@@ -18,8 +19,20 @@ class AppLauncher {
     public:
         static void internal_timer_cb_func(evutil_socket_t fd, short what, void *arg) {
 #ifdef _DEBUG
-            fprintf(stderr, "internal timer cb\n");
+            fprintf(stderr, "internal timer cb, fd%d\n", fd);
 #endif
+            if (NULL == arg)
+                return;
+
+            static_cast<AppLauncher*>(arg)->Tick();
+        }
+
+        static void signal_stop_handler(int signum, siginfo_t *sig_info, void *arg) {
+            running_ = false;
+        }
+
+        static void signal_reload_handler(int signum, siginfo_t *sig_info, void *arg) {
+            reloading_ = false;
         }
 
     private:
@@ -27,10 +40,12 @@ class AppLauncher {
         int CleanUp();
 
         // 作为异步event回调使用
-        int Proc();
         int Tick();
         int Reload();
         int CtrlKeeper();
+
+    private:
+        void InitSignalHandle();
 
     private:
         struct event_base* event_base_;
@@ -40,7 +55,8 @@ class AppLauncher {
         RapidApp* app_;
 
     private:
-        bool running_;
+        static bool running_;
+        static bool reloading_;
 };
 
 }

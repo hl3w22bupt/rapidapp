@@ -3,8 +3,11 @@
 
 namespace rapidapp {
 
+bool AppLauncher::running_ = false;
+bool AppLauncher::reloading_ = false;
+
 AppLauncher::AppLauncher() : event_base_(NULL), internal_timer_(NULL),
-                                app_(NULL), running_(false)
+                                app_(NULL)
 {}
 
 AppLauncher::~AppLauncher()
@@ -12,8 +15,33 @@ AppLauncher::~AppLauncher()
     CleanUp();
 }
 
+void AppLauncher::InitSignalHandle()
+{
+    signal(SIGHUP,  SIG_IGN);
+    signal(SIGPIPE, SIG_IGN);
+    signal(SIGCHLD, SIG_IGN);
+
+    struct sigaction sig_act;
+    sig_act.sa_flags = SA_SIGINFO;
+    sig_act.sa_sigaction = signal_stop_handler;
+    sigaction(SIGTERM, &sig_act, NULL);
+    sigaction(SIGINT, &sig_act, NULL);
+    sigaction(SIGQUIT, &sig_act, NULL);
+    sigaction(SIGUSR1, &sig_act, NULL);
+
+    sig_act.sa_sigaction = signal_reload_handler;
+    sigaction(SIGUSR2, &sig_act, NULL);
+}
+
 int AppLauncher::Init()
 {
+    InitSignalHandle();
+
+#ifdef _DEBUG
+    event_enable_debug_mode();
+    //event_enable_debug_logging(EVENT_DBG_NONE);
+#endif
+
     struct event_base* evt_base = event_base_new();
     if (NULL == evt_base)
     {
@@ -22,6 +50,7 @@ int AppLauncher::Init()
 
     event_base_ = evt_base;
 
+    // print libevent info
     const char** methods = event_get_supported_methods();
     fprintf(stderr, "libevent version:%s, supported method:",
             event_get_version());
@@ -31,14 +60,14 @@ int AppLauncher::Init()
     }
     fprintf(stderr, "\n");
 
-    struct event* internal_timer_ = evtimer_new(event_base_,
+    struct event* internal_timer_ = event_new(event_base_, -1, EV_PERSIST,
                                                internal_timer_cb_func, this);
     if (NULL == internal_timer_)
     {
         return -1;
     }
 
-    // TODO, 可配置
+    // TODO, 可配置，通过此项配置控制后台服务的帧率
     struct timeval tv;
     tv.tv_sec = 0;
     tv.tv_usec = 1000;
@@ -46,6 +75,8 @@ int AppLauncher::Init()
     {
         return -1;
     }
+
+    // TODO ctrl unix socket
 
     return 0;
 }
@@ -67,30 +98,41 @@ int AppLauncher::CleanUp()
     return 0;
 }
 
-int AppLauncher::Proc()
-{
-    assert(app_ != NULL);
-
-    // 1. poll msg from front/back
-    // event_base_loop();
-    return 0;
-}
-
 int AppLauncher::Tick()
 {
     assert(app_ != NULL);
+    assert(event_base_ != NULL);
+
+    if (!running_)
+    {
+#ifdef _DEBUG
+        fprintf(stderr, "exit loop\n");
+#endif
+        event_base_loopbreak(event_base_);
+    }
+
+    if (reloading_)
+    {
+        Reload();
+        reloading_ = false;
+    }
+
     return 0;
 }
 
 int AppLauncher::Reload()
 {
     assert(app_ != NULL);
+    assert(event_base_ != NULL);
+
     return 0;
 }
 
 int AppLauncher::CtrlKeeper()
 {
     assert(app_ != NULL);
+    assert(event_base_ != NULL);
+
     return 0;
 }
 
@@ -117,10 +159,12 @@ int AppLauncher::Run(RapidApp* app)
         return -1;
     }
 
-    // 3. mainloop
 #ifdef _DEBUG
     event_base_dump_events(event_base_, stdout);
 #endif
+
+    // 3. mainloop
+    running_ = true;
     event_base_dispatch(event_base_);
 
     // 4. app fini
