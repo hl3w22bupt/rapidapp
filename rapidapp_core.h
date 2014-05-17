@@ -8,13 +8,21 @@
 
 namespace rapidapp {
 
+const int MAX_URL_LEN = 128;
+const int MAX_FILE_NAME_LEN = 128;
+
+struct AppSetting {
+    char listen_url[MAX_URL_LEN];
+    char log_conf_file[MAX_FILE_NAME_LEN];
+};
+
 class AppLauncher {
     public:
         AppLauncher();
         ~AppLauncher();
 
     public:
-        int Run(RapidApp* app);
+        int Run(RapidApp* app, int argc, char** argv);
 
     public:
         static void internal_timer_cb_func(evutil_socket_t fd, short what, void *arg) {
@@ -46,6 +54,7 @@ class AppLauncher {
 
     private:
         void InitSignalHandle();
+        int ParseCmdLine(int argc, char** argv);
 
     private:
         struct event_base* event_base_;
@@ -53,6 +62,7 @@ class AppLauncher {
 
     private:
         RapidApp* app_;
+        AppSetting setting_;
 
     private:
         static bool running_;

@@ -17,4 +17,4 @@ env.StaticLibrary('rapidapp', frame_src)
 
 sample_src = Glob('sample/*.cpp')
 sample_src += Glob('./librapidapp.a')
-env.Program('sample/app_demo', sample_src, LIBS='event')
+env.Program('sample/app_demo', sample_src, LIBS=['event', 'gflags'])

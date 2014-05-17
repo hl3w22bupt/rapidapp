@@ -1,5 +1,10 @@
 #include "rapidapp_core.h"
+#include <gflags/gflags.h>
 #include <cassert>
+#include <cstring>
+
+DEFINE_string(url, "0.0.0.0:80", "server listen url, format: [ip:port]");
+DEFINE_string(log_conf, "./logging.setting", "logging setting file");
 
 namespace rapidapp {
 
@@ -61,7 +66,7 @@ int AppLauncher::Init()
     fprintf(stderr, "\n");
 
     struct event* internal_timer_ = event_new(event_base_, -1, EV_PERSIST,
-                                               internal_timer_cb_func, this);
+                                              internal_timer_cb_func, this);
     if (NULL == internal_timer_)
     {
         return -1;
@@ -136,7 +141,34 @@ int AppLauncher::CtrlKeeper()
     return 0;
 }
 
-int AppLauncher::Run(RapidApp* app)
+int AppLauncher::ParseCmdLine(int argc, char** argv)
+{
+    assert(argc > 0 && argv != NULL);
+
+    gflags::SetVersionString(app_->GetAppVersion());
+    gflags::SetUsageMessage("server application based on rapidapp");
+    gflags::ParseCommandLineFlags(&argc, &argv, true);
+
+    // listen url
+    if (FLAGS_url.length() >= sizeof(setting_.listen_url))
+    {
+        fprintf(stderr, "url(length:%u) is too long\n", (unsigned)FLAGS_url.length());
+        return -1;
+    }
+    strcpy(setting_.listen_url, FLAGS_url.c_str());
+
+    // log conf
+    if (FLAGS_log_conf.length() >= sizeof(setting_.log_conf_file))
+    {
+        fprintf(stderr, "log_conf(length:%u) is too long\n", (unsigned)FLAGS_log_conf.length());
+        return -1;
+    }
+    strcpy(setting_.log_conf_file, FLAGS_log_conf.c_str());
+
+    return 0;
+}
+
+int AppLauncher::Run(RapidApp* app, int argc, char** argv)
 {
     if (NULL == app)
     {
@@ -144,6 +176,14 @@ int AppLauncher::Run(RapidApp* app)
     }
 
     app_ = app;
+
+    if (argc > 0 && argv != NULL)
+    {
+        if (ParseCmdLine(argc, argv) != 0)
+        {
+            return -1;
+        }
+    }
 
     // 1. Init
     int ret = Init();
