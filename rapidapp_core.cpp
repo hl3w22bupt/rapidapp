@@ -1,5 +1,6 @@
 #include "rapidapp_core.h"
 #include <gflags/gflags.h>
+#include <glog/logging.h>
 #include <cassert>
 #include <cstring>
 
@@ -37,6 +38,13 @@ void AppLauncher::InitSignalHandle()
 
     sig_act.sa_sigaction = signal_reload_handler;
     sigaction(SIGUSR2, &sig_act, NULL);
+}
+
+int AppLauncher::InitLogging(int argc, char** argv)
+{
+    google::InitGoogleLogging(argv[0]);
+    google::InstallFailureFunction(&failed_cb_func);
+    return 0;
 }
 
 int AppLauncher::Init()
@@ -192,8 +200,14 @@ int AppLauncher::Run(RapidApp* app, int argc, char** argv)
         return -1;
     }
 
+    int ret = InitLogging(argc, argv);
+    if (ret != 0)
+    {
+        return -1;
+    }
+
     // 1. Init
-    int ret = Init();
+    ret = Init();
     if (ret != 0)
     {
         return -1;
@@ -207,6 +221,7 @@ int AppLauncher::Run(RapidApp* app, int argc, char** argv)
     }
 
 #ifdef _DEBUG
+    assert(event_base_ != NULL);
     event_base_dump_events(event_base_, stdout);
 #endif
 

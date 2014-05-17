@@ -36,6 +36,9 @@ class AppLauncher {
             static_cast<AppLauncher*>(arg)->Tick();
         }
 
+        static void failed_cb_func() {
+        }
+
         static void signal_stop_handler(int signum, siginfo_t *sig_info, void *arg) {
             running_ = false;
         }
@@ -55,6 +58,7 @@ class AppLauncher {
 
     private:
         void InitSignalHandle();
+        int InitLogging(int argc, char** argv);
         int ParseCmdLine(int argc, char** argv);
 
     private:
