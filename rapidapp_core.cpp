@@ -3,6 +3,9 @@
 #include <glog/logging.h>
 #include <cassert>
 #include <cstring>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 DEFINE_string(url, "0.0.0.0:80", "server listen url, format: [ip:port]");
 DEFINE_string(log_file, "", "logging file name");
@@ -10,12 +13,16 @@ DEFINE_int32(fps, 1000, "frame-per-second, MUST >= 1, associated with reload and
 
 namespace rapidapp {
 
+const int MAX_TCP_BACKLOG = 102400;
+
 bool AppLauncher::running_ = false;
 bool AppLauncher::reloading_ = false;
 
 AppLauncher::AppLauncher() : event_base_(NULL), internal_timer_(NULL),
-                                app_(NULL)
-{}
+                                listener_(NULL), app_(NULL)
+{
+    memset(&setting_, 0, sizeof(setting_));
+}
 
 AppLauncher::~AppLauncher()
 {
@@ -42,11 +49,14 @@ void AppLauncher::InitSignalHandle()
 
 int AppLauncher::InitLogging(int argc, char** argv)
 {
+    assert(argc > 0 && argv != NULL);
+
     char* file_name = setting_.log_file_name;
     if ('\0' == file_name[0])
     {
         file_name = argv[0];
     }
+
     google::InitGoogleLogging(file_name);
     google::SetLogDestination(google::INFO, file_name);
     google::InstallFailureFunction(&failed_cb_func);
@@ -54,8 +64,25 @@ int AppLauncher::InitLogging(int argc, char** argv)
     return 0;
 }
 
-int AppLauncher::Init()
+int AppLauncher::Init(int argc, char** argv)
 {
+    // command line
+    int ret = ParseCmdLine(argc, argv);
+    if (ret != 0)
+    {
+        fprintf(stderr, "ParseCmdLine failed, argc:%d", argc);
+        return -1;
+    }
+
+    // glog
+    ret = InitLogging(argc, argv);
+    if (ret != 0)
+    {
+        fprintf(stderr, "Init logger failed");
+        return -1;
+    }
+
+    // signal
     InitSignalHandle();
 
 #ifdef _DEBUG
@@ -63,15 +90,18 @@ int AppLauncher::Init()
     //event_enable_debug_logging(EVENT_DBG_NONE);
 #endif
 
+    // event base
     struct event_base* evt_base = event_base_new();
     if (NULL == evt_base)
     {
+        PLOG(ERROR)<<"create event base failed";
         return -1;
     }
 
     event_base_ = evt_base;
 
-    // print libevent info
+    // 打印libevent信息
+#ifdef _DEBUG
     const char** methods = event_get_supported_methods();
     fprintf(stderr, "libevent version:%s, supported method:",
             event_get_version());
@@ -80,11 +110,14 @@ int AppLauncher::Init()
         fprintf(stderr, " %s ", methods[i]);
     }
     fprintf(stderr, "\n");
+#endif
 
+    // 帧计时器
     struct event* internal_timer_ = event_new(event_base_, -1, EV_PERSIST,
                                               internal_timer_cb_func, this);
     if (NULL == internal_timer_)
     {
+        PLOG(ERROR)<<"create internal timer failed";
         return -1;
     }
 
@@ -94,16 +127,39 @@ int AppLauncher::Init()
     tv.tv_usec = 1000000 / setting_.fps;
     if (event_add(internal_timer_, &tv) != 0)
     {
+        PLOG(ERROR)<<"add internal timer to event base failed";
         return -1;
     }
 
     // TODO ctrl unix socket
+
+    // listener, TODO port
+    struct sockaddr_in listen_sa;
+    listen_sa.sin_family = AF_INET;
+    listen_sa.sin_addr.s_addr = inet_addr(setting_.listen_url);
+    listen_sa.sin_port = htons(80);
+    listener_ = evconnlistener_new_bind(
+         event_base_, socket_listen_cb_function, this,
+         LEV_OPT_CLOSE_ON_FREE|LEV_OPT_CLOSE_ON_EXEC|LEV_OPT_REUSEABLE,
+         MAX_TCP_BACKLOG, (const struct sockaddr*)&listen_sa,
+         sizeof(listen_sa));
+    if (NULL == listener_)
+    {
+        PLOG(ERROR)<<"create evlisten failed";
+        return -1;
+    }
 
     return 0;
 }
 
 int AppLauncher::CleanUp()
 {
+    if (listener_ != NULL)
+    {
+        evconnlistener_free(listener_);
+        listener_ = NULL;
+    }
+
     if (internal_timer_ != NULL)
     {
         event_free(internal_timer_);
@@ -205,20 +261,8 @@ int AppLauncher::Run(RapidApp* app, int argc, char** argv)
         return -1;
     }
 
-    if (ParseCmdLine(argc, argv) != 0)
-    {
-        fprintf(stderr, "ParseCmdLine failed, argc:%d", argc);
-        return -1;
-    }
-
-    int ret = InitLogging(argc, argv);
-    if (ret != 0)
-    {
-        return -1;
-    }
-
     // 1. Init
-    ret = Init();
+    int ret = Init(argc, argv);
     if (ret != 0)
     {
         PLOG(ERROR)<<"Init failed, return"<<ret;

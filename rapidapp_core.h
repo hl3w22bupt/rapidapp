@@ -2,7 +2,9 @@
 #define RAPIDAPP_CORE_H_
 
 #include "rapidapp_base.h"
+#include "rapidapp_net.h"
 #include "event2/event.h"
+#include "event2/listener.h"
 #include <cstdio>
 #include <csignal>
 
@@ -33,6 +35,12 @@ class AppLauncher {
             static_cast<AppLauncher*>(arg)->Tick();
         }
 
+        static void socket_listen_cb_function(struct evconnlistener *listener,
+                                              evutil_socket_t sock,
+                                              struct sockaddr *addr, int len, void *ptr) {
+            // TODO 接收的新连接加入event管理
+        }
+
         static void failed_cb_func() {
         }
 
@@ -45,7 +53,7 @@ class AppLauncher {
         }
 
     private:
-        int Init();
+        int Init(int argc, char** argv);
         int CleanUp();
 
         // 作为异步event回调使用
@@ -61,6 +69,7 @@ class AppLauncher {
     private:
         struct event_base* event_base_;
         struct event* internal_timer_;      // 内部定时器，帧驱动
+        struct evconnlistener* listener_;
 
     private:
         RapidApp* app_;
