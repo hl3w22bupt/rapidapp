@@ -5,7 +5,7 @@
 #include <cstring>
 
 DEFINE_string(url, "0.0.0.0:80", "server listen url, format: [ip:port]");
-DEFINE_string(log_conf, "./logging.setting", "logging setting file");
+DEFINE_string(log_file, "", "logging file name");
 DEFINE_int32(fps, 1000, "frame-per-second, MUST >= 1, associated with reload and timer");
 
 namespace rapidapp {
@@ -42,8 +42,15 @@ void AppLauncher::InitSignalHandle()
 
 int AppLauncher::InitLogging(int argc, char** argv)
 {
-    google::InitGoogleLogging(argv[0]);
+    char* file_name = setting_.log_file_name;
+    if ('\0' == file_name[0])
+    {
+        file_name = argv[0];
+    }
+    google::InitGoogleLogging(file_name);
+    google::SetLogDestination(google::INFO, file_name);
     google::InstallFailureFunction(&failed_cb_func);
+
     return 0;
 }
 
@@ -117,18 +124,16 @@ int AppLauncher::Tick()
     assert(app_ != NULL);
     assert(event_base_ != NULL);
 
-    if (!running_)
-    {
-#ifdef _DEBUG
-        fprintf(stderr, "exit loop\n");
-#endif
-        event_base_loopbreak(event_base_);
-    }
-
     if (reloading_)
     {
         Reload();
         reloading_ = false;
+    }
+
+    if (!running_)
+    {
+        PLOG(INFO)<<"exit loop";
+        event_base_loopbreak(event_base_);
     }
 
     return 0;
@@ -152,13 +157,11 @@ int AppLauncher::CtrlKeeper()
 
 int AppLauncher::ParseCmdLine(int argc, char** argv)
 {
+    assert(argc > 0 && argv != NULL);
+
     gflags::SetVersionString(app_->GetAppVersion());
     gflags::SetUsageMessage("server application based on rapidapp");
-
-    if (argc > 0 && argv != NULL)
-    {
-        gflags::ParseCommandLineFlags(&argc, &argv, true);
-    }
+    gflags::ParseCommandLineFlags(&argc, &argv, true);
 
     // listen url
     if (FLAGS_url.length() >= sizeof(setting_.listen_url))
@@ -168,13 +171,13 @@ int AppLauncher::ParseCmdLine(int argc, char** argv)
     }
     strcpy(setting_.listen_url, FLAGS_url.c_str());
 
-    // log conf
-    if (FLAGS_log_conf.length() >= sizeof(setting_.log_conf_file))
+    // log file
+    if (FLAGS_log_file.length() >= sizeof(setting_.log_file_name))
     {
-        fprintf(stderr, "log_conf(length:%u) is too long\n", (unsigned)FLAGS_log_conf.length());
+        fprintf(stderr, "log_file(length:%u) is too long\n", (unsigned)FLAGS_log_file.length());
         return -1;
     }
-    strcpy(setting_.log_conf_file, FLAGS_log_conf.c_str());
+    strcpy(setting_.log_file_name, FLAGS_log_file.c_str());
 
     if (FLAGS_fps < 1)
     {
@@ -190,13 +193,21 @@ int AppLauncher::Run(RapidApp* app, int argc, char** argv)
 {
     if (NULL == app)
     {
+        fprintf(stderr, "app is NULL\n");
         return -1;
     }
 
     app_ = app;
 
+    if (argc <=0 || NULL == argv)
+    {
+        fprintf(stderr, "argc:%d, argv:%p\n", argc, argv);
+        return -1;
+    }
+
     if (ParseCmdLine(argc, argv) != 0)
     {
+        fprintf(stderr, "ParseCmdLine failed, argc:%d", argc);
         return -1;
     }
 
@@ -210,6 +221,7 @@ int AppLauncher::Run(RapidApp* app, int argc, char** argv)
     ret = Init();
     if (ret != 0)
     {
+        PLOG(ERROR)<<"Init failed, return"<<ret;
         return -1;
     }
 
@@ -217,9 +229,11 @@ int AppLauncher::Run(RapidApp* app, int argc, char** argv)
     ret = app_->OnInit();
     if (ret != 0)
     {
+        PLOG(ERROR)<<"app OnInit failed return:"<<ret;
         return -1;
     }
 
+    LOG(INFO)<<"start success...";
 #ifdef _DEBUG
     assert(event_base_ != NULL);
     event_base_dump_events(event_base_, stdout);
@@ -233,14 +247,14 @@ int AppLauncher::Run(RapidApp* app, int argc, char** argv)
     ret = app_->OnFini();
     if (ret != 0)
     {
-        // log
+        PLOG(ERROR)<<"app OnFini failed return:"<<ret;
     }
 
     // 5. CleanUp
     ret = CleanUp();
     if (ret != 0)
     {
-        // log
+        PLOG(ERROR)<<"CleanUp failed return:"<<ret;
     }
 
     return 0;

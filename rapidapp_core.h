@@ -14,7 +14,7 @@ const int MAX_FILE_NAME_LEN = 128;
 struct AppSetting {
     int  fps;       // 每秒帧率
     char listen_url[MAX_URL_LEN];
-    char log_conf_file[MAX_FILE_NAME_LEN];
+    char log_file_name[MAX_FILE_NAME_LEN];
 };
 
 class AppLauncher {
@@ -27,9 +27,6 @@ class AppLauncher {
 
     public:
         static void internal_timer_cb_func(evutil_socket_t fd, short what, void *arg) {
-#ifdef _DEBUG
-            fprintf(stderr, "internal timer cb, fd%d\n", fd);
-#endif
             if (NULL == arg)
                 return;
 
