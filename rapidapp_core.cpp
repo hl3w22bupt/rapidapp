@@ -137,7 +137,7 @@ int AppLauncher::Init(int argc, char** argv)
     struct sockaddr_in listen_sa;
     listen_sa.sin_family = AF_INET;
     listen_sa.sin_addr.s_addr = inet_addr(setting_.listen_url);
-    listen_sa.sin_port = htons(80);
+    listen_sa.sin_port = htons(8080);
     listener_ = evconnlistener_new_bind(
          event_base_, socket_listen_cb_function, this,
          LEV_OPT_CLOSE_ON_FREE|LEV_OPT_CLOSE_ON_EXEC|LEV_OPT_REUSEABLE,
