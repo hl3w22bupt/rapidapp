@@ -11,6 +11,8 @@ if int(debug) != 0:
     env.Append(CPPDEFINES='_DEBUG')
 
 frame_src = Glob('*.cpp')
+frame_src += Glob('utils/*.c')
+frame_src += Glob('utils/*.cpp')
 
 env.SharedLibrary('rapidapp', frame_src)
 env.StaticLibrary('rapidapp', frame_src)
