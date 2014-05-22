@@ -1,4 +1,5 @@
 #include "rapidapp_core.h"
+#include "utils/rap_net_uri.h"
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 #include <cassert>
@@ -7,7 +8,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-DEFINE_string(url, "0.0.0.0:80", "server listen url, format: [ip:port]");
+DEFINE_string(url, "tcp:0.0.0.0:80", "server listen url, format: [proto:ip:port]");
 DEFINE_string(log_file, "", "logging file name");
 DEFINE_int32(fps, 1000, "frame-per-second, MUST >= 1, associated with reload and timer");
 
@@ -133,11 +134,15 @@ int AppLauncher::Init(int argc, char** argv)
 
     // TODO ctrl unix socket
 
-    // listener, TODO port
+    // listener
     struct sockaddr_in listen_sa;
-    listen_sa.sin_family = AF_INET;
-    listen_sa.sin_addr.s_addr = inet_addr(setting_.listen_url);
-    listen_sa.sin_port = htons(8080);
+    ret = rap_uri_get_socket_addr(setting_.listen_url, &listen_sa);
+    if (ret != 0)
+    {
+        PLOG(ERROR)<<"bad url: "<<setting_.listen_url;
+        return -1;
+    }
+
     listener_ = evconnlistener_new_bind(
          event_base_, socket_listen_cb_function, this,
          LEV_OPT_CLOSE_ON_FREE|LEV_OPT_CLOSE_ON_EXEC|LEV_OPT_REUSEABLE,
