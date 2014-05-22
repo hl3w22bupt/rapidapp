@@ -16,6 +16,8 @@ namespace rapidapp {
 
 const int MAX_TCP_BACKLOG = 102400;
 
+const char* udp_uri = "udp:127.0.0.1:9090";
+
 bool AppLauncher::running_ = false;
 bool AppLauncher::reloading_ = false;
 
@@ -132,7 +134,11 @@ int AppLauncher::Init(int argc, char** argv)
         return -1;
     }
 
-    // TODO ctrl unix socket
+    // ctrl udp socket
+    evutil_socket_t udp_ctrl_sockfd = rap_uri_open_socket(udp_uri);
+    evutil_make_socket_nonblocking(udp_ctrl_sockfd);
+    evutil_make_socket_closeonexec(udp_ctrl_sockfd);
+    // TODO add bufferevent
 
     // listener
     struct sockaddr_in listen_sa;
