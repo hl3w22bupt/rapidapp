@@ -5,6 +5,7 @@
 #include "rapidapp_net.h"
 #include "event2/event.h"
 #include "event2/listener.h"
+#include "event2/bufferevent.h"
 #include <cstdio>
 #include <csignal>
 
@@ -39,9 +40,26 @@ class AppLauncher {
                                               evutil_socket_t sock,
                                               struct sockaddr *addr, int len, void *ptr) {
             // TODO 接收的新连接加入event管理
+            if (NULL == ptr)
+            {
+                return;
+            }
+            else if (NULL == listener || sock < 0 || NULL == addr)
+            {
+                return;
+            }
+
+            static_cast<AppLauncher*>(ptr)->OnClientConnect(sock, addr);
         }
 
         static void failed_cb_func() {
+        }
+
+        static void on_ctrl_cb_func(struct bufferevent* bev, void *arg) {
+            if (NULL == bev || NULL == arg)
+                return;
+
+            static_cast<AppLauncher*>(arg)->OnCtrlMsg(bev);
         }
 
         static void signal_stop_handler(int signum, siginfo_t *sig_info, void *arg) {
@@ -59,7 +77,8 @@ class AppLauncher {
         // 作为异步event回调使用
         int Tick();
         int Reload();
-        int CtrlKeeper();
+        int OnCtrlMsg(struct bufferevent* bev);
+        int OnClientConnect(evutil_socket_t sock, struct sockaddr *addr);
 
     private:
         void InitSignalHandle();
@@ -68,8 +87,9 @@ class AppLauncher {
 
     private:
         struct event_base* event_base_;
-        struct event* internal_timer_;      // 内部定时器，帧驱动
+        struct event* internal_timer_;          // 内部定时器，帧驱动
         struct evconnlistener* listener_;
+        struct bufferevent* udp_ctrl_keeper_;   // command control mode
 
     private:
         RapidApp* app_;

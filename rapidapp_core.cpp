@@ -136,9 +136,23 @@ int AppLauncher::Init(int argc, char** argv)
 
     // ctrl udp socket
     evutil_socket_t udp_ctrl_sockfd = rap_uri_open_socket(udp_uri);
+    if (udp_ctrl_sockfd < 0)
+    {
+        PLOG(ERROR)<<"open socket failed by uri:"<<udp_uri;
+        return -1;
+    }
+
     evutil_make_socket_nonblocking(udp_ctrl_sockfd);
     evutil_make_socket_closeonexec(udp_ctrl_sockfd);
-    // TODO add bufferevent
+    udp_ctrl_keeper_ = bufferevent_socket_new(event_base_, udp_ctrl_sockfd,
+                                              BEV_OPT_CLOSE_ON_FREE);
+    if (NULL == udp_ctrl_keeper_)
+    {
+        PLOG(ERROR)<<"create bufferevent for ctrl keeper failed";
+        return -1;
+    }
+    bufferevent_enable(udp_ctrl_keeper_, EV_READ|EV_WRITE);
+    bufferevent_setcb(udp_ctrl_keeper_, on_ctrl_cb_func, NULL, NULL, this);
 
     // listener
     struct sockaddr_in listen_sa;
@@ -214,11 +228,25 @@ int AppLauncher::Reload()
     return 0;
 }
 
-int AppLauncher::CtrlKeeper()
+int AppLauncher::OnCtrlMsg(struct bufferevent* bev)
 {
     assert(app_ != NULL);
     assert(event_base_ != NULL);
 
+    if (NULL ==bev)
+    {
+        PLOG(ERROR)<<"bev is null, but event triggered";
+        return -1;
+    }
+
+    // TODO frame specified control msg
+    app_->OnRecvCtrl();
+
+    return 0;
+}
+
+int AppLauncher::OnClientConnect(evutil_socket_t sock, struct sockaddr *addr)
+{
     return 0;
 }
 
