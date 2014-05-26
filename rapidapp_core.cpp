@@ -8,7 +8,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-DEFINE_string(url, "tcp:0.0.0.0:80", "server listen url, format: [proto:ip:port]");
+DEFINE_string(uri, "tcp:0.0.0.0:80", "server listen uri, format: [proto:ip:port]");
 DEFINE_string(log_file, "", "logging file name");
 DEFINE_int32(fps, 1000, "frame-per-second, MUST >= 1, associated with reload and timer");
 
@@ -20,6 +20,12 @@ const char* udp_uri = "udp:127.0.0.1:9090";
 
 bool AppLauncher::running_ = false;
 bool AppLauncher::reloading_ = false;
+
+void libevent_log_cb_func(int severity, const char *msg) {
+    if (msg != NULL) {
+        PLOG(INFO)<<"libevent log:"<<msg;
+    }
+}
 
 AppLauncher::AppLauncher() : event_base_(NULL), internal_timer_(NULL),
                                 listener_(NULL), app_(NULL)
@@ -93,6 +99,9 @@ int AppLauncher::Init(int argc, char** argv)
     //event_enable_debug_logging(EVENT_DBG_NONE);
 #endif
 
+    // set libevent log callback
+    event_set_log_callback(libevent_log_cb_func);
+
     // event base
     struct event_base* evt_base = event_base_new();
     if (NULL == evt_base)
@@ -156,10 +165,10 @@ int AppLauncher::Init(int argc, char** argv)
 
     // tcp listener
     struct sockaddr_in listen_sa;
-    ret = rap_uri_get_socket_addr(setting_.listen_url, &listen_sa);
+    ret = rap_uri_get_socket_addr(setting_.listen_uri, &listen_sa);
     if (ret != 0)
     {
-        PLOG(ERROR)<<"bad url: "<<setting_.listen_url;
+        PLOG(ERROR)<<"bad uri: "<<setting_.listen_uri;
         return -1;
     }
 
@@ -270,7 +279,8 @@ int AppLauncher::OnFrontEndConnect(evutil_socket_t sock, struct sockaddr *addr)
     }
 
     bufferevent_enable(event, EV_READ|EV_WRITE);
-    bufferevent_setcb(event, on_frontend_data_cb_func, NULL, NULL, this);
+    bufferevent_setcb(event, on_frontend_data_cb_func, NULL,
+                      on_nondata_event_cb_func, this);
 
     return 0;
 }
@@ -282,9 +292,32 @@ int AppLauncher::OnFrontEndMsg(struct bufferevent* bev)
     return 0;
 }
 
-int AppLauncher::OnFrontEndSocketEvent(struct bufferevent* bev)
+int AppLauncher::OnFrontEndSocketEvent(struct bufferevent* bev, short events)
 {
     assert(bev != NULL);
+
+    PLOG(INFO)<<"recv socket event:"<<events;
+
+    // frontend event
+    if (events & BEV_EVENT_ERROR)
+    {
+        PLOG(ERROR)<<"socket error";
+        bufferevent_free(bev);
+        return 0;
+    }
+
+    if (events & BEV_EVENT_TIMEOUT)
+    {
+        PLOG(INFO)<<"socket read/write timeout";
+        return 0;
+    }
+
+    if (events & BEV_EVENT_EOF)
+    {
+        PLOG(INFO)<<"peer close connection actively";
+        bufferevent_free(bev);
+        return 0;
+    }
 
     return 0;
 }
@@ -297,13 +330,13 @@ int AppLauncher::ParseCmdLine(int argc, char** argv)
     gflags::SetUsageMessage("server application based on rapidapp");
     gflags::ParseCommandLineFlags(&argc, &argv, true);
 
-    // listen url
-    if (FLAGS_url.length() >= sizeof(setting_.listen_url))
+    // listen uri
+    if (FLAGS_uri.length() >= sizeof(setting_.listen_uri))
     {
-        fprintf(stderr, "url(length:%u) is too long\n", (unsigned)FLAGS_url.length());
+        fprintf(stderr, "uri(length:%u) is too long\n", (unsigned)FLAGS_uri.length());
         return -1;
     }
-    strcpy(setting_.listen_url, FLAGS_url.c_str());
+    strcpy(setting_.listen_uri, FLAGS_uri.c_str());
 
     // log file
     if (FLAGS_log_file.length() >= sizeof(setting_.log_file_name))

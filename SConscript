@@ -9,6 +9,8 @@ env = Environment(CCFLAGS='-Werror -g -pg',
 #LINKFLAGS
 if int(debug) != 0:
     env.Append(CPPDEFINES='_DEBUG')
+else:
+    env.Append(CPPDEFINES='NDEBUG')
 
 frame_src = Glob('*.cpp')
 frame_src += Glob('utils/*.c')

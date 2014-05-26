@@ -16,7 +16,7 @@ const int MAX_FILE_NAME_LEN = 128;
 
 struct AppSetting {
     int  fps;       // 每秒帧率
-    char listen_url[MAX_URL_LEN];
+    char listen_uri[MAX_URL_LEN];
     char log_file_name[MAX_FILE_NAME_LEN];
 };
 
@@ -69,7 +69,7 @@ class AppLauncher {
             if (NULL == bev || NULL == arg)
                 return;
 
-            // TODO OnFrontEndMsg
+            // OnFrontEndMsg
             static_cast<AppLauncher*>(arg)->OnFrontEndMsg(bev);
         }
 
@@ -77,8 +77,8 @@ class AppLauncher {
             if (NULL == bev || NULL == arg)
                 return;
 
-            // TODO OnFrontEndSocketEvent
-            static_cast<AppLauncher*>(arg)->OnFrontEndSocketEvent(bev);
+            // OnFrontEndSocketEvent
+            static_cast<AppLauncher*>(arg)->OnFrontEndSocketEvent(bev, events);
         }
 
 
@@ -111,7 +111,7 @@ class AppLauncher {
         int OnFrontEndConnect(evutil_socket_t sock, struct sockaddr *addr);
 
         int OnFrontEndMsg(struct bufferevent* bev);
-        int OnFrontEndSocketEvent(struct bufferevent* bev);
+        int OnFrontEndSocketEvent(struct bufferevent* bev, short events);
 
     private:
         void InitSignalHandle();
