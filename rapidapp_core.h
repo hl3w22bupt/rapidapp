@@ -20,6 +20,19 @@ struct AppSetting {
     char log_file_name[MAX_FILE_NAME_LEN];
 };
 
+class ConnectionHanlderMgr {
+    public:
+        ConnectionHanlderMgr();
+        ~ConnectionHanlderMgr();
+
+    public:
+        int AddHandler();
+        int RemoveHandler();
+
+    private:
+        /*HandlerPool handler_pool_;*/
+};
+
 class AppLauncher {
     public:
         AppLauncher();
@@ -39,7 +52,7 @@ class AppLauncher {
         static void socket_listen_cb_function(struct evconnlistener *listener,
                                               evutil_socket_t sock,
                                               struct sockaddr *addr, int len, void *ptr) {
-            // TODO 接收的新连接加入event管理
+            // 接收的新连接加入event管理
             if (NULL == ptr)
             {
                 return;
@@ -49,8 +62,25 @@ class AppLauncher {
                 return;
             }
 
-            static_cast<AppLauncher*>(ptr)->OnClientConnect(sock, addr);
+            static_cast<AppLauncher*>(ptr)->OnFrontEndConnect(sock, addr);
         }
+
+        static void on_frontend_data_cb_func(struct bufferevent* bev, void *arg) {
+            if (NULL == bev || NULL == arg)
+                return;
+
+            // TODO OnFrontEndMsg
+            static_cast<AppLauncher*>(arg)->OnFrontEndMsg(bev);
+        }
+
+        static void on_nondata_event_cb_func(struct bufferevent* bev, short events, void *arg) {
+            if (NULL == bev || NULL == arg)
+                return;
+
+            // TODO OnFrontEndSocketEvent
+            static_cast<AppLauncher*>(arg)->OnFrontEndSocketEvent(bev);
+        }
+
 
         static void failed_cb_func() {
         }
@@ -78,7 +108,10 @@ class AppLauncher {
         int Tick();
         int Reload();
         int OnCtrlMsg(struct bufferevent* bev);
-        int OnClientConnect(evutil_socket_t sock, struct sockaddr *addr);
+        int OnFrontEndConnect(evutil_socket_t sock, struct sockaddr *addr);
+
+        int OnFrontEndMsg(struct bufferevent* bev);
+        int OnFrontEndSocketEvent(struct bufferevent* bev);
 
     private:
         void InitSignalHandle();

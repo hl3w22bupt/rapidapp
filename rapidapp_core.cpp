@@ -154,7 +154,7 @@ int AppLauncher::Init(int argc, char** argv)
     bufferevent_enable(udp_ctrl_keeper_, EV_READ|EV_WRITE);
     bufferevent_setcb(udp_ctrl_keeper_, on_ctrl_cb_func, NULL, NULL, this);
 
-    // listener
+    // tcp listener
     struct sockaddr_in listen_sa;
     ret = rap_uri_get_socket_addr(setting_.listen_url, &listen_sa);
     if (ret != 0)
@@ -183,6 +183,12 @@ int AppLauncher::CleanUp()
     {
         evconnlistener_free(listener_);
         listener_ = NULL;
+    }
+
+    if (udp_ctrl_keeper_ != NULL)
+    {
+        bufferevent_free(udp_ctrl_keeper_);
+        udp_ctrl_keeper_ = NULL;
     }
 
     if (internal_timer_ != NULL)
@@ -245,8 +251,41 @@ int AppLauncher::OnCtrlMsg(struct bufferevent* bev)
     return 0;
 }
 
-int AppLauncher::OnClientConnect(evutil_socket_t sock, struct sockaddr *addr)
+int AppLauncher::OnFrontEndConnect(evutil_socket_t sock, struct sockaddr *addr)
 {
+    assert(sock >= 0 && addr != NULL);
+
+    PLOG(INFO)<<"has accepted new connect:"<<
+        inet_ntoa(((struct sockaddr_in*)addr)->sin_addr);
+
+    evutil_make_socket_nonblocking(sock);
+    evutil_make_socket_closeonexec(sock);
+    struct bufferevent* event =
+        bufferevent_socket_new(event_base_, sock,
+                               BEV_OPT_CLOSE_ON_FREE);
+    if (NULL == event)
+    {
+        PLOG(ERROR)<<"add new connection fd:"<<sock<<" failed";
+        return -1;
+    }
+
+    bufferevent_enable(event, EV_READ|EV_WRITE);
+    bufferevent_setcb(event, on_frontend_data_cb_func, NULL, NULL, this);
+
+    return 0;
+}
+
+int AppLauncher::OnFrontEndMsg(struct bufferevent* bev)
+{
+    assert(bev != NULL);
+
+    return 0;
+}
+
+int AppLauncher::OnFrontEndSocketEvent(struct bufferevent* bev)
+{
+    assert(bev != NULL);
+
     return 0;
 }
 
