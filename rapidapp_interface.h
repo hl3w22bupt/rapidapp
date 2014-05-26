@@ -8,8 +8,8 @@ namespace rapidapp {
 // App抽象基类
 class RapidApp {
     public:
-        RapidApp();
-        virtual ~RapidApp();
+        RapidApp(){};
+        virtual ~RapidApp(){};
 
     public:
         virtual int OnInit() = 0;

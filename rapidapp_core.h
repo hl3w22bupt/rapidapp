@@ -87,6 +87,11 @@ class AppLauncher {
             reloading_ = false;
         }
 
+        /*private:*/
+        /*EasyNet& GetNetEasyInstance() {*/
+        /*return easy_net_handler_;*/
+        /*}*/
+
     private:
         int Init(int argc, char** argv);
         int CleanUp();
@@ -121,6 +126,7 @@ class AppLauncher {
 
     private:
         class ConnectionHandlerMgr connection_handler_mgr_;
+        /*class EasyNet easy_net_handler_;*/
 };
 
 }

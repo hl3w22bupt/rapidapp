@@ -75,6 +75,8 @@ int AppLauncher::InitLogging(int argc, char** argv)
 
 int AppLauncher::Init(int argc, char** argv)
 {
+    assert(app_ != NULL);
+
     // command line
     int ret = ParseCmdLine(argc, argv);
     if (ret != 0)
@@ -101,6 +103,14 @@ int AppLauncher::Init(int argc, char** argv)
 
     // set libevent log callback
     event_set_log_callback(libevent_log_cb_func);
+
+    size_t up_size = 2 * app_->GetFrontEndMaxMsgSize();
+    ret = connection_handler_mgr_.Init(up_size);
+    if (ret != 0)
+    {
+        LOG(ERROR)<<"init net mgr failed";
+        return -1;
+    }
 
     // event base
     struct event_base* evt_base = event_base_new();
@@ -294,6 +304,8 @@ int AppLauncher::OnFrontEndMsg(struct bufferevent* bev)
     // get msg from bufferevent
     size_t msg_size = bufferevent_read(bev, connection_handler_mgr_.up_msg_buffer_.buffer,
                                        connection_handler_mgr_.up_msg_buffer_.size);
+
+    LOG(INFO)<<"recv total "<<msg_size<<" bytes from frontend";
     app_->OnRecvFrontEnd(connection_handler_mgr_.up_msg_buffer_.buffer,
                          msg_size);
 
