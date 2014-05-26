@@ -5,6 +5,7 @@
 
 namespace rapidapp {
 
+class AppLauncher;
 class EasyNet {
     public:
         static EasyNet* CreateFrontEnd(const char* url);
@@ -22,6 +23,8 @@ class EasyNet {
     private:
         EasyNet();
         ~EasyNet();
+
+        friend class AppLauncher;
 };
 
 }

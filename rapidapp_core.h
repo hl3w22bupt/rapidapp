@@ -33,6 +33,7 @@ class AppLauncher {
             if (NULL == arg)
                 return;
 
+            // 帧驱动逻辑
             static_cast<AppLauncher*>(arg)->Tick();
         }
 
@@ -49,6 +50,7 @@ class AppLauncher {
                 return;
             }
 
+            // OnFrontEndConnect
             static_cast<AppLauncher*>(ptr)->OnFrontEndConnect(sock, addr);
         }
 
@@ -87,10 +89,10 @@ class AppLauncher {
             reloading_ = false;
         }
 
-        /*private:*/
-        /*EasyNet& GetNetEasyInstance() {*/
-        /*return easy_net_handler_;*/
-        /*}*/
+    private:
+        EasyNet& GetNetEasyInstance() {
+            return easy_net_handler_;
+        }
 
     private:
         int Init(int argc, char** argv);
@@ -126,7 +128,7 @@ class AppLauncher {
 
     private:
         class ConnectionHandlerMgr connection_handler_mgr_;
-        /*class EasyNet easy_net_handler_;*/
+        class EasyNet easy_net_handler_;
 };
 
 }
