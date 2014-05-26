@@ -1,6 +1,8 @@
 #ifndef RAPIDAPP_BASE_H_
 #define RAPIDAPP_BASE_H_
 
+#include <cstdio>
+
 namespace rapidapp {
 
 // App抽象基类
@@ -21,13 +23,14 @@ class RapidApp {
 
         virtual int OnRecvCtrl() = 0;
 
-        virtual int OnRecvFrontEnd() = 0;
-        virtual int OnRecvBackEnd() = 0;
+        virtual int OnRecvFrontEnd(const char* msg, size_t size) = 0;
+        virtual int OnRecvBackEnd(const char* msg, size_t size) = 0;
 
     public:
         virtual int OnReportRundata() = 0;
 
     public:
+        virtual size_t GetFrontEndMaxMsgSize() = 0;
         virtual const char* GetAppVersion() = 0;
 };
 

@@ -1,8 +1,8 @@
 #ifndef RAPIDAPP_CORE_H_
 #define RAPIDAPP_CORE_H_
 
-#include "rapidapp_base.h"
-#include "rapidapp_net.h"
+#include "rapidapp_interface.h"
+#include "rapidapp_net_mgr.h"
 #include "event2/event.h"
 #include "event2/listener.h"
 #include "event2/bufferevent.h"
@@ -18,19 +18,6 @@ struct AppSetting {
     int  fps;       // 每秒帧率
     char listen_uri[MAX_URL_LEN];
     char log_file_name[MAX_FILE_NAME_LEN];
-};
-
-class ConnectionHanlderMgr {
-    public:
-        ConnectionHanlderMgr();
-        ~ConnectionHanlderMgr();
-
-    public:
-        int AddHandler();
-        int RemoveHandler();
-
-    private:
-        /*HandlerPool handler_pool_;*/
 };
 
 class AppLauncher {
@@ -131,6 +118,9 @@ class AppLauncher {
     private:
         static bool running_;
         static bool reloading_;
+
+    private:
+        class ConnectionHandlerMgr connection_handler_mgr_;
 };
 
 }

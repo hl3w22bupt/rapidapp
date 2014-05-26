@@ -39,16 +39,21 @@ int MyApp::OnRecvCtrl()
     return 0;
 }
 
-int MyApp::OnRecvFrontEnd()
+int MyApp::OnRecvFrontEnd(const char* msg, size_t size)
 {
     return 0;
 }
-int MyApp::OnRecvBackEnd()
+int MyApp::OnRecvBackEnd(const char* msg, size_t size)
 {
     return 0;
 }
 
 int MyApp::OnReportRundata()
+{
+    return 0;
+}
+
+size_t MyApp::GetFrontEndMaxMsgSize()
 {
     return 0;
 }

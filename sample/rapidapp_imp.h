@@ -1,7 +1,7 @@
 #ifndef RAPIDAPP_IMP_H_
 #define RAPIDAPP_IMP_H_
 
-#include "rapidapp_base.h"
+#include "rapidapp_interface.h"
 
 using namespace rapidapp;
 
@@ -22,14 +22,15 @@ class MyApp : public RapidApp {
 
         virtual int OnRecvCtrl();
 
-        virtual int OnRecvFrontEnd();
-        virtual int OnRecvBackEnd();
+        virtual int OnRecvFrontEnd(const char* msg, size_t size);
+        virtual int OnRecvBackEnd(const char* msg, size_t size);
 
     public:
         virtual int OnReportRundata();
 
     public:
         virtual const char* GetAppVersion();
+        virtual size_t GetFrontEndMaxMsgSize();
 };
 
 #endif

@@ -28,7 +28,7 @@ void libevent_log_cb_func(int severity, const char *msg) {
 }
 
 AppLauncher::AppLauncher() : event_base_(NULL), internal_timer_(NULL),
-                                listener_(NULL), app_(NULL)
+                                listener_(NULL), app_(NULL), connection_handler_mgr_()
 {
     memset(&setting_, 0, sizeof(setting_));
 }
@@ -278,6 +278,7 @@ int AppLauncher::OnFrontEndConnect(evutil_socket_t sock, struct sockaddr *addr)
         return -1;
     }
 
+    // TODO setwatermark
     bufferevent_enable(event, EV_READ|EV_WRITE);
     bufferevent_setcb(event, on_frontend_data_cb_func, NULL,
                       on_nondata_event_cb_func, this);
@@ -288,6 +289,13 @@ int AppLauncher::OnFrontEndConnect(evutil_socket_t sock, struct sockaddr *addr)
 int AppLauncher::OnFrontEndMsg(struct bufferevent* bev)
 {
     assert(bev != NULL);
+    assert(app_ != NULL);
+
+    // get msg from bufferevent
+    size_t msg_size = bufferevent_read(bev, connection_handler_mgr_.up_msg_buffer_.buffer,
+                                       connection_handler_mgr_.up_msg_buffer_.size);
+    app_->OnRecvFrontEnd(connection_handler_mgr_.up_msg_buffer_.buffer,
+                         msg_size);
 
     return 0;
 }
