@@ -5,38 +5,38 @@ namespace rapidapp {
 
 const int kDefaultUpSize = 1024 * 1024 * 1024;  // 1M
 
-ConnectionHandlerMgr::ConnectionHandlerMgr()
+NetHandlerMgr::NetHandlerMgr()
 {
-    up_msg_buffer_.buffer = NULL;
-    up_msg_buffer_.size = 0;
+    recv_buffer_.buffer = NULL;
+    recv_buffer_.size = 0;
 }
 
-ConnectionHandlerMgr::~ConnectionHandlerMgr()
+NetHandlerMgr::~NetHandlerMgr()
 {}
 
-int ConnectionHandlerMgr::Init(size_t up_size)
+int NetHandlerMgr::Init(size_t recv_buff_size)
 {
-    if (0 == up_size)
+    if (0 == recv_buff_size)
     {
-        up_size = kDefaultUpSize;
+        recv_buff_size = kDefaultUpSize;
     }
 
-    up_msg_buffer_.buffer = static_cast<char*>(calloc(up_size, 1));
-    if (NULL == up_msg_buffer_.buffer)
+    recv_buffer_.buffer = static_cast<char*>(calloc(recv_buff_size, 1));
+    if (NULL == recv_buffer_.buffer)
     {
         return -1;
     }
-    up_msg_buffer_.size = up_size;
+    recv_buffer_.size = recv_buff_size;
 
     return 0;
 }
 
-void ConnectionHandlerMgr::CleanUp()
+void NetHandlerMgr::CleanUp()
 {
-    if (up_msg_buffer_.buffer != NULL)
+    if (recv_buffer_.buffer != NULL)
     {
-        free(up_msg_buffer_.buffer);
-        up_msg_buffer_.buffer = NULL;
+        free(recv_buffer_.buffer);
+        recv_buffer_.buffer = NULL;
     }
 }
 

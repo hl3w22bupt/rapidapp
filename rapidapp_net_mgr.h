@@ -1,7 +1,6 @@
 #ifndef RAPIDAPP_NET_MGR_H_
 #define RAPIDAPP_NET_MGR_H_
 
-#include "rapidapp_net.h"
 #include <cstdio>
 
 namespace rapidapp {
@@ -12,13 +11,13 @@ struct RapBuffer {
 };
 
 class AppLauncher;
-class ConnectionHandlerMgr {
+class NetHandlerMgr {
     public:
-        ConnectionHandlerMgr();
-        ~ConnectionHandlerMgr();
+        NetHandlerMgr();
+        ~NetHandlerMgr();
 
     public:
-        int Init(size_t up_size);
+        int Init(size_t recv_buff_size);
         void CleanUp();
 
     public:
@@ -27,7 +26,7 @@ class ConnectionHandlerMgr {
 
     private:
         /*HandlerPool handler_pool_;*/
-        struct RapBuffer up_msg_buffer_;
+        struct RapBuffer recv_buffer_;
 
         friend class AppLauncher;
 };

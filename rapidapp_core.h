@@ -3,6 +3,7 @@
 
 #include "rapidapp_interface.h"
 #include "rapidapp_net_mgr.h"
+#include "rapidapp_framework_imp.h"
 #include "event2/event.h"
 #include "event2/listener.h"
 #include "event2/bufferevent.h"
@@ -90,8 +91,8 @@ class AppLauncher {
         }
 
     private:
-        EasyNet& GetNetEasyInstance() {
-            return easy_net_handler_;
+        AppFrameWork& GetFrameworkSingleton() {
+            return easy_framework_;
         }
 
     private:
@@ -127,8 +128,8 @@ class AppLauncher {
         static bool reloading_;
 
     private:
-        class ConnectionHandlerMgr connection_handler_mgr_;
-        class EasyNet easy_net_handler_;
+        class NetHandlerMgr frontend_handler_mgr_;
+        class AppFrameWork easy_framework_;
 };
 
 }
