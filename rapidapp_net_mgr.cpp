@@ -40,4 +40,34 @@ void NetHandlerMgr::CleanUp()
     }
 }
 
+int NetHandlerMgr::AddHandler(struct bufferevent* event)
+{
+    if (NULL == event)
+    {
+        return -1;
+    }
+
+    evutil_socket_t fd = bufferevent_getfd(event);
+    handler_pool_[fd] = event;
+
+    return 0;
+}
+
+int NetHandlerMgr::RemoveHandler(struct bufferevent* event)
+{
+    if (NULL == event)
+    {
+        return -1;
+    }
+
+    evutil_socket_t fd = bufferevent_getfd(event);
+    HandlerPool::iterator it = handler_pool_.find(fd);
+    if (it != handler_pool_.end())
+    {
+        handler_pool_.erase(it);
+    }
+
+    return 0;
+}
+
 }

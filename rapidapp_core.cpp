@@ -293,6 +293,8 @@ int AppLauncher::OnFrontEndConnect(evutil_socket_t sock, struct sockaddr *addr)
     bufferevent_setcb(event, on_frontend_data_cb_func, NULL,
                       on_nondata_event_cb_func, this);
 
+    frontend_handler_mgr_.AddHandler(event);
+
     return 0;
 }
 
@@ -322,6 +324,7 @@ int AppLauncher::OnFrontEndSocketEvent(struct bufferevent* bev, short events)
     if (events & BEV_EVENT_ERROR)
     {
         PLOG(ERROR)<<"socket error";
+        frontend_handler_mgr_.RemoveHandler(bev);
         bufferevent_free(bev);
         return 0;
     }
@@ -335,6 +338,7 @@ int AppLauncher::OnFrontEndSocketEvent(struct bufferevent* bev, short events)
     if (events & BEV_EVENT_EOF)
     {
         PLOG(INFO)<<"peer close connection actively";
+        frontend_handler_mgr_.RemoveHandler(bev);
         bufferevent_free(bev);
         return 0;
     }

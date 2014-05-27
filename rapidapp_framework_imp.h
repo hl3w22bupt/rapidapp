@@ -26,7 +26,7 @@ class AppFrameWork : public IFrameWork {
         virtual int SendToBackEnd(EasyNet* net, const char* buf, size_t buf_size);
 
     private:
-        class NetHandlerMgr* net_mgr_;
+        class NetHandlerMgr net_mgr_;
 };
 
 }
