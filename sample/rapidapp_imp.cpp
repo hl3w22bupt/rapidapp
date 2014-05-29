@@ -58,6 +58,11 @@ size_t MyApp::GetFrontEndMaxMsgSize()
     return 0;
 }
 
+size_t MyApp::GetBackEndMaxMsgSize()
+{
+    return 0;
+}
+
 const char* MyApp::GetAppVersion()
 {
     return "1.0.0";

@@ -14,7 +14,7 @@ struct RapBuffer {
 
 typedef std::tr1::unordered_map<evutil_socket_t, struct bufferevent*> HandlerPool;
 
-class AppLauncher;
+class AppFrameWork;
 class NetHandlerMgr {
     public:
         NetHandlerMgr();
@@ -32,7 +32,7 @@ class NetHandlerMgr {
         HandlerPool handler_pool_;
         struct RapBuffer recv_buffer_;
 
-        friend class AppLauncher;
+        friend class AppFrameWork;
 };
 
 }

@@ -31,6 +31,7 @@ class RapidApp {
 
     public:
         virtual size_t GetFrontEndMaxMsgSize() = 0;
+        virtual size_t GetBackEndMaxMsgSize() = 0;
         virtual const char* GetAppVersion() = 0;
 };
 
