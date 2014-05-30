@@ -403,6 +403,37 @@ int AppFrameWork::ParseCmdLine(int argc, char** argv)
     return 0;
 }
 
+EasyNet* AppFrameWork::CreateBackEnd(const char* url, IEventListener* event_listener)
+{
+    if (NULL == url || NULL == event_listener)
+    {
+        return NULL;
+    }
+
+    EasyNet* easy_net_handler = new EasyNet();
+    if (NULL == easy_net_handler)
+    {
+        return NULL;
+    }
+
+    int ret = easy_net_handler->Init(url, event_listener, event_base_);
+    if (ret != 0)
+    {
+        delete easy_net_handler;
+        return NULL;
+    }
+
+    return NULL;
+}
+
+void AppFrameWork::DestroyBackEnd(EasyNet** net)
+{
+    if (NULL == net || NULL == *net)
+    {
+        return;
+    }
+}
+
 int AppFrameWork::SendToFrontEnd(EasyNet* net, const char* buf, size_t buf_size)
 {
     if (NULL == net || NULL == buf || 0 == buf_size)
@@ -421,24 +452,6 @@ int AppFrameWork::SendToBackEnd(EasyNet* net, const char* buf, size_t buf_size)
     }
 
     return 0;
-}
-
-EasyNet* AppFrameWork::CreateBackEnd(const char* url)
-{
-    if (NULL == url)
-    {
-        return NULL;
-    }
-
-    return NULL;
-}
-
-void AppFrameWork::DestroyBackEnd(EasyNet** net)
-{
-    if (NULL == net || NULL == *net)
-    {
-        return;
-    }
 }
 
 }

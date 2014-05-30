@@ -4,6 +4,7 @@
 #include "rapidapp_interface.h"
 #include "rapidapp_framework.h"
 #include "rapidapp_net_mgr.h"
+#include "rapidapp_easy_net.h"
 #include "event2/event.h"
 #include "event2/listener.h"
 #include "event2/bufferevent.h"
@@ -21,7 +22,6 @@ struct AppSetting {
     char log_file_name[MAX_FILE_NAME_LEN];
 };
 
-class EasyNet;
 class AppFrameWork : public IFrameWork {
     public:
         AppFrameWork();
@@ -34,7 +34,7 @@ class AppFrameWork : public IFrameWork {
 
     // 对外接口虚函数实现类
     public:
-        virtual EasyNet* CreateBackEnd(const char* url);
+        virtual EasyNet* CreateBackEnd(const char* url, IEventListener* event_listener);
         virtual void DestroyBackEnd(EasyNet** net);
 
     public:

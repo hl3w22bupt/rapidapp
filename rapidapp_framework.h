@@ -5,6 +5,15 @@
 
 namespace rapidapp {
 
+class IEventListener {
+    public:
+        IEventListener(){}
+        ~IEventListener(){}
+
+    public:
+        virtual int OnEventReadable(const char* data, size_t size) = 0;
+};
+
 class EasyNet;
 class IFrameWork {
     public:
@@ -12,7 +21,7 @@ class IFrameWork {
         ~IFrameWork(){}
 
     public:
-        virtual EasyNet* CreateBackEnd(const char* url) = 0;
+        virtual EasyNet* CreateBackEnd(const char* url, IEventListener* event_listener) = 0;
         virtual void DestroyBackEnd(EasyNet** net) = 0;
 
     public:
