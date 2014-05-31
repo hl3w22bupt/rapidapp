@@ -359,7 +359,16 @@ int AppFrameWork::OnFrontEndMsg(struct bufferevent* bev)
                                        frontend_handler_mgr_.recv_buffer_.size);
 
     LOG(INFO)<<"recv total "<<msg_size<<" bytes from frontend";
-    app_->OnRecvFrontEnd(frontend_handler_mgr_.recv_buffer_.buffer,
+
+    EasyNet* easy_net = frontend_handler_mgr_.GetHandlerByEvent(bev);
+    if (NULL == easy_net)
+    {
+        LOG(ERROR)<<"get handler by event failed";
+        return -1;
+    }
+
+    app_->OnRecvFrontEnd(easy_net,
+                         frontend_handler_mgr_.recv_buffer_.buffer,
                          msg_size);
 
     return 0;
@@ -405,7 +414,16 @@ int AppFrameWork::OnBackEndMsg(struct bufferevent* bev)
                                        backend_handler_mgr_.recv_buffer_.size);
 
     LOG(INFO)<<"recv total "<<msg_size<<" bytes from backend";
-    app_->OnRecvBackEnd(backend_handler_mgr_.recv_buffer_.buffer,
+
+    EasyNet* easy_net = backend_handler_mgr_.GetHandlerByEvent(bev);
+    if (NULL == easy_net)
+    {
+        LOG(ERROR)<<"get handler by event failed";
+        return -1;
+    }
+
+    app_->OnRecvBackEnd(easy_net,
+                        backend_handler_mgr_.recv_buffer_.buffer,
                         msg_size);
 
     return 0;

@@ -6,6 +6,7 @@
 namespace rapidapp {
 
 // App抽象基类
+class EasyNet;
 class RapidApp {
     public:
         RapidApp(){};
@@ -23,8 +24,8 @@ class RapidApp {
 
         virtual int OnRecvCtrl() = 0;
 
-        virtual int OnRecvFrontEnd(const char* msg, size_t size) = 0;
-        virtual int OnRecvBackEnd(const char* msg, size_t size) = 0;
+        virtual int OnRecvFrontEnd(EasyNet* net, const char* msg, size_t size) = 0;
+        virtual int OnRecvBackEnd(EasyNet* net, const char* msg, size_t size) = 0;
 
     public:
         virtual int OnReportRundata() = 0;

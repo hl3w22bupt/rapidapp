@@ -156,4 +156,24 @@ int NetHandlerMgr::RemoveHandlerByEvent(struct bufferevent* event)
     return 0;
 }
 
+EasyNet* NetHandlerMgr::GetHandlerByEvent(struct bufferevent* event)
+{
+    if (NULL == event)
+    {
+        LOG(ERROR)<<"null bufferevent handler";
+        return NULL;
+    }
+
+    evutil_socket_t fd = bufferevent_getfd(event);
+    HandlerPool::iterator it = handler_pool_.find(fd);
+    if (it != handler_pool_.end())
+    {
+        return it->second;
+    }
+    else
+    {
+        return NULL;
+    }
+}
+
 }

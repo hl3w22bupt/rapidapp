@@ -30,8 +30,11 @@ class NetHandlerMgr {
         EasyNet* AddHandlerByUri(const char* uri, struct event_base* event_base);
         EasyNet* AddHandlerBySocket(evutil_socket_t sock_fd, struct event_base* event_base);
         int AddHandlerToMap(EasyNet* easy_net_handler);
+
         int RemoveHandler(EasyNet* easy_net_handler);
         int RemoveHandlerByEvent(struct bufferevent* event);
+
+        EasyNet* GetHandlerByEvent(struct bufferevent* event);
 
     private:
         HandlerPool handler_pool_;
