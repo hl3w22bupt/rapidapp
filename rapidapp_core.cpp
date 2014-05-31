@@ -57,7 +57,6 @@ int AppLauncher::Run(RapidApp* app, int argc, char** argv)
     ret = easy_framework_.CleanUp();
     if (ret != 0)
     {
-        PLOG(ERROR)<<"CleanUp failed return:"<<ret;
     }
 
     return 0;

@@ -30,7 +30,7 @@ AppFrameWork::AppFrameWork() : event_base_(NULL), internal_timer_(NULL),
 
 AppFrameWork::~AppFrameWork()
 {
-    CleanUp();
+    //CleanUp();
 }
 
 void AppFrameWork::InitSignalHandle()
@@ -266,6 +266,9 @@ int AppFrameWork::CleanUp()
         event_base_free(event_base_);
         event_base_ = NULL;
     }
+
+    google::ShutdownGoogleLogging();
+    gflags::ShutDownCommandLineFlags();
 
     return 0;
 }
