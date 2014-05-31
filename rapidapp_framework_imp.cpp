@@ -51,6 +51,40 @@ void AppFrameWork::InitSignalHandle()
     sigaction(SIGUSR2, &sig_act, NULL);
 }
 
+int AppFrameWork::ParseCmdLine(int argc, char** argv)
+{
+    assert(argc > 0 && argv != NULL);
+
+    gflags::SetVersionString(app_->GetAppVersion());
+    gflags::SetUsageMessage("server application based on rapidapp");
+    gflags::ParseCommandLineFlags(&argc, &argv, true);
+
+    // listen uri
+    if (FLAGS_uri.length() >= sizeof(setting_.listen_uri))
+    {
+        fprintf(stderr, "uri(length:%u) is too long\n", (unsigned)FLAGS_uri.length());
+        return -1;
+    }
+    strcpy(setting_.listen_uri, FLAGS_uri.c_str());
+
+    // log file
+    if (FLAGS_log_file.length() >= sizeof(setting_.log_file_name))
+    {
+        fprintf(stderr, "log_file(length:%u) is too long\n", (unsigned)FLAGS_log_file.length());
+        return -1;
+    }
+    strcpy(setting_.log_file_name, FLAGS_log_file.c_str());
+
+    if (FLAGS_fps < 1)
+    {
+        fprintf(stderr, "fps MUST >= 1");
+        return -1;
+    }
+    setting_.fps = FLAGS_fps;
+
+    return 0;
+}
+
 int AppFrameWork::InitLogging(int argc, char** argv)
 {
     assert(argc > 0 && argv != NULL);
@@ -300,23 +334,17 @@ int AppFrameWork::OnFrontEndConnect(evutil_socket_t sock, struct sockaddr *addr)
     PLOG(INFO)<<"has accepted new connect:"<<
         inet_ntoa(((struct sockaddr_in*)addr)->sin_addr);
 
-    evutil_make_socket_nonblocking(sock);
-    evutil_make_socket_closeonexec(sock);
-    struct bufferevent* event =
-        bufferevent_socket_new(event_base_, sock,
-                               BEV_OPT_CLOSE_ON_FREE);
-    if (NULL == event)
+
+    EasyNet* easy_net_handler = frontend_handler_mgr_.AddHandlerBySocket(sock, event_base_);
+    if (NULL == easy_net_handler)
     {
-        PLOG(ERROR)<<"add new connection fd:"<<sock<<" failed";
+        LOG(ERROR)<<"AddHandlerBySocket failed, socket:"<<sock;
         return -1;
     }
 
+    bufferevent_setcb(easy_net_handler->hevent_, on_frontend_data_cb_func, NULL,
+                      on_frontend_nondata_event_cb_func, this);
     // TODO setwatermark
-    bufferevent_enable(event, EV_READ|EV_WRITE);
-    bufferevent_setcb(event, on_frontend_data_cb_func, NULL,
-                      on_nondata_event_cb_func, this);
-
-    frontend_handler_mgr_.AddHandler(event);
 
     return 0;
 }
@@ -347,8 +375,7 @@ int AppFrameWork::OnFrontEndSocketEvent(struct bufferevent* bev, short events)
     if (events & BEV_EVENT_ERROR)
     {
         PLOG(ERROR)<<"socket error";
-        frontend_handler_mgr_.RemoveHandler(bev);
-        bufferevent_free(bev);
+        frontend_handler_mgr_.RemoveHandlerByEvent(bev);
         return 0;
     }
 
@@ -361,69 +388,72 @@ int AppFrameWork::OnFrontEndSocketEvent(struct bufferevent* bev, short events)
     if (events & BEV_EVENT_EOF)
     {
         PLOG(INFO)<<"peer close connection actively";
-        frontend_handler_mgr_.RemoveHandler(bev);
-        bufferevent_free(bev);
+        frontend_handler_mgr_.RemoveHandlerByEvent(bev);
         return 0;
     }
 
     return 0;
 }
 
-int AppFrameWork::ParseCmdLine(int argc, char** argv)
+int AppFrameWork::OnBackEndMsg(struct bufferevent* bev)
 {
-    assert(argc > 0 && argv != NULL);
+    assert(bev != NULL);
+    assert(app_ != NULL);
 
-    gflags::SetVersionString(app_->GetAppVersion());
-    gflags::SetUsageMessage("server application based on rapidapp");
-    gflags::ParseCommandLineFlags(&argc, &argv, true);
+    // get msg from bufferevent
+    size_t msg_size = bufferevent_read(bev, backend_handler_mgr_.recv_buffer_.buffer,
+                                       backend_handler_mgr_.recv_buffer_.size);
 
-    // listen uri
-    if (FLAGS_uri.length() >= sizeof(setting_.listen_uri))
-    {
-        fprintf(stderr, "uri(length:%u) is too long\n", (unsigned)FLAGS_uri.length());
-        return -1;
-    }
-    strcpy(setting_.listen_uri, FLAGS_uri.c_str());
-
-    // log file
-    if (FLAGS_log_file.length() >= sizeof(setting_.log_file_name))
-    {
-        fprintf(stderr, "log_file(length:%u) is too long\n", (unsigned)FLAGS_log_file.length());
-        return -1;
-    }
-    strcpy(setting_.log_file_name, FLAGS_log_file.c_str());
-
-    if (FLAGS_fps < 1)
-    {
-        fprintf(stderr, "fps MUST >= 1");
-        return -1;
-    }
-    setting_.fps = FLAGS_fps;
+    LOG(INFO)<<"recv total "<<msg_size<<" bytes from backend";
+    app_->OnRecvBackEnd(backend_handler_mgr_.recv_buffer_.buffer,
+                        msg_size);
 
     return 0;
 }
 
-EasyNet* AppFrameWork::CreateBackEnd(const char* url, IEventListener* event_listener)
+int AppFrameWork::OnBackEndSocketEvent(struct bufferevent* bev, short events)
 {
-    if (NULL == url || NULL == event_listener)
+    assert(bev != NULL);
+
+    PLOG(INFO)<<"recv socket event:"<<events;
+
+    // backend event
+    if (events & BEV_EVENT_ERROR)
     {
-        return NULL;
+        PLOG(ERROR)<<"socket error";
+        backend_handler_mgr_.RemoveHandlerByEvent(bev);
+        return 0;
     }
 
-    EasyNet* easy_net_handler = new EasyNet();
+    if (events & BEV_EVENT_TIMEOUT)
+    {
+        PLOG(INFO)<<"socket read/write timeout";
+        return 0;
+    }
+
+    if (events & BEV_EVENT_EOF)
+    {
+        PLOG(INFO)<<"peer close connection actively";
+        backend_handler_mgr_.RemoveHandlerByEvent(bev);
+        return 0;
+    }
+
+    return 0;
+}
+
+EasyNet* AppFrameWork::CreateBackEnd(const char* uri)
+{
+    EasyNet* easy_net_handler = backend_handler_mgr_.AddHandlerByUri(uri, event_base_);
     if (NULL == easy_net_handler)
     {
+        LOG(ERROR)<<"AddHandlerByUri failed, uri:"<<uri;
         return NULL;
     }
 
-    int ret = easy_net_handler->Init(url, event_listener, event_base_);
-    if (ret != 0)
-    {
-        delete easy_net_handler;
-        return NULL;
-    }
+    bufferevent_setcb(easy_net_handler->hevent_, on_backend_data_cb_func, NULL,
+                      on_backend_nondata_event_cb_func, this);
 
-    return NULL;
+    return easy_net_handler;
 }
 
 void AppFrameWork::DestroyBackEnd(EasyNet** net)
@@ -432,6 +462,10 @@ void AppFrameWork::DestroyBackEnd(EasyNet** net)
     {
         return;
     }
+
+    backend_handler_mgr_.RemoveHandler((*net));
+
+    *net = NULL;
 }
 
 int AppFrameWork::SendToFrontEnd(EasyNet* net, const char* buf, size_t buf_size)

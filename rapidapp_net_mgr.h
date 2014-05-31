@@ -1,7 +1,9 @@
 #ifndef RAPIDAPP_NET_MGR_H_
 #define RAPIDAPP_NET_MGR_H_
 
+#include "event2/event.h"
 #include "event2/bufferevent.h"
+#include "rapidapp_easy_net.h"
 #include <cstdio>
 #include <tr1/unordered_map>
 
@@ -12,7 +14,7 @@ struct RapBuffer {
     size_t size;
 };
 
-typedef std::tr1::unordered_map<evutil_socket_t, struct bufferevent*> HandlerPool;
+typedef std::tr1::unordered_map<evutil_socket_t, EasyNet*> HandlerPool;
 
 class AppFrameWork;
 class NetHandlerMgr {
@@ -25,8 +27,11 @@ class NetHandlerMgr {
         void CleanUp();
 
     public:
-        int AddHandler(struct bufferevent* event);
-        int RemoveHandler(struct bufferevent* event);
+        EasyNet* AddHandlerByUri(const char* uri, struct event_base* event_base);
+        EasyNet* AddHandlerBySocket(evutil_socket_t sock_fd, struct event_base* event_base);
+        int AddHandlerToMap(EasyNet* easy_net_handler);
+        int RemoveHandler(EasyNet* easy_net_handler);
+        int RemoveHandlerByEvent(struct bufferevent* event);
 
     private:
         HandlerPool handler_pool_;

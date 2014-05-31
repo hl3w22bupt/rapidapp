@@ -13,7 +13,6 @@
 
 namespace rapidapp {
 
-const int MAX_URL_LEN = 128;
 const int MAX_FILE_NAME_LEN = 128;
 
 struct AppSetting {
@@ -34,7 +33,7 @@ class AppFrameWork : public IFrameWork {
 
     // 对外接口虚函数实现类
     public:
-        virtual EasyNet* CreateBackEnd(const char* url, IEventListener* event_listener);
+        virtual EasyNet* CreateBackEnd(const char* url);
         virtual void DestroyBackEnd(EasyNet** net);
 
     public:
@@ -76,7 +75,7 @@ class AppFrameWork : public IFrameWork {
             static_cast<AppFrameWork*>(arg)->OnFrontEndMsg(bev);
         }
 
-        static void on_nondata_event_cb_func(struct bufferevent* bev, short events, void *arg) {
+        static void on_frontend_nondata_event_cb_func(struct bufferevent* bev, short events, void *arg) {
             if (NULL == bev || NULL == arg)
                 return;
 
@@ -84,6 +83,21 @@ class AppFrameWork : public IFrameWork {
             static_cast<AppFrameWork*>(arg)->OnFrontEndSocketEvent(bev, events);
         }
 
+        static void on_backend_data_cb_func(struct bufferevent* bev, void *arg) {
+            if (NULL == bev || NULL == arg)
+                return;
+
+            // OnBackEndMsg
+            static_cast<AppFrameWork*>(arg)->OnBackEndMsg(bev);
+        }
+
+        static void on_backend_nondata_event_cb_func(struct bufferevent* bev, short events, void *arg) {
+            if (NULL == bev || NULL == arg)
+                return;
+
+            // OnBackEndSocketEvent
+            static_cast<AppFrameWork*>(arg)->OnBackEndSocketEvent(bev, events);
+        }
 
         static void failed_cb_func() {
         }
@@ -112,6 +126,9 @@ class AppFrameWork : public IFrameWork {
 
         int OnFrontEndMsg(struct bufferevent* bev);
         int OnFrontEndSocketEvent(struct bufferevent* bev, short events);
+
+        int OnBackEndMsg(struct bufferevent* bev);
+        int OnBackEndSocketEvent(struct bufferevent* bev, short events);
 
     private:
         void InitSignalHandle();
