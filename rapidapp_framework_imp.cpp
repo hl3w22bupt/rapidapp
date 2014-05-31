@@ -22,7 +22,7 @@ void libevent_log_cb_func(int severity, const char *msg) {
 }
 
 AppFrameWork::AppFrameWork() : event_base_(NULL), internal_timer_(NULL),
-                                 listener_(NULL), app_(NULL),
+                                 listener_(NULL), udp_ctrl_keeper_(NULL), app_(NULL),
                                    frontend_handler_mgr_(), backend_handler_mgr_()
 {
     memset(&setting_, 0, sizeof(setting_));
@@ -130,22 +130,6 @@ int AppFrameWork::Init(RapidApp* app, int argc, char** argv)
     // signal
     InitSignalHandle();
 
-    size_t size = 2 * app_->GetFrontEndMaxMsgSize();
-    ret = frontend_handler_mgr_.Init(size);
-    if (ret != 0)
-    {
-        LOG(ERROR)<<"init frontend net mgr failed";
-        return -1;
-    }
-
-    size = 2 * app_->GetBackEndMaxMsgSize();
-    ret = backend_handler_mgr_.Init(size);
-    if (ret != 0)
-    {
-        LOG(ERROR)<<"init backend net mgr failed";
-        return -1;
-    }
-
 #ifdef _DEBUG
     event_enable_debug_mode();
     //event_enable_debug_logging(EVENT_DBG_NONE);
@@ -235,11 +219,30 @@ int AppFrameWork::Init(RapidApp* app, int argc, char** argv)
         return -1;
     }
 
+    size_t size = 2 * app_->GetFrontEndMaxMsgSize();
+    ret = frontend_handler_mgr_.Init(size);
+    if (ret != 0)
+    {
+        LOG(ERROR)<<"init frontend net mgr failed";
+        return -1;
+    }
+
+    size = 2 * app_->GetBackEndMaxMsgSize();
+    ret = backend_handler_mgr_.Init(size);
+    if (ret != 0)
+    {
+        LOG(ERROR)<<"init backend net mgr failed";
+        return -1;
+    }
+
     return 0;
 }
 
 int AppFrameWork::CleanUp()
 {
+    backend_handler_mgr_.CleanUp();
+    frontend_handler_mgr_.CleanUp();
+
     if (listener_ != NULL)
     {
         evconnlistener_free(listener_);
@@ -263,9 +266,6 @@ int AppFrameWork::CleanUp()
         event_base_free(event_base_);
         event_base_ = NULL;
     }
-
-    frontend_handler_mgr_.CleanUp();
-    backend_handler_mgr_.CleanUp();
 
     return 0;
 }

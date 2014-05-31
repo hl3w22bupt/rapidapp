@@ -4,7 +4,7 @@
 
 namespace rapidapp {
 
-const int kDefaultUpSize = 1024 * 1024 * 1024;  // 1M
+const int kDefaultUpSize = 1024 * 1024;  // 1M
 
 NetHandlerMgr::NetHandlerMgr()
 {
@@ -25,6 +25,7 @@ int NetHandlerMgr::Init(size_t recv_buff_size)
     recv_buffer_.buffer = static_cast<char*>(calloc(recv_buff_size, 1));
     if (NULL == recv_buffer_.buffer)
     {
+        PLOG(ERROR)<<"calloc size:"<<recv_buff_size<<" failed";
         return -1;
     }
     recv_buffer_.size = recv_buff_size;
@@ -34,6 +35,19 @@ int NetHandlerMgr::Init(size_t recv_buff_size)
 
 void NetHandlerMgr::CleanUp()
 {
+    HandlerPool::iterator it = handler_pool_.begin();
+    for (; it != handler_pool_.end();)
+    {
+        EasyNet* net = it->second;
+        if (net != NULL)
+        {
+            net->CleanUp();
+            delete net;
+        }
+
+        handler_pool_.erase(it++);
+    }
+
     if (recv_buffer_.buffer != NULL)
     {
         free(recv_buffer_.buffer);
@@ -143,8 +157,11 @@ int NetHandlerMgr::RemoveHandlerByEvent(struct bufferevent* event)
     if (it != handler_pool_.end())
     {
         EasyNet* easy_net_handler = it->second;
-        easy_net_handler->CleanUp();
-        delete easy_net_handler;
+        if (easy_net_handler != NULL)
+        {
+            easy_net_handler->CleanUp();
+            delete easy_net_handler;
+        }
 
         handler_pool_.erase(it);
     }
