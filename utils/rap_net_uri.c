@@ -94,6 +94,7 @@ evutil_socket_t rap_uri_open_socket(const char* uri)
     return 0;
 }
 
+// TODO gethostbyname_r
 int rap_uri_get_socket_addr(const char* uri, struct sockaddr_in* sin)
 {
     char* uri_ptr = NULL;

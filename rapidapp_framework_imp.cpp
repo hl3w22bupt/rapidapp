@@ -493,12 +493,22 @@ int AppFrameWork::SendToFrontEnd(EasyNet* net, const char* buf, size_t buf_size)
         return -1;
     }
 
+    if (net->Send(buf, buf_size) != 0)
+    {
+        return -1;
+    }
+
     return 0;
 }
 
 int AppFrameWork::SendToBackEnd(EasyNet* net, const char* buf, size_t buf_size)
 {
     if (NULL == net || NULL == buf || 0 == buf_size)
+    {
+        return -1;
+    }
+
+    if (net->Send(buf, buf_size) != 0)
     {
         return -1;
     }
