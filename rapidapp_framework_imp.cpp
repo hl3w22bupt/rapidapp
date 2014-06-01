@@ -22,8 +22,8 @@ void libevent_log_cb_func(int severity, const char *msg) {
 }
 
 AppFrameWork::AppFrameWork() : event_base_(NULL), internal_timer_(NULL),
-                                 listener_(NULL), udp_ctrl_keeper_(NULL), app_(NULL),
-                                   frontend_handler_mgr_(), backend_handler_mgr_()
+                                 listener_(NULL), udp_ctrl_keeper_(NULL), ctrl_dispatcher_(),
+                                 app_(NULL), frontend_handler_mgr_(), backend_handler_mgr_()
 {
     memset(&setting_, 0, sizeof(setting_));
 }
@@ -481,6 +481,7 @@ void AppFrameWork::DestroyBackEnd(EasyNet** net)
 {
     if (NULL == net || NULL == *net)
     {
+        LOG(WARNING)<<"invalid net";
         return;
     }
 
@@ -493,11 +494,13 @@ int AppFrameWork::SendToFrontEnd(EasyNet* net, const char* buf, size_t buf_size)
 {
     if (NULL == net || NULL == buf || 0 == buf_size)
     {
+        LOG(ERROR)<<"null net || null buf || buf_size == 0";
         return -1;
     }
 
     if (net->Send(buf, buf_size) != 0)
     {
+        LOG(ERROR)<<"send buf size:"<<buf_size<<" failed";
         return -1;
     }
 
@@ -508,11 +511,13 @@ int AppFrameWork::SendToBackEnd(EasyNet* net, const char* buf, size_t buf_size)
 {
     if (NULL == net || NULL == buf || 0 == buf_size)
     {
+        LOG(ERROR)<<"null net || null buf || buf_size == 0";
         return -1;
     }
 
     if (net->Send(buf, buf_size) != 0)
     {
+        LOG(ERROR)<<"send buf size:"<<buf_size<<" failed";
         return -1;
     }
 

@@ -5,6 +5,7 @@
 #include "rapidapp_framework.h"
 #include "rapidapp_net_mgr.h"
 #include "rapidapp_easy_net.h"
+#include "rapidapp_ctrl_cmd_keyword.h"
 #include "event2/event.h"
 #include "event2/listener.h"
 #include "event2/bufferevent.h"
@@ -140,6 +141,7 @@ class AppFrameWork : public IFrameWork {
         struct event* internal_timer_;          // 内部定时器，帧驱动
         struct evconnlistener* listener_;
         struct bufferevent* udp_ctrl_keeper_;   // command control mode
+        AppControlDispatcher ctrl_dispatcher_;
 
     private:
         RapidApp* app_;
