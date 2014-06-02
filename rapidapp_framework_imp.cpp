@@ -41,6 +41,8 @@ void AppFrameWork::InitSignalHandle()
     signal(SIGCHLD, SIG_IGN);
 
     struct sigaction sig_act;
+    memset(&sig_act, 0, sizeof(sig_act));
+
     sig_act.sa_flags = SA_SIGINFO;
     sig_act.sa_sigaction = signal_stop_handler;
     sigaction(SIGTERM, &sig_act, NULL);
@@ -314,9 +316,9 @@ int AppFrameWork::Reload()
     assert(app_ != NULL);
     assert(event_base_ != NULL);
 
-    PLOG(INFO)<<"app begin reload<<<";
+    LOG(INFO)<<"app begin reload<<<";
     app_->OnReload();
-    PLOG(INFO)<<">>>app end reload";
+    LOG(INFO)<<">>>app end reload";
 
     return 0;
 }

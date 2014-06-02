@@ -116,7 +116,7 @@ class AppFrameWork : public IFrameWork {
         }
 
         static void signal_reload_handler(int signum, siginfo_t *sig_info, void *arg) {
-            reloading_ = false;
+            reloading_ = true;
         }
 
     private:
