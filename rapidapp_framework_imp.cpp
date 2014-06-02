@@ -314,6 +314,10 @@ int AppFrameWork::Reload()
     assert(app_ != NULL);
     assert(event_base_ != NULL);
 
+    PLOG(INFO)<<"app begin reload<<<";
+    app_->OnReload();
+    PLOG(INFO)<<">>>app end reload";
+
     return 0;
 }
 
