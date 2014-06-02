@@ -1,6 +1,5 @@
 #include "rapidapp_framework_imp.h"
 #include "utils/rap_net_uri.h"
-#include <glog/logging.h>
 #include <cassert>
 #include <cstring>
 
@@ -11,6 +10,8 @@ DEFINE_int32(fps, 1000, "frame-per-second, MUST >= 1, associated with reload and
 namespace rapidapp {
 const int MAX_TCP_BACKLOG = 102400;
 const char* udp_uri = "udp:127.0.0.1:9090";
+
+const int MAX_CTRL_MSG_LEN = 2048;
 
 bool AppFrameWork::running_ = false;
 bool AppFrameWork::reloading_ = false;
@@ -180,6 +181,9 @@ int AppFrameWork::Init(RapidApp* app, int argc, char** argv)
     }
 
     // ctrl udp socket
+    // TODO 添加内部支持命令字
+    //ctrl_dispatcher_.AddSupportedCommand();
+
     evutil_socket_t udp_ctrl_sockfd = rap_uri_open_socket(udp_uri);
     if (udp_ctrl_sockfd < 0)
     {
@@ -318,14 +322,33 @@ int AppFrameWork::OnCtrlMsg(struct bufferevent* bev)
     assert(app_ != NULL);
     assert(event_base_ != NULL);
 
-    if (NULL ==bev)
+    if (NULL == bev)
     {
         PLOG(ERROR)<<"bev is null, but event triggered";
         return -1;
     }
 
-    // TODO frame specified control msg
-    app_->OnRecvCtrl();
+    static char ctrl_msg[MAX_CTRL_MSG_LEN];
+    size_t len = bufferevent_read(bev, ctrl_msg, sizeof(ctrl_msg));
+    if (0 == len)
+    {
+        PLOG(ERROR)<<"null command";
+        return -1;
+    }
+    ctrl_msg[MAX_CTRL_MSG_LEN - 1] = '\0';
+
+    LOG(INFO)<<"recv ctrl msg:"<<ctrl_msg;
+
+    int ret = ctrl_dispatcher_.Dispatch(ctrl_msg);
+    if (ret != 0)
+    {
+        // non-rapidapp inner control command, user specified control msg
+        ret = app_->OnRecvCtrl(ctrl_msg);
+        if (ret < 0)
+        {
+            LOG(ERROR)<<"invalid control command:"<<ctrl_msg;
+        }
+    }
 
     return 0;
 }

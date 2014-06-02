@@ -34,7 +34,7 @@ int AppLauncher::Run(RapidApp* app, int argc, char** argv)
     }
 
     // 2. app init
-    ret = app->OnInit();
+    ret = app->OnInit(&easy_framework_);
     if (ret != 0)
     {
         PLOG(ERROR)<<"app OnInit failed return:"<<ret;
@@ -54,10 +54,7 @@ int AppLauncher::Run(RapidApp* app, int argc, char** argv)
     }
 
     // 5. CleanUp
-    ret = easy_framework_.CleanUp();
-    if (ret != 0)
-    {
-    }
+    easy_framework_.CleanUp();
 
     return 0;
 }

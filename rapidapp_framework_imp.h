@@ -9,6 +9,7 @@
 #include "event2/event.h"
 #include "event2/listener.h"
 #include "event2/bufferevent.h"
+#include <glog/logging.h>
 #include <cstdio>
 #include <csignal>
 

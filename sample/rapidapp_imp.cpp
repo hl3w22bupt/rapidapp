@@ -6,7 +6,7 @@ MyApp::MyApp()
 MyApp::~MyApp()
 {}
 
-int MyApp::OnInit()
+int MyApp::OnInit(IFrameWork* app_framework)
 {
     return 0;
 }
@@ -34,15 +34,17 @@ int MyApp::OnReload()
     return 0;
 }
 
-int MyApp::OnRecvCtrl()
+int MyApp::OnRecvCtrl(const char* msg)
 {
     return 0;
 }
 
 int MyApp::OnRecvFrontEnd(EasyNet* net, const char* msg, size_t size)
 {
+    LOG(INFO)<<"recv app msg size:"<<size;
     return 0;
 }
+
 int MyApp::OnRecvBackEnd(EasyNet* net, const char* msg, size_t size)
 {
     return 0;

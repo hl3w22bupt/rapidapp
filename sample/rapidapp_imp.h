@@ -1,7 +1,7 @@
 #ifndef RAPIDAPP_IMP_H_
 #define RAPIDAPP_IMP_H_
 
-#include "rapidapp_interface.h"
+#include "rapidapp.h"
 
 using namespace rapidapp;
 
@@ -11,7 +11,7 @@ class MyApp : public RapidApp {
         ~MyApp();
 
     public:
-        virtual int OnInit();
+        virtual int OnInit(IFrameWork* app_framework);
         virtual int OnFini();
 
         virtual int OnStop();
@@ -20,7 +20,7 @@ class MyApp : public RapidApp {
         virtual int OnUpdate();
         virtual int OnReload();
 
-        virtual int OnRecvCtrl();
+        virtual int OnRecvCtrl(const char* msg);
 
         virtual int OnRecvFrontEnd(EasyNet* net, const char* msg, size_t size);
         virtual int OnRecvBackEnd(EasyNet* net, const char* msg, size_t size);

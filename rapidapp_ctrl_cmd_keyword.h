@@ -7,6 +7,8 @@
 
 namespace rapidapp {
 
+const char CTRL_CMD_DELIMETER = ' ';
+
 class ICommandEventListener {
     public:
         ICommandEventListener(){};
@@ -48,6 +50,7 @@ public std::binary_function<std::string, std::string, bool> {
     }
 };
 
+// TODO 命令使用描述
 typedef std::tr1::unordered_map<std::string, ICommandEventListener*, Equal, Compare> CmdDictionary;
 
 class AppControlDispatcher {
@@ -58,6 +61,33 @@ class AppControlDispatcher {
     public:
         inline void AddSupportedCommand(std::string cmd, ICommandEventListener* listener) {
             commad_dictionary_[cmd] = listener;
+        }
+
+        inline int Dispatch(const char* command) {
+            std::string cmd(command);
+            size_t pos = cmd.find(CTRL_CMD_DELIMETER);
+            if (pos > 0)
+            {
+                cmd = std::string(command, pos);
+            }
+
+            ICommandEventListener* listener = GetEventListener(cmd);
+            if (listener != NULL) {
+                listener->OnCommand(command);
+                return 0;
+            } else {
+                return -1;
+            }
+        }
+
+    private:
+        inline ICommandEventListener* GetEventListener(std::string cmd) {
+            const CmdDictionary::iterator it = commad_dictionary_.find(cmd);
+            if (it != commad_dictionary_.end()) {
+                return it->second;
+            } else {
+                return NULL;
+            }
         }
 
     private:

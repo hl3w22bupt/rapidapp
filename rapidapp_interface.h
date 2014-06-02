@@ -1,6 +1,7 @@
 #ifndef RAPIDAPP_BASE_H_
 #define RAPIDAPP_BASE_H_
 
+#include "rapidapp_framework.h"
 #include <cstdio>
 
 namespace rapidapp {
@@ -13,7 +14,7 @@ class RapidApp {
         virtual ~RapidApp(){};
 
     public:
-        virtual int OnInit() = 0;
+        virtual int OnInit(IFrameWork* app_framework) = 0;
         virtual int OnFini() = 0;
 
         virtual int OnStop() = 0;
@@ -22,7 +23,9 @@ class RapidApp {
         virtual int OnUpdate() = 0;
         virtual int OnReload() = 0;
 
-        virtual int OnRecvCtrl() = 0;
+        virtual int OnRecvCtrl(const char* msg) {
+            return -1;
+        }
 
         virtual int OnRecvFrontEnd(EasyNet* net, const char* msg, size_t size) = 0;
         virtual int OnRecvBackEnd(EasyNet* net, const char* msg, size_t size) = 0;
