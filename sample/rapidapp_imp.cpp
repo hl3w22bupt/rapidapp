@@ -39,13 +39,13 @@ int MyApp::OnRecvCtrl(const char* msg)
     return 0;
 }
 
-int MyApp::OnRecvFrontEnd(EasyNet* net, const char* msg, size_t size)
+int MyApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t size)
 {
     LOG(INFO)<<"recv app msg size:"<<size;
     return 0;
 }
 
-int MyApp::OnRecvBackEnd(EasyNet* net, const char* msg, size_t size)
+int MyApp::OnRecvBackEnd(EasyNet* net, int type, const char* msg, size_t size)
 {
     return 0;
 }

@@ -56,7 +56,8 @@ void NetHandlerMgr::CleanUp()
     }
 }
 
-EasyNet* NetHandlerMgr::AddHandlerByUri(const char* uri, struct event_base* event_base)
+EasyNet* NetHandlerMgr::AddHandlerByUri(const char* uri, int type,
+                                        struct event_base* event_base)
 {
     if (NULL == uri || NULL == event_base)
     {
@@ -71,7 +72,7 @@ EasyNet* NetHandlerMgr::AddHandlerByUri(const char* uri, struct event_base* even
         return NULL;
     }
 
-    int ret = easy_net_handler->Connect(uri, event_base);
+    int ret = easy_net_handler->Connect(uri, type, event_base);
     if (ret != 0)
     {
         LOG(ERROR)<<"connect failed, uri:"<<uri;
@@ -84,7 +85,8 @@ EasyNet* NetHandlerMgr::AddHandlerByUri(const char* uri, struct event_base* even
     return easy_net_handler;
 }
 
-EasyNet* NetHandlerMgr::AddHandlerBySocket(evutil_socket_t sock_fd, struct event_base* event_base)
+EasyNet* NetHandlerMgr::AddHandlerBySocket(evutil_socket_t sock_fd, int type,
+                                           struct event_base* event_base)
 {
     if (sock_fd < 0)
     {
@@ -99,7 +101,7 @@ EasyNet* NetHandlerMgr::AddHandlerBySocket(evutil_socket_t sock_fd, struct event
         return NULL;
     }
 
-    int ret = easy_net_handler->Init(sock_fd, event_base);
+    int ret = easy_net_handler->Init(sock_fd, type, event_base);
     if (ret != 0)
     {
         LOG(ERROR)<<"init EasyNet failed by sock:"<<sock_fd;

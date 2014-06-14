@@ -367,7 +367,8 @@ int AppFrameWork::OnFrontEndConnect(evutil_socket_t sock, struct sockaddr *addr)
         inet_ntoa(((struct sockaddr_in*)addr)->sin_addr);
 
 
-    EasyNet* easy_net_handler = frontend_handler_mgr_.AddHandlerBySocket(sock, event_base_);
+    EasyNet* easy_net_handler = frontend_handler_mgr_.AddHandlerBySocket
+        (sock, 0/*前端服务目前不区分类型*/, event_base_);
     if (NULL == easy_net_handler)
     {
         LOG(ERROR)<<"AddHandlerBySocket failed, socket:"<<sock;
@@ -399,7 +400,7 @@ int AppFrameWork::OnFrontEndMsg(struct bufferevent* bev)
         return -1;
     }
 
-    app_->OnRecvFrontEnd(easy_net,
+    app_->OnRecvFrontEnd(easy_net, easy_net->net_type(),
                          frontend_handler_mgr_.recv_buffer_.buffer,
                          msg_size);
 
@@ -454,7 +455,7 @@ int AppFrameWork::OnBackEndMsg(struct bufferevent* bev)
         return -1;
     }
 
-    app_->OnRecvBackEnd(easy_net,
+    app_->OnRecvBackEnd(easy_net, easy_net->net_type(),
                         backend_handler_mgr_.recv_buffer_.buffer,
                         msg_size);
 
@@ -491,12 +492,12 @@ int AppFrameWork::OnBackEndSocketEvent(struct bufferevent* bev, short events)
     return 0;
 }
 
-EasyNet* AppFrameWork::CreateBackEnd(const char* uri)
+EasyNet* AppFrameWork::CreateBackEnd(const char* uri, int type)
 {
-    EasyNet* easy_net_handler = backend_handler_mgr_.AddHandlerByUri(uri, event_base_);
+    EasyNet* easy_net_handler = backend_handler_mgr_.AddHandlerByUri(uri, type, event_base_);
     if (NULL == easy_net_handler)
     {
-        LOG(ERROR)<<"AddHandlerByUri failed, uri:"<<uri;
+        LOG(ERROR)<<"AddHandlerByUri failed, uri:"<<uri<<", type:"<<type;
         return NULL;
     }
 
@@ -551,6 +552,15 @@ int AppFrameWork::SendToBackEnd(EasyNet* net, const char* buf, size_t buf_size)
     }
 
     return 0;
+}
+
+EasyTimer* AppFrameWork::CreateTimer(size_t time, int timer_id)
+{
+    return NULL;
+}
+
+void AppFrameWork::DestroyTimer(EasyTimer** timer)
+{
 }
 
 }

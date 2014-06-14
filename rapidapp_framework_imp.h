@@ -35,12 +35,15 @@ class AppFrameWork : public IFrameWork {
 
     // 对外接口虚函数实现类
     public:
-        virtual EasyNet* CreateBackEnd(const char* url);
+        virtual EasyNet* CreateBackEnd(const char* url, int type);
         virtual void DestroyBackEnd(EasyNet** net);
 
-    public:
         virtual int SendToFrontEnd(EasyNet* net, const char* buf, size_t buf_size);
         virtual int SendToBackEnd(EasyNet* net, const char* buf, size_t buf_size);
+
+    public:
+        virtual EasyTimer* CreateTimer(size_t time, int timer_id);
+        virtual void DestroyTimer(EasyTimer** timer);
 
     // 事件回调
     public:

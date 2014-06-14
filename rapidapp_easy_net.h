@@ -16,8 +16,8 @@ class EasyNet {
         ~EasyNet();
 
     public:
-        int Init(evutil_socket_t sock_fd, struct event_base* ev_base);
-        int Connect(const char* uri, struct event_base* ev_base);
+        int Init(evutil_socket_t sock_fd, int type, struct event_base* ev_base);
+        int Connect(const char* uri, int type, struct event_base* ev_base);
         void CleanUp();
 
     public:
@@ -28,8 +28,13 @@ class EasyNet {
             return hevent_;
         }
 
+        inline int net_type() {
+            return net_type_;
+        }
+
     private:
         struct bufferevent* hevent_;
+        int net_type_;                  // 网络实体类型
         char uri_[MAX_URL_LEN];         // 发起后端连接时，后端服务uri
         friend class AppFrameWork;
 };

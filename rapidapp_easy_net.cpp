@@ -5,7 +5,7 @@
 
 namespace rapidapp {
 
-EasyNet::EasyNet() : hevent_(NULL)
+EasyNet::EasyNet() : hevent_(NULL), net_type_(0)
 {
     uri_[0] = '\0';
 }
@@ -13,7 +13,7 @@ EasyNet::EasyNet() : hevent_(NULL)
 EasyNet::~EasyNet()
 {}
 
-int EasyNet::Init(evutil_socket_t sock_fd, struct event_base* ev_base)
+int EasyNet::Init(evutil_socket_t sock_fd, int type, struct event_base* ev_base)
 {
     if (sock_fd < 0 || NULL == ev_base)
     {
@@ -34,11 +34,12 @@ int EasyNet::Init(evutil_socket_t sock_fd, struct event_base* ev_base)
     bufferevent_enable(bev, EV_READ|EV_WRITE);
 
     hevent_ = bev;
+    net_type_ = type;
 
     return 0;
 }
 
-int EasyNet::Connect(const char* uri, struct event_base* ev_base)
+int EasyNet::Connect(const char* uri, int type, struct event_base* ev_base)
 {
     if (NULL == uri || NULL == ev_base)
     {
@@ -80,6 +81,7 @@ int EasyNet::Connect(const char* uri, struct event_base* ev_base)
     }
 
     hevent_ = bev;
+    net_type_ = type;
     strcpy(uri_, uri);
 
     return 0;
