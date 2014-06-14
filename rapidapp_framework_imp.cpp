@@ -363,7 +363,7 @@ int AppFrameWork::OnFrontEndConnect(evutil_socket_t sock, struct sockaddr *addr)
 {
     assert(sock >= 0 && addr != NULL);
 
-    PLOG(INFO)<<"has accepted new connect:"<<
+    PLOG(INFO)<<"has accepted new tcp connect:"<<
         inet_ntoa(((struct sockaddr_in*)addr)->sin_addr);
 
 
@@ -422,7 +422,7 @@ int AppFrameWork::OnFrontEndSocketEvent(struct bufferevent* bev, short events)
 
     if (events & BEV_EVENT_TIMEOUT)
     {
-        PLOG(INFO)<<"socket read/write timeout";
+        PLOG(INFO)<<"socket "<<bufferevent_getfd(bev)<<" read/write timeout";
         return 0;
     }
 

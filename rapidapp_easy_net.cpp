@@ -60,7 +60,7 @@ int EasyNet::Connect(const char* uri, struct event_base* ev_base)
         return -1;
     }
 
-    struct bufferevent* bev = bufferevent_socket_new(ev_base, -1,
+    struct bufferevent* bev = bufferevent_socket_new(ev_base, -1/*invalid fd*/,
                                                      BEV_OPT_CLOSE_ON_FREE);
     if (NULL == bev)
     {
