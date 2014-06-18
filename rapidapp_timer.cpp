@@ -1,16 +1,17 @@
 #include "rapidapp_timer.h"
+#include <time.h>
 
 namespace rapidapp {
 
-EasyTimer::EasyTimer()
+EasyTimer::EasyTimer() : next_active_timestamp_(0), time_step_(0), timer_id_(0)
 {}
 
 EasyTimer::~EasyTimer()
 {}
 
-int EasyTimer::Init(time_t next_timestamp, int timer_id)
+int EasyTimer::Init(size_t time, int timer_id)
 {
-    next_active_timestamp_ = next_timestamp;
+    time_step_ = time;
     timer_id_ = timer_id;
 
     return 0;
@@ -21,6 +22,9 @@ void EasyTimer::CleanUp()
 
 int EasyTimer::Start()
 {
+    time_t now = time(NULL);
+    next_active_timestamp_ = now + time_step_;
+
     return 0;
 }
 

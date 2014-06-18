@@ -65,7 +65,7 @@ EasyNet* NetHandlerMgr::AddHandlerByUri(const char* uri, int type,
         return NULL;
     }
 
-    EasyNet* easy_net_handler = new EasyNet();
+    EasyNet* easy_net_handler = new(std::nothrow) EasyNet();
     if (NULL == easy_net_handler)
     {
         PLOG(ERROR)<<"new EasyNet failed";
@@ -94,7 +94,7 @@ EasyNet* NetHandlerMgr::AddHandlerBySocket(evutil_socket_t sock_fd, int type,
         return NULL;
     }
 
-    EasyNet* easy_net_handler = new EasyNet();
+    EasyNet* easy_net_handler = new(std::nothrow) EasyNet();
     if (NULL == easy_net_handler)
     {
         PLOG(ERROR)<<"new EasyNet failed";

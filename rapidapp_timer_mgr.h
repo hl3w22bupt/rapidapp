@@ -8,7 +8,7 @@ namespace rapidapp {
 
 /*
  * STL 默认alloc在资源不够时，是会抛出异常的，后续需要加强对异常的处理
- *
+ * 目前这种方式的性能也取决于二分搜索时upper_bound
  * */
 typedef EasyTimer* LPEASYTIMER;
 typedef std::vector<EasyTimer*> TimerList;
@@ -28,6 +28,9 @@ class TimerMgr {
     public:
         EasyTimer* AddTimer(size_t time, int timer_id);
         int RemoveTimer(const EasyTimer* timer);
+
+    public:
+        EasyTimer* GetNextActiveTimer();
 
     private:
         size_t max_timer_num_;

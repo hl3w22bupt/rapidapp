@@ -316,7 +316,20 @@ int AppFrameWork::Tick()
         event_base_loopbreak(event_base_);
     }
 
-    // TODO 检查定时器事件是否触发
+    // 检查定时器事件是否触发
+    while(true)
+    {
+        EasyTimer* timer = timer_mgr_.GetNextActiveTimer();
+
+        if (NULL == timer)
+        {
+            break;
+        }
+        else
+        {
+            app_->OnTimer(timer, timer->timer_id());
+        }
+    }
 
     return 0;
 }
