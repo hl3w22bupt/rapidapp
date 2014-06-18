@@ -110,9 +110,21 @@ int TimerMgr::RemoveTimer(const EasyTimer* timer)
         return -1;
     }
 
-    // TODO remove from vector
+    // remove from vector
+    // 由于目前定时器一般不会太多，临时采用遍历的方式
+    for (TimerList::iterator it = timer_list_.begin();
+         it != timer_list_.end(); ++it)
+    {
+        if (*it != NULL)
+        {
+            if (*it == timer && timer->timer_id() == (*it)->timer_id())
+            {
+                delete timer;
+                timer_list_.erase(it);
+            }
+        }
+    }
 
-    delete timer;
     return 0;
 }
 
