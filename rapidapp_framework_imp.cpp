@@ -241,11 +241,19 @@ int AppFrameWork::Init(RapidApp* app, int argc, char** argv)
         return -1;
     }
 
+    ret = timer_mgr_.Init(DEFAULT_MAX_TIMER_NUM);
+    if (ret != 0)
+    {
+        LOG(ERROR)<<"init timer mgr failed";
+        return -1;
+    }
+
     return 0;
 }
 
 int AppFrameWork::CleanUp()
 {
+    timer_mgr_.CleanUp();
     backend_handler_mgr_.CleanUp();
     frontend_handler_mgr_.CleanUp();
 
@@ -307,6 +315,8 @@ int AppFrameWork::Tick()
         PLOG(INFO)<<"exit loop";
         event_base_loopbreak(event_base_);
     }
+
+    // TODO 检查定时器事件是否触发
 
     return 0;
 }
@@ -556,11 +566,26 @@ int AppFrameWork::SendToBackEnd(EasyNet* net, const char* buf, size_t buf_size)
 
 EasyTimer* AppFrameWork::CreateTimer(size_t time, int timer_id)
 {
-    return NULL;
+    EasyTimer* timer = timer_mgr_.AddTimer(time, timer_id);
+    if (NULL == timer)
+    {
+        LOG(ERROR)<<"AddTimer failed, time:"<<time<<", timer_id:"<<timer_id;
+    }
+
+    return timer;
 }
 
 void AppFrameWork::DestroyTimer(EasyTimer** timer)
 {
+    if (NULL == timer || NULL == *timer)
+    {
+        LOG(WARNING)<<"invalid timer";
+        return;
+    }
+
+    timer_mgr_.RemoveTimer((*timer));
+
+    *timer = NULL;
 }
 
 }

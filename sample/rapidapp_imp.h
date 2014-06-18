@@ -25,6 +25,8 @@ class MyApp : public RapidApp {
         virtual int OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t size);
         virtual int OnRecvBackEnd(EasyNet* net, int type, const char* msg, size_t size);
 
+        virtual int OnTimer(EasyTimer* timer, int timer_id);
+
     public:
         virtual int OnReportRundata();
 

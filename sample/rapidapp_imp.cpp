@@ -50,6 +50,11 @@ int MyApp::OnRecvBackEnd(EasyNet* net, int type, const char* msg, size_t size)
     return 0;
 }
 
+int MyApp::OnTimer(EasyTimer* timer, int timer_id)
+{
+    return 0;
+}
+
 int MyApp::OnReportRundata()
 {
     return 0;

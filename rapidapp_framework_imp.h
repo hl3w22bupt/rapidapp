@@ -5,6 +5,7 @@
 #include "rapidapp_framework.h"
 #include "rapidapp_net_mgr.h"
 #include "rapidapp_easy_net.h"
+#include "rapidapp_timer_mgr.h"
 #include "rapidapp_ctrl_cmd_keyword.h"
 #include "event2/event.h"
 #include "event2/listener.h"
@@ -158,6 +159,9 @@ class AppFrameWork : public IFrameWork {
     private:
         class NetHandlerMgr frontend_handler_mgr_;
         class NetHandlerMgr backend_handler_mgr_;
+
+    private:
+        class TimerMgr timer_mgr_;
 };
 
 }
