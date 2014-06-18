@@ -29,7 +29,19 @@ int TimerMgr::Init(size_t timer_max)
 }
 
 void TimerMgr::CleanUp()
-{}
+{
+    for (TimerList::iterator it = timer_list_.begin();
+         it != timer_list_.end(); ++it)
+    {
+        if (*it != NULL)
+        {
+            delete *it;
+            *it = NULL;
+        }
+    }
+
+    timer_list_.clear();
+}
 
 EasyTimer* TimerMgr::GetNextActiveTimer()
 {

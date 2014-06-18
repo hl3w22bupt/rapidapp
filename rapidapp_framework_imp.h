@@ -151,6 +151,7 @@ class AppFrameWork : public IFrameWork {
     private:
         RapidApp* app_;
         AppSetting setting_;
+        bool has_been_cleanup_;
 
     private:
         static bool running_;

@@ -24,14 +24,18 @@ void libevent_log_cb_func(int severity, const char *msg) {
 
 AppFrameWork::AppFrameWork() : event_base_(NULL), internal_timer_(NULL),
                                  listener_(NULL), udp_ctrl_keeper_(NULL), ctrl_dispatcher_(),
-                                 app_(NULL), frontend_handler_mgr_(), backend_handler_mgr_()
+                                 app_(NULL), has_been_cleanup_(false),
+                                 frontend_handler_mgr_(), backend_handler_mgr_()
 {
     memset(&setting_, 0, sizeof(setting_));
 }
 
 AppFrameWork::~AppFrameWork()
 {
-    //CleanUp();
+    if (!has_been_cleanup_)
+    {
+        CleanUp();
+    }
 }
 
 void AppFrameWork::InitSignalHandle()
@@ -283,6 +287,8 @@ int AppFrameWork::CleanUp()
 
     google::ShutdownGoogleLogging();
     gflags::ShutDownCommandLineFlags();
+
+    has_been_cleanup_ = true;
 
     return 0;
 }
