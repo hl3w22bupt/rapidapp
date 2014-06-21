@@ -26,6 +26,8 @@ TimerMgr::~TimerMgr()
 int TimerMgr::Init(size_t timer_max)
 {
     max_timer_num_ = timer_max;
+
+    return 0;
 }
 
 void TimerMgr::CleanUp()

@@ -559,9 +559,11 @@ int AppFrameWork::SendToFrontEnd(EasyNet* net, const char* buf, size_t buf_size)
 
     if (net->Send(buf, buf_size) != 0)
     {
-        LOG(ERROR)<<"send buf size:"<<buf_size<<" failed";
+        LOG(ERROR)<<"send buf size:"<<buf_size<<" to frontend failed";
         return -1;
     }
+
+    LOG(INFO)<<"send buf size:"<<buf_size<<" to frontend success";
 
     return 0;
 }

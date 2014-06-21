@@ -34,6 +34,9 @@ class MyApp : public RapidApp {
         virtual const char* GetAppVersion();
         virtual size_t GetFrontEndMaxMsgSize();
         virtual size_t GetBackEndMaxMsgSize();
+
+    private:
+        IFrameWork* frame_stub_;
 };
 
 #endif
