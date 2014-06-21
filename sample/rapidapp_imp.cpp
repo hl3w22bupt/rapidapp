@@ -112,9 +112,13 @@ size_t MyApp::GetFrontEndMsgLength(const char* buffer, size_t size)
         return 0;
     }
 
+#ifndef _DEBUG
     uint32_t len = 0;
     memcpy(&len, buffer, sizeof(uint32_t));
     return ntohl(len);
+#else
+    return size;
+#endif
 }
 
 size_t MyApp::GetBackEndMsgLength(const char* buffer, size_t size)

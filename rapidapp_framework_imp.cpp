@@ -440,9 +440,9 @@ int AppFrameWork::OnFrontEndMsg(struct bufferevent* bev)
     // GetFrontEndMsgLength
     size_t msglen = app_->GetFrontEndMsgLength(frontend_handler_mgr_.recv_buffer_.buffer,
                                                msg_size);
-    if (0 == msglen)
+    if (0 == msglen || msglen > msg_size)
     {
-        LOG(INFO)<<"msg is NOT complete yet";
+        LOG(INFO)<<"recv msg size:"<<msg_size<<", but msg len:"<<msglen<<"---NOT complete yet";
         return 0;
     }
 
@@ -520,9 +520,9 @@ int AppFrameWork::OnBackEndMsg(struct bufferevent* bev)
     // GetBackEndMsgLength
     size_t msglen = app_->GetBackEndMsgLength(backend_handler_mgr_.recv_buffer_.buffer,
                                               msg_size);
-    if (0 == msglen)
+    if (0 == msglen || msglen > msg_size)
     {
-        LOG(INFO)<<"msg is NOT complete yet";
+        LOG(INFO)<<"recv msg size:"<<msg_size<<", but msg len:"<<msglen<<"---NOT complete yet";
         return 0;
     }
 
