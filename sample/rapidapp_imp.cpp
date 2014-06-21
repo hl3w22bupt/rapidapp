@@ -105,6 +105,30 @@ size_t MyApp::GetBackEndMaxMsgSize()
     return 0;
 }
 
+size_t MyApp::GetFrontEndMsgLength(const char* buffer, size_t size)
+{
+    if (NULL == buffer || 4 > size)
+    {
+        return 0;
+    }
+
+    uint32_t len = 0;
+    memcpy(&len, buffer, sizeof(uint32_t));
+    return ntohl(len);
+}
+
+size_t MyApp::GetBackEndMsgLength(const char* buffer, size_t size)
+{
+    if (NULL == buffer || 4 > size)
+    {
+        return 0;
+    }
+
+    uint32_t len = 0;
+    memcpy(&len, buffer, sizeof(uint32_t));
+    return ntohl(len);
+}
+
 const char* MyApp::GetAppVersion()
 {
     return "1.0.0";

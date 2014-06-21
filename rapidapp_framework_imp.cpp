@@ -1,5 +1,6 @@
 #include "rapidapp_framework_imp.h"
 #include "utils/rap_net_uri.h"
+#include <event2/buffer.h>
 #include <cassert>
 #include <cstring>
 
@@ -363,6 +364,7 @@ int AppFrameWork::OnCtrlMsg(struct bufferevent* bev)
         return -1;
     }
 
+    // 控制模式采用UDP通信，不存在分包情况
     static char ctrl_msg[MAX_CTRL_MSG_LEN];
     size_t len = bufferevent_read(bev, ctrl_msg, sizeof(ctrl_msg));
     if (0 == len)
@@ -417,10 +419,35 @@ int AppFrameWork::OnFrontEndMsg(struct bufferevent* bev)
     assert(app_ != NULL);
 
     // get msg from bufferevent
-    size_t msg_size = bufferevent_read(bev, frontend_handler_mgr_.recv_buffer_.buffer,
-                                       frontend_handler_mgr_.recv_buffer_.size);
+    //size_t msg_size = bufferevent_read(bev, frontend_handler_mgr_.recv_buffer_.buffer,
+                                       //frontend_handler_mgr_.recv_buffer_.size);
 
-    LOG(INFO)<<"recv total "<<msg_size<<" bytes from frontend";
+    struct evbuffer* evbuf = bufferevent_get_input(bev);
+    if (NULL == evbuf)
+    {
+        LOG(ERROR)<<"assert failed, evbuf of frontend is NULL";
+        return -1;
+    }
+
+    ev_ssize_t msg_size = evbuffer_copyout(evbuf, frontend_handler_mgr_.recv_buffer_.buffer,
+                                           frontend_handler_mgr_.recv_buffer_.size);
+    if (-1 == msg_size)
+    {
+        LOG(ERROR)<<"could not drain from buffer";
+        return -1;
+    }
+
+    // GetFrontEndMsgLength
+    size_t msglen = app_->GetFrontEndMsgLength(frontend_handler_mgr_.recv_buffer_.buffer,
+                                               msg_size);
+    if (0 == msglen)
+    {
+        LOG(INFO)<<"msg is NOT complete yet";
+        return 0;
+    }
+
+    evbuffer_drain(evbuf, msglen);
+    LOG(INFO)<<"recv total "<<msg_size<<" bytes from frontend"<<", msg len:"<<msglen;
 
     EasyNet* easy_net = frontend_handler_mgr_.GetHandlerByEvent(bev);
     if (NULL == easy_net)
@@ -431,7 +458,7 @@ int AppFrameWork::OnFrontEndMsg(struct bufferevent* bev)
 
     app_->OnRecvFrontEnd(easy_net, easy_net->net_type(),
                          frontend_handler_mgr_.recv_buffer_.buffer,
-                         msg_size);
+                         msglen);
 
     return 0;
 }
@@ -472,10 +499,36 @@ int AppFrameWork::OnBackEndMsg(struct bufferevent* bev)
     assert(app_ != NULL);
 
     // get msg from bufferevent
-    size_t msg_size = bufferevent_read(bev, backend_handler_mgr_.recv_buffer_.buffer,
-                                       backend_handler_mgr_.recv_buffer_.size);
+    //size_t msg_size = bufferevent_read(bev, backend_handler_mgr_.recv_buffer_.buffer,
+                                       //backend_handler_mgr_.recv_buffer_.size);
 
-    LOG(INFO)<<"recv total "<<msg_size<<" bytes from backend";
+    struct evbuffer* evbuf = bufferevent_get_input(bev);
+    if (NULL == evbuf)
+    {
+        LOG(ERROR)<<"assert failed, evbuf of backend input is NULL";
+        return -1;
+    }
+
+    ev_ssize_t msg_size = evbuffer_copyout(evbuf, backend_handler_mgr_.recv_buffer_.buffer,
+                                           backend_handler_mgr_.recv_buffer_.size);
+    if (-1 == msg_size)
+    {
+        LOG(ERROR)<<"could not drain from buffer";
+        return -1;
+    }
+
+    // GetBackEndMsgLength
+    size_t msglen = app_->GetBackEndMsgLength(backend_handler_mgr_.recv_buffer_.buffer,
+                                              msg_size);
+    if (0 == msglen)
+    {
+        LOG(INFO)<<"msg is NOT complete yet";
+        return 0;
+    }
+
+    assert(msglen <= msg_size);
+    evbuffer_drain(evbuf, msglen);
+    LOG(INFO)<<"recv total "<<msg_size<<" bytes from backend"<<", msg len:"<<msglen;
 
     EasyNet* easy_net = backend_handler_mgr_.GetHandlerByEvent(bev);
     if (NULL == easy_net)
@@ -486,7 +539,7 @@ int AppFrameWork::OnBackEndMsg(struct bufferevent* bev)
 
     app_->OnRecvBackEnd(easy_net, easy_net->net_type(),
                         backend_handler_mgr_.recv_buffer_.buffer,
-                        msg_size);
+                        msglen);
 
     return 0;
 }
