@@ -23,6 +23,9 @@ class EasyAction {
         int Perform();
         int Done();
 
+    private:
+        void Forward();
+
     public:
         int AddSubAction(EasyAction* sub_action);
 
