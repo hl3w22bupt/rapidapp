@@ -1,5 +1,5 @@
-#ifndef RAPIDAPP_TIMER_H_
-#define RAPIDAPP_TIMER_H_
+#ifndef RAPIDAPP_EASY_TIMER_H_
+#define RAPIDAPP_EASY_TIMER_H_
 
 #include <time.h>
 

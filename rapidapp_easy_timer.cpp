@@ -1,4 +1,4 @@
-#include "rapidapp_timer.h"
+#include "rapidapp_easy_timer.h"
 #include <time.h>
 
 namespace rapidapp {

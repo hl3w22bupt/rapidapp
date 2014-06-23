@@ -1,7 +1,7 @@
 #ifndef RAPIDAPP_TIMER_MGR_H_
 #define RAPIDAPP_TIMER_MGR_H_
 
-#include "rapidapp_timer.h"
+#include "rapidapp_easy_timer.h"
 #include <vector>
 
 namespace rapidapp {
