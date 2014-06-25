@@ -3,6 +3,7 @@
 #include <event2/buffer.h>
 #include <cassert>
 #include <cstring>
+#include <sys/resource.h>
 
 DEFINE_string(uri, "tcp:0.0.0.0:80", "server listen uri, format: [proto:ip:port]");
 DEFINE_string(log_file, "", "logging file name");
@@ -13,6 +14,8 @@ const int MAX_TCP_BACKLOG = 102400;
 const char* udp_uri = "udp:127.0.0.1:9090";
 
 const int MAX_CTRL_MSG_LEN = 2048;
+
+const int DEFAULT_MAX_FD_LIMIT = 10240;
 
 bool AppFrameWork::running_ = false;
 bool AppFrameWork::reloading_ = false;
@@ -93,6 +96,37 @@ int AppFrameWork::ParseCmdLine(int argc, char** argv)
     return 0;
 }
 
+int AppFrameWork::SetResourceLimit(int fd_limit)
+{
+    if (fd_limit <= 0)
+    {
+        LOG(ERROR)<<"bad fd_limit"<<fd_limit;
+        return -1;
+    }
+
+    struct rlimit rlmt;
+    if (getrlimit(RLIMIT_NOFILE, &rlmt) != 0)
+    {
+        PLOG(ERROR)<<"getrlimit failed";
+        return -1;
+    }
+
+    if ((int)rlmt.rlim_cur < fd_limit)
+    {
+        LOG(INFO)<<"current system resoure limit:"<<rlmt.rlim_cur<<
+            " less than expected:"<<fd_limit<<", so setrlimit";
+        rlmt.rlim_cur = fd_limit;
+        rlmt.rlim_max = fd_limit;
+        if (setrlimit(RLIMIT_NOFILE, &rlmt) != 0)
+        {
+            PLOG(ERROR)<<"setrlimit to "<<fd_limit<<" failed";
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
 int AppFrameWork::InitLogging(int argc, char** argv)
 {
     assert(argc > 0 && argv != NULL);
@@ -137,6 +171,14 @@ int AppFrameWork::Init(RapidApp* app, int argc, char** argv)
 
     // signal
     InitSignalHandle();
+
+    // 设置系统资源限制
+    ret = SetResourceLimit(DEFAULT_MAX_FD_LIMIT);
+    if (ret != 0)
+    {
+        LOG(ERROR)<<stderr, "set resource limit failed";
+        return -1;
+    }
 
 #ifdef _DEBUG
     event_enable_debug_mode();

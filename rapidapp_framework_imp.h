@@ -140,6 +140,7 @@ class AppFrameWork : public IFrameWork {
         void InitSignalHandle();
         int InitLogging(int argc, char** argv);
         int ParseCmdLine(int argc, char** argv);
+        int SetResourceLimit(int fd_limit);
 
     private:
         struct event_base* event_base_;
