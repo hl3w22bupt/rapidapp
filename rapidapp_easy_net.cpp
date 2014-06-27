@@ -71,7 +71,7 @@ int EasyNet::Connect(const char* uri, int type, struct event_base* ev_base)
     bufferevent_enable(bev, EV_READ|EV_WRITE);
 
     // socket fd没有设置的情况下，调用connect会创建一个socket并且设置为非阻塞模式
-    ret = bufferevent_socket_connect(hevent_, (struct sockaddr*)&sin,
+    ret = bufferevent_socket_connect(bev, (struct sockaddr*)&sin,
                                      sizeof(sin));
     if (ret != 0)
     {
