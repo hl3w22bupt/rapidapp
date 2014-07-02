@@ -67,7 +67,7 @@ int MyApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t size)
     resp.set_msglen(0);
     resp.set_msglen(resp.ByteSize());
 
-    LOG(INFO)<<resp.DebugString();
+    LOG(INFO)<<std::endl<<resp.DebugString();
 
     std::string resp_str;
     resp.SerializeToString(&resp_str);
