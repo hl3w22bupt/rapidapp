@@ -20,7 +20,7 @@ frame_src += Glob('utils/*.cpp')
 env.SharedLibrary('rapidapp', frame_src)
 env.StaticLibrary('rapidapp', frame_src)
 
-os.system('cd sample && protoc --cpp_out=. sample.proto')
+os.system('echo \'genereate c++ code over protobuf...\' && cd sample && protoc --cpp_out=. sample.proto')
 sample_src = Glob('sample/*.cpp')
 sample_src += Glob('sample/*.cc')
 sample_src += Glob('./librapidapp.a')
