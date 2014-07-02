@@ -479,18 +479,9 @@ int AppFrameWork::OnFrontEndMsg(struct bufferevent* bev)
         return -1;
     }
 
+    LOG(INFO)<<"recv total "<<msg_size<<" bytes from frontend";
+
     // GetFrontEndMsgLength
-    size_t msglen = app_->GetFrontEndMsgLength(frontend_handler_mgr_.recv_buffer_.buffer,
-                                               msg_size);
-    if (0 == msglen || msglen > msg_size)
-    {
-        LOG(INFO)<<"recv msg size:"<<msg_size<<", but msg len:"<<msglen<<"---NOT complete yet";
-        return 0;
-    }
-
-    evbuffer_drain(evbuf, msglen);
-    LOG(INFO)<<"recv total "<<msg_size<<" bytes from frontend"<<", msg len:"<<msglen;
-
     EasyNet* easy_net = frontend_handler_mgr_.GetHandlerByEvent(bev);
     if (NULL == easy_net)
     {
@@ -498,9 +489,27 @@ int AppFrameWork::OnFrontEndMsg(struct bufferevent* bev)
         return -1;
     }
 
-    app_->OnRecvFrontEnd(easy_net, easy_net->net_type(),
-                         frontend_handler_mgr_.recv_buffer_.buffer,
-                         msglen);
+    size_t elapsed_msglen = 0;
+    while(msg_size > elapsed_msglen)
+    {
+        size_t msglen = app_->GetFrontEndMsgLength(
+            frontend_handler_mgr_.recv_buffer_.buffer + elapsed_msglen,
+            msg_size - elapsed_msglen);
+        if (0 == msglen || msglen > (msg_size - elapsed_msglen))
+        {
+            LOG(INFO)<<"recved left msg size:"<<msg_size - elapsed_msglen
+                <<", but msg len:"<<msglen<<"---NOT complete yet";
+            break;
+        }
+
+        LOG(INFO)<<"current msg len:"<<msglen;
+
+        app_->OnRecvFrontEnd(easy_net, easy_net->net_type(),
+                             frontend_handler_mgr_.recv_buffer_.buffer + elapsed_msglen,
+                             msglen);
+        elapsed_msglen += msglen;
+    }
+    evbuffer_drain(evbuf, elapsed_msglen);
 
     return 0;
 }
@@ -559,19 +568,9 @@ int AppFrameWork::OnBackEndMsg(struct bufferevent* bev)
         return -1;
     }
 
+    LOG(INFO)<<"recv total "<<msg_size<<" bytes from backend";
+
     // GetBackEndMsgLength
-    size_t msglen = app_->GetBackEndMsgLength(backend_handler_mgr_.recv_buffer_.buffer,
-                                              msg_size);
-    if (0 == msglen || msglen > msg_size)
-    {
-        LOG(INFO)<<"recv msg size:"<<msg_size<<", but msg len:"<<msglen<<"---NOT complete yet";
-        return 0;
-    }
-
-    assert(msglen <= msg_size);
-    evbuffer_drain(evbuf, msglen);
-    LOG(INFO)<<"recv total "<<msg_size<<" bytes from backend"<<", msg len:"<<msglen;
-
     EasyNet* easy_net = backend_handler_mgr_.GetHandlerByEvent(bev);
     if (NULL == easy_net)
     {
@@ -579,9 +578,27 @@ int AppFrameWork::OnBackEndMsg(struct bufferevent* bev)
         return -1;
     }
 
-    app_->OnRecvBackEnd(easy_net, easy_net->net_type(),
-                        backend_handler_mgr_.recv_buffer_.buffer,
-                        msglen);
+    size_t elapsed_msglen = 0;
+    while(msg_size > elapsed_msglen)
+    {
+        size_t msglen = app_->GetBackEndMsgLength(
+            backend_handler_mgr_.recv_buffer_.buffer + elapsed_msglen,
+            msg_size - elapsed_msglen);
+        if (0 == msglen || msglen > (msg_size - elapsed_msglen))
+        {
+            LOG(INFO)<<"recved left msg size:"<<msg_size - elapsed_msglen
+                <<", but msg len:"<<msglen<<"---NOT complete yet";
+            break;
+        }
+
+        LOG(INFO)<<"current msg len:"<<msglen;
+
+        app_->OnRecvBackEnd(easy_net, easy_net->net_type(),
+                            backend_handler_mgr_.recv_buffer_.buffer + elapsed_msglen,
+                            msglen);
+        elapsed_msglen += msglen;
+    }
+    evbuffer_drain(evbuf, elapsed_msglen);
 
     return 0;
 }
