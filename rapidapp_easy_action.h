@@ -1,6 +1,8 @@
 #ifndef RAPIDAPP_EASY_ACTION_H_
 #define RAPIDAPP_EASY_ACTION_H_
 
+/*在协程的基础上构建action更加自然*/
+
 namespace rapidapp {
 
 class IActionable {
