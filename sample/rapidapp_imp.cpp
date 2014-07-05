@@ -61,16 +61,12 @@ int MyApp::OnInit(IFrameWork* app_framework)
     }
     backend_ = net;
 
-    rpc_ = new(std::nothrow) EasyRpc();
+    // 一个transport 对应 一个protocol
+    // 因而这里一个后端服务对应一个rpc instance
+    rpc_ = frame_stub_->CreateRpc(net, &rpc_handler);
     if (NULL == rpc_)
     {
-        return -1;
-    }
-
-    int ret = rpc_->Init(net, &rpc_handler, 1000, 1000);
-    if (ret != 0)
-    {
-        LOG(ERROR)<<"rpc init failed";
+        LOG(ERROR)<<"create rpc instace failed";
         return -1;
     }
 
@@ -81,7 +77,7 @@ int MyApp::OnFini()
 {
     if (rpc_ != NULL)
     {
-        delete rpc_;
+        frame_stub_->DestroyRpc(&rpc_);
         rpc_ = NULL;
     }
 
@@ -90,6 +86,7 @@ int MyApp::OnFini()
         frame_stub_->DestroyBackEnd(&backend_);
         backend_ = NULL;
     }
+
     ::google::protobuf::ShutdownProtobufLibrary();
 
     return 0;
@@ -149,7 +146,7 @@ int MyApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t size)
 
     rapidapp_sample::Mesg backend_resp;
     LOG(INFO)<<"start rpc call...";
-    rpc_->RpcCall(&resp, &backend_resp);
+    frame_stub_->RpcCall(rpc_, &resp, &backend_resp);
     //frame_stub_->SendToBackEnd(backend_, resp_str.c_str(), resp.ByteSize());
     return 0;
 }

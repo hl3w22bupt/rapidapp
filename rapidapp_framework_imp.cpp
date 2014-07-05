@@ -30,7 +30,8 @@ void libevent_log_cb_func(int severity, const char *msg) {
 AppFrameWork::AppFrameWork() : event_base_(NULL), internal_timer_(NULL),
                                  listener_(NULL), udp_ctrl_keeper_(NULL), ctrl_dispatcher_(),
                                  app_(NULL), has_been_cleanup_(false),
-                                 frontend_handler_mgr_(), backend_handler_mgr_()
+                                 frontend_handler_mgr_(), backend_handler_mgr_(),
+                                 timer_mgr_(), rpc_scheduler_(NULL)
 {
     memset(&setting_, 0, sizeof(setting_));
 }
@@ -298,11 +299,24 @@ int AppFrameWork::Init(RapidApp* app, int argc, char** argv)
         return -1;
     }
 
+    rpc_scheduler_ = new(std::nothrow) magic_cube::CoroutineScheduler();
+    if (NULL == rpc_scheduler_)
+    {
+        LOG(ERROR)<<"init rpc scheduler failed";
+        return -1;
+    }
+
     return 0;
 }
 
 int AppFrameWork::CleanUp()
 {
+    if (rpc_scheduler_ != NULL)
+    {
+        delete rpc_scheduler_;
+        rpc_scheduler_ = NULL;
+    }
+
     timer_mgr_.CleanUp();
     backend_handler_mgr_.CleanUp();
     frontend_handler_mgr_.CleanUp();
@@ -708,6 +722,8 @@ int AppFrameWork::SendToBackEnd(EasyNet* net, const char* buf, size_t buf_size)
         return -1;
     }
 
+    LOG(INFO)<<"send buf size:"<<buf_size<<" to backend success";
+
     return 0;
 }
 
@@ -734,5 +750,47 @@ void AppFrameWork::DestroyTimer(EasyTimer** timer)
 
     *timer = NULL;
 }
+
+EasyRpc* AppFrameWork::CreateRpc(EasyNet* net, IMsgHandler* handler)
+{
+    EasyRpc* rpc = new(std::nothrow) EasyRpc();
+    if (NULL == rpc)
+    {
+        return NULL;
+    }
+
+    int ret = rpc->Init(rpc_scheduler_, net, handler);
+    if (ret != 0)
+    {
+        delete rpc;
+        return NULL;
+    }
+
+    return rpc;
+}
+
+int AppFrameWork::DestroyRpc(EasyRpc** rpc)
+{
+    if (NULL == rpc || NULL == *rpc)
+    {
+        return -1;
+    }
+
+    delete *rpc;
+    *rpc = NULL;
+
+    return 0;
+}
+
+int AppFrameWork::RpcCall(EasyRpc* rpc, const void* request, void* response)
+{
+    if (NULL == rpc || NULL == request || NULL == response)
+    {
+        return -1;
+    }
+
+    return rpc->RpcCall(request, response);
+}
+
 
 } // namespace rapidapp

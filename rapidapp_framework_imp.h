@@ -6,6 +6,7 @@
 #include "rapidapp_net_mgr.h"
 #include "rapidapp_easy_net.h"
 #include "rapidapp_timer_mgr.h"
+#include "rapidapp_easy_rpc.h"
 #include "rapidapp_ctrl_cmd_keyword.h"
 #include "event2/event.h"
 #include "event2/listener.h"
@@ -45,6 +46,11 @@ class AppFrameWork : public IFrameWork {
     public:
         virtual EasyTimer* CreateTimer(size_t time, int timer_id);
         virtual void DestroyTimer(EasyTimer** timer);
+
+    public:
+        virtual EasyRpc* CreateRpc(EasyNet* net, IMsgHandler* handler);
+        virtual int DestroyRpc(EasyRpc** rpc);
+        virtual int RpcCall(EasyRpc* rpc, const void* request, void* response);
 
     // 事件回调
     public:
@@ -164,6 +170,9 @@ class AppFrameWork : public IFrameWork {
 
     private:
         class TimerMgr timer_mgr_;
+
+    private:
+        magic_cube::CoroutineScheduler* rpc_scheduler_;
 };
 
 }

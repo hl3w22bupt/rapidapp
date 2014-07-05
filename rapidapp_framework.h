@@ -5,8 +5,19 @@
 
 namespace rapidapp {
 
+class IMsgHandler {
+    public:
+        IMsgHandler(){}
+        virtual ~IMsgHandler() {}
+
+    public:
+        virtual int HandleRequest(const void* request, void* data, size_t* size) = 0;
+        virtual int HandleResponse(const void* data, size_t size, void* response) = 0;
+};
+
 class EasyTimer;
 class EasyNet;
+class EasyRpc;
 class IFrameWork {
     public:
         IFrameWork(){}
@@ -25,6 +36,11 @@ class IFrameWork {
         // timer_id用于区分定时器，使用者保证唯一性
         virtual EasyTimer* CreateTimer(size_t time, int timer_id) = 0;
         virtual void DestroyTimer(EasyTimer** timer) = 0;
+
+    public:
+        virtual EasyRpc* CreateRpc(EasyNet* net, IMsgHandler* handler) = 0;
+        virtual int DestroyRpc(EasyRpc** rpc) = 0;
+        virtual int RpcCall(EasyRpc* rpc, const void* request, void* response) = 0;
 };
 
 }
