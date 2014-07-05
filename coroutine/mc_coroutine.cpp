@@ -18,10 +18,27 @@ CoroutineScheduler::CoroutineScheduler(int cocurrent_num, int stack_size) :
 {}
 
 CoroutineScheduler::~CoroutineScheduler()
-{}
-
-int CoroutineScheduler::CreateCoroutine()
 {
+    CoroutineTable::iterator it = coroutine_table_.begin();
+    for (; it != coroutine_table_.end(); ++it)
+    {
+        if (it->second != NULL)
+        {
+            free(it->second);
+            it->second = NULL;
+        }
+    }
+
+    coroutine_table_.clear();
+}
+
+int CoroutineScheduler::CreateCoroutine(coroutine_func func, void* arg)
+{
+    if (NULL == func)
+    {
+        return -1;
+    }
+
     if (coroutine_table_.size() >= coroutine_max_)
     {
         return -1;
@@ -37,6 +54,8 @@ int CoroutineScheduler::CreateCoroutine()
 
     ctx->state = COROUTINE_READY;
     ctx->idx = cid_seed;
+    ctx->func = func;
+    ctx->arg = arg;
 
     coroutine_table_[cid_seed] = ctx;
 
@@ -100,6 +119,8 @@ void CoroutineScheduler::ScheduleFunction(void* arg)
     assert(ctx != NULL);
 
     ctx->func(ctx->arg);
+    ctx->state = COROUTINE_DONE;
+    the_handler->running_cid_ = -1;
 }
 
 int CoroutineScheduler::ResumeCoroutine(int uct_id)

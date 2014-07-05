@@ -37,7 +37,7 @@ class CoroutineScheduler {
         /// @brief  创建协程实例
         ///
         /// @return
-        int CreateCoroutine();
+        int CreateCoroutine(coroutine_func func, void* arg);
 
         /// @brief  销毁协程实例
         void DestroyCoroutine(int uct_id);

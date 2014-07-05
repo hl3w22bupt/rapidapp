@@ -582,6 +582,7 @@ int AppFrameWork::OnBackEndMsg(struct bufferevent* bev)
     while(msg_size > elapsed_msglen)
     {
         size_t msglen = app_->GetBackEndMsgLength(
+            easy_net->net_type(),
             backend_handler_mgr_.recv_buffer_.buffer + elapsed_msglen,
             msg_size - elapsed_msglen);
         if (0 == msglen || msglen > (msg_size - elapsed_msglen))
@@ -721,4 +722,4 @@ void AppFrameWork::DestroyTimer(EasyTimer** timer)
     *timer = NULL;
 }
 
-}
+} // namespace rapidapp

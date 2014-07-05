@@ -126,7 +126,7 @@ size_t MyApp::GetFrontEndMsgLength(const char* buffer, size_t size)
 #endif
 }
 
-size_t MyApp::GetBackEndMsgLength(const char* buffer, size_t size)
+size_t MyApp::GetBackEndMsgLength(int type, const char* buffer, size_t size)
 {
     if (NULL == buffer || 4 > size)
     {

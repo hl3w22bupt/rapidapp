@@ -15,6 +15,7 @@ class IActionable {
         virtual int OnActionDone() {return 0;}
 };
 
+// 动作，串行动作，并行动作
 class EasyAction {
     public:
         EasyAction();
