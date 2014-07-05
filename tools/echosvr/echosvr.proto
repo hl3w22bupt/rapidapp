@@ -1,0 +1,11 @@
+package rapidapp_sample;
+
+message EchoBody {
+    required uint64 seq = 1;
+    optional string echo = 2;
+}
+
+message Mesg {
+    required fixed32 msglen = 1;
+    required EchoBody body = 2;
+}

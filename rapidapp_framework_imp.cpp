@@ -173,6 +173,7 @@ int AppFrameWork::Init(RapidApp* app, int argc, char** argv)
     // signal
     InitSignalHandle();
 
+#ifndef _DEBUG
     // 设置系统资源限制
     ret = SetResourceLimit(DEFAULT_MAX_FD_LIMIT);
     if (ret != 0)
@@ -180,6 +181,7 @@ int AppFrameWork::Init(RapidApp* app, int argc, char** argv)
         LOG(ERROR)<<stderr, "set resource limit failed";
         return -1;
     }
+#endif
 
 #ifdef _DEBUG
     event_enable_debug_mode();

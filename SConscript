@@ -26,3 +26,8 @@ sample_src = Glob('sample/*.cpp')
 sample_src += Glob('sample/*.cc')
 sample_src += Glob('./librapidapp.a')
 env.Program('sample/app_demo', sample_src, LIBS=['event', 'glog', 'gflags', 'protobuf', 'pthread'])
+
+os.system('echo \'genereate c++ code over protobuf...\' && cd tools/echosvr && protoc --cpp_out=. echosvr.proto')
+tools_echosvr_src = Glob('tools/echosvr/*.cpp')
+tools_echosvr_src += Glob('./librapidapp.a')
+env.Program('tools/echo_svr', tools_echosvr_src, LIBS=['event', 'glog', 'gflags', 'protobuf', 'pthread'])

@@ -8,7 +8,7 @@ namespace rapidapp {
 using namespace magic_cube;
 class IMsgHandler {
     public:
-        IMsgHandler();
+        IMsgHandler(){}
         virtual ~IMsgHandler() {}
 
     public:
