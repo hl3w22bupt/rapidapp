@@ -4,36 +4,6 @@
 #include <google/protobuf/message_lite.h>
 #include <google/protobuf/io/coded_stream.h>
 
-class RpcHandlerImp : public IMsgHandler {
-    public:
-        RpcHandlerImp(){}
-        ~RpcHandlerImp(){}
-
-    public:
-        int HandleRequest(const void* request, void* data, size_t* size) {
-            if (NULL == request || NULL == data || NULL == size || 0 == *size)
-                return -1;
-
-            const rapidapp_sample::Mesg* req = static_cast<const rapidapp_sample::Mesg*>(request);
-            req->SerializeToArray(data, *size);
-            *size = req->ByteSize();
-
-            return 0;
-        }
-
-        int HandleResponse(const void* data, size_t size, void* response) {
-            if (NULL == data || 0 == size || NULL == response)
-                return -1;
-
-            rapidapp_sample::Mesg* resp = static_cast<rapidapp_sample::Mesg*>(response);
-            resp->ParseFromArray(data, size);
-
-            return 0;
-        }
-};
-
-RpcHandlerImp rpc_handler;
-
 MyApp::MyApp()
 {}
 
@@ -63,7 +33,7 @@ int MyApp::OnInit(IFrameWork* app_framework)
 
     // 一个transport 对应 一个protocol
     // 因而这里一个后端服务对应一个rpc instance
-    rpc_ = frame_stub_->CreateRpc(net, &rpc_handler);
+    rpc_ = frame_stub_->CreateRpc(net);
     if (NULL == rpc_)
     {
         LOG(ERROR)<<"create rpc instace failed";
@@ -144,9 +114,20 @@ int MyApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t size)
     }
     frame_stub_->SendToFrontEnd(net, resp_str.c_str(), resp.ByteSize());
 
-    rapidapp_sample::Mesg backend_resp;
+    const void* resp_buffer = NULL;
+    size_t resp_size = 0;
     LOG(INFO)<<"start rpc call...";
-    frame_stub_->RpcCall(rpc_, &resp, &backend_resp);
+    frame_stub_->RpcCall(rpc_, resp_str.c_str(), resp.ByteSize(),
+                         &resp_buffer, &resp_size);
+    if (NULL == resp_buffer || 0 == resp_size)
+    {
+        PLOG(ERROR)<<"resp is null";
+        return -1;
+    }
+    rapidapp_sample::Mesg backend_resp;
+    backend_resp.ParseFromArray(resp_buffer, resp_size);
+    LOG(INFO)<<"RPC resp from backend:"<<std::endl<<backend_resp.DebugString();
+
     //frame_stub_->SendToBackEnd(backend_, resp_str.c_str(), resp.ByteSize());
     return 0;
 }

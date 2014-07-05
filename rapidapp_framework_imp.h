@@ -48,9 +48,11 @@ class AppFrameWork : public IFrameWork {
         virtual void DestroyTimer(EasyTimer** timer);
 
     public:
-        virtual EasyRpc* CreateRpc(EasyNet* net, IMsgHandler* handler);
+        virtual EasyRpc* CreateRpc(EasyNet* net);
         virtual int DestroyRpc(EasyRpc** rpc);
-        virtual int RpcCall(EasyRpc* rpc, const void* request, void* response);
+        virtual int RpcCall(EasyRpc* rpc,
+                            const void* request, size_t request_size,
+                            const void** response, size_t* response_size);
 
     // 事件回调
     public:

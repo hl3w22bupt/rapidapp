@@ -10,6 +10,9 @@ DEFINE_string(uri, "tcp:0.0.0.0:80", "server listen uri, format: [proto:ip:port]
 DEFINE_string(log_file, "", "logging file name");
 DEFINE_int32(fps, 1000, "frame-per-second, MUST >= 1, associated with reload and timer");
 
+DEFINE_int32(max_cocurrent_rpc, 10240, "max cocurrent rpc number");
+DEFINE_int32(rpc_stack_size, 1024, "rpc stack size to save user context");
+
 namespace rapidapp {
 const int MAX_TCP_BACKLOG = 102400;
 const char* udp_uri = "udp:127.0.0.1:9090";
@@ -299,7 +302,9 @@ int AppFrameWork::Init(RapidApp* app, int argc, char** argv)
         return -1;
     }
 
-    rpc_scheduler_ = new(std::nothrow) magic_cube::CoroutineScheduler();
+    rpc_scheduler_ = new(std::nothrow) magic_cube::CoroutineScheduler(
+                                                    FLAGS_max_cocurrent_rpc,
+                                                    FLAGS_rpc_stack_size);
     if (NULL == rpc_scheduler_)
     {
         LOG(ERROR)<<"init rpc scheduler failed";
@@ -619,6 +624,7 @@ int AppFrameWork::OnBackEndMsg(struct bufferevent* bev)
         }
         else
         {
+            // TODO bind rpc列表中清除rpc
             EasyRpc* rpc = static_cast<EasyRpc*>(easy_net->rpc_binded());
             assert(rpc != NULL);
             rpc->Resume(backend_handler_mgr_.recv_buffer_.buffer + elapsed_msglen,
@@ -751,7 +757,7 @@ void AppFrameWork::DestroyTimer(EasyTimer** timer)
     *timer = NULL;
 }
 
-EasyRpc* AppFrameWork::CreateRpc(EasyNet* net, IMsgHandler* handler)
+EasyRpc* AppFrameWork::CreateRpc(EasyNet* net)
 {
     EasyRpc* rpc = new(std::nothrow) EasyRpc();
     if (NULL == rpc)
@@ -759,12 +765,16 @@ EasyRpc* AppFrameWork::CreateRpc(EasyNet* net, IMsgHandler* handler)
         return NULL;
     }
 
-    int ret = rpc->Init(rpc_scheduler_, net, handler);
+    int ret = rpc->Init(rpc_scheduler_, net);
     if (ret != 0)
     {
         delete rpc;
         return NULL;
     }
+
+    // TODO 1个连接上关联多个rpc_call
+    // 如果后端服务响应包顺序和请求包完全一致，则无需异步callback id即可保证
+    net->set_rpc_binded(rpc);
 
     return rpc;
 }
@@ -782,14 +792,16 @@ int AppFrameWork::DestroyRpc(EasyRpc** rpc)
     return 0;
 }
 
-int AppFrameWork::RpcCall(EasyRpc* rpc, const void* request, void* response)
+int AppFrameWork::RpcCall(EasyRpc* rpc, const void* request, size_t request_size,
+                          const void** response, size_t* response_size)
 {
-    if (NULL == rpc || NULL == request || NULL == response)
+    if (NULL == rpc || NULL == request || 0 == request_size
+        || NULL == response || NULL == response_size)
     {
         return -1;
     }
 
-    return rpc->RpcCall(request, response);
+    return rpc->RpcCall(request, request_size, response, response_size);
 }
 
 

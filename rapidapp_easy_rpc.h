@@ -16,8 +16,9 @@ class EasyRpc {
 
         // 基于协程封装出异步rpc调用
     public:
-        int Init(magic_cube::CoroutineScheduler* scheduler, EasyNet* net, IMsgHandler* msg_handler);
-        int RpcCall(const void* request, void* response);
+        int Init(magic_cube::CoroutineScheduler* scheduler, EasyNet* net);
+        int RpcCall(const void* request, size_t request_size,
+                    const void** response, size_t* response_size);
 
     private:
         int Resume(const char* buffer, size_t size);
@@ -30,9 +31,11 @@ class EasyRpc {
 
     private:
         EasyNet* net_;
-        IMsgHandler* msg_handler_;
         const void* request_;
-        void* response_;
+        size_t request_size_;
+        const void** response_;
+        size_t* response_size_;
+
 
         int cid_;
         friend class AppFrameWork;

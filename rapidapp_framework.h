@@ -5,16 +5,6 @@
 
 namespace rapidapp {
 
-class IMsgHandler {
-    public:
-        IMsgHandler(){}
-        virtual ~IMsgHandler() {}
-
-    public:
-        virtual int HandleRequest(const void* request, void* data, size_t* size) = 0;
-        virtual int HandleResponse(const void* data, size_t size, void* response) = 0;
-};
-
 class EasyTimer;
 class EasyNet;
 class EasyRpc;
@@ -38,9 +28,11 @@ class IFrameWork {
         virtual void DestroyTimer(EasyTimer** timer) = 0;
 
     public:
-        virtual EasyRpc* CreateRpc(EasyNet* net, IMsgHandler* handler) = 0;
+        virtual EasyRpc* CreateRpc(EasyNet* net) = 0;
         virtual int DestroyRpc(EasyRpc** rpc) = 0;
-        virtual int RpcCall(EasyRpc* rpc, const void* request, void* response) = 0;
+        virtual int RpcCall(EasyRpc* rpc,
+                            const void* request, size_t request_size,
+                            const void** response, size_t* response_size) = 0;
 };
 
 }
