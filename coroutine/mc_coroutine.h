@@ -22,6 +22,7 @@ typedef struct CoroutineCtx {
     int yield;            // 传递给其它ctx的参数
     coroutine_func func;  // 协程回调函数
     void *arg;            // 协程回调函数参数
+    char stack[1];
 } COROUTINECTX;
 
 typedef std::tr1::unordered_map<int, COROUTINECTX*> CoroutineTable;
@@ -43,10 +44,8 @@ class CoroutineScheduler {
 
         /// @brief  协程让出CPU占用权
         ///
-        /// @param  uct_id
-        ///
         /// @return
-        int YieldCoroutine(int uct_id);
+        int YieldCoroutine();
 
         /// @brief  协程抢占CPU占用权
         ///
@@ -55,7 +54,13 @@ class CoroutineScheduler {
         /// @return
         int ResumeCoroutine(int uct_id);
 
+        /// @brief  协程是否存活
+        ///
+        /// @return
         bool CoroutineBeenAlive(int uct_id);
+
+    private:
+        static void ScheduleFunction(void* arg);
 
         // noncopyable
     private:
