@@ -32,10 +32,25 @@ class EasyNet {
             return net_type_;
         }
 
+        inline void set_rpc_binded(void* rpc) {
+            rpc_binded_ = rpc;
+        }
+
+        inline void* rpc_binded() {
+            return rpc_binded_;
+        }
+
+        inline bool is_rpc_binded() {
+            return rpc_binded_;
+        }
+
     private:
-        struct bufferevent* hevent_;
+        struct bufferevent* hevent_;    // net对应的bufferevent实例
         int net_type_;                  // 网络实体类型
         char uri_[MAX_URL_LEN];         // 发起后端连接时，后端服务uri
+
+    private:
+        void* rpc_binded_;              // 捆绑的rpc
         friend class AppFrameWork;
 };
 

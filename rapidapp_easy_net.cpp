@@ -8,6 +8,7 @@ namespace rapidapp {
 EasyNet::EasyNet() : hevent_(NULL), net_type_(0)
 {
     uri_[0] = '\0';
+    rpc_binded_ = NULL;
 }
 
 EasyNet::~EasyNet()

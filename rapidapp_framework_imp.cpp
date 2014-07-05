@@ -1,4 +1,5 @@
 #include "rapidapp_framework_imp.h"
+#include "rapidapp_easy_rpc.h"
 #include "utils/rap_net_uri.h"
 #include <event2/buffer.h>
 #include <cassert>
@@ -594,9 +595,19 @@ int AppFrameWork::OnBackEndMsg(struct bufferevent* bev)
 
         LOG(INFO)<<"current msg len:"<<msglen;
 
-        app_->OnRecvBackEnd(easy_net, easy_net->net_type(),
-                            backend_handler_mgr_.recv_buffer_.buffer + elapsed_msglen,
-                            msglen);
+        if (!easy_net->is_rpc_binded())
+        {
+            app_->OnRecvBackEnd(easy_net, easy_net->net_type(),
+                                backend_handler_mgr_.recv_buffer_.buffer + elapsed_msglen,
+                                msglen);
+        }
+        else
+        {
+            EasyRpc* rpc = static_cast<EasyRpc*>(easy_net->rpc_binded());
+            assert(rpc != NULL);
+            rpc->Resume(backend_handler_mgr_.recv_buffer_.buffer + elapsed_msglen,
+                        msglen);
+        }
         elapsed_msglen += msglen;
     }
     evbuffer_drain(evbuf, elapsed_msglen);
