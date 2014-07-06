@@ -1,20 +1,22 @@
 #include "rapidapp_easy_rpc.h"
 #include "rapidapp_easy_net.h"
 #include <cassert>
+#include <glog/logging.h>
 
 namespace rapidapp {
 
 EasyRpc::EasyRpc() : scheduler_(NULL), net_(NULL),
                     request_(NULL), request_size_(0),
-                    response_(NULL), response_size_(NULL),
-                    cid_(-1)
+                    response_(NULL), response_size_(NULL), crid_list_()
 {}
 
 EasyRpc::~EasyRpc()
 {
-    if (cid_ >= 0 && scheduler_ != NULL)
+    while (crid_list_.size() > 0)
     {
-        scheduler_->DestroyCoroutine(cid_);
+        int crid = crid_list_.front();
+        scheduler_->DestroyCoroutine(crid);
+        crid_list_.pop();
     }
 }
 
@@ -57,9 +59,9 @@ int EasyRpc::RpcCall(const void* request, size_t request_size,
         return -1;
     }
 
-    cid_ = cid;
+    crid_list_.push(cid);
     // 协程启动
-    scheduler_->ResumeCoroutine(cid_);
+    scheduler_->ResumeCoroutine(cid);
 
     return 0;
 }
@@ -80,6 +82,10 @@ int EasyRpc::RpcFunction(void* arg)
 
     the_handler->net_->Send(static_cast<const char*>(the_handler->request_),
                             the_handler->request_size_);
+
+    LOG(INFO)<<"rpc>>> send buf size:"<<
+        the_handler->request_size_<<" to backend success";
+
     // Yield
     the_handler->scheduler_->YieldCoroutine();
 
@@ -89,11 +95,17 @@ int EasyRpc::RpcFunction(void* arg)
 int EasyRpc::Resume(const char* buffer, size_t size)
 {
     assert(scheduler_ != NULL);
+    if (NULL == response_ || NULL == response_size_)
+    {
+        return -1;
+    }
 
     *response_ = buffer;
     *response_size_ = size;
     // Resume
-    scheduler_->ResumeCoroutine(cid_);
+    int crid = crid_list_.front();
+    crid_list_.pop();
+    scheduler_->ResumeCoroutine(crid);
     return 0;
 }
 

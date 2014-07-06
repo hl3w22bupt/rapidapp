@@ -3,6 +3,7 @@
 
 #include "coroutine/mc_coroutine.h"
 #include "rapidapp_framework.h"
+#include <queue>
 
 namespace rapidapp {
 
@@ -20,6 +21,10 @@ class EasyRpc {
         int RpcCall(const void* request, size_t request_size,
                     const void** response, size_t* response_size);
 
+        inline bool IsActive() {
+            return (!crid_list_.empty());
+        }
+
     private:
         int Resume(const char* buffer, size_t size);
 
@@ -36,8 +41,8 @@ class EasyRpc {
         const void** response_;
         size_t* response_size_;
 
+        std::queue<int> crid_list_;
 
-        int cid_;
         friend class AppFrameWork;
 };
 

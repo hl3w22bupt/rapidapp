@@ -616,19 +616,17 @@ int AppFrameWork::OnBackEndMsg(struct bufferevent* bev)
 
         LOG(INFO)<<"current msg len:"<<msglen;
 
-        if (!easy_net->is_rpc_binded())
+        EasyRpc* rpc = static_cast<EasyRpc*>(easy_net->rpc_binded());
+        if (easy_net->is_rpc_binded() && rpc != NULL && rpc->IsActive())
+        {
+            rpc->Resume(backend_handler_mgr_.recv_buffer_.buffer + elapsed_msglen,
+                        msglen);
+        }
+        else
         {
             app_->OnRecvBackEnd(easy_net, easy_net->net_type(),
                                 backend_handler_mgr_.recv_buffer_.buffer + elapsed_msglen,
                                 msglen);
-        }
-        else
-        {
-            // TODO bind rpc列表中清除rpc
-            EasyRpc* rpc = static_cast<EasyRpc*>(easy_net->rpc_binded());
-            assert(rpc != NULL);
-            rpc->Resume(backend_handler_mgr_.recv_buffer_.buffer + elapsed_msglen,
-                        msglen);
         }
         elapsed_msglen += msglen;
     }
@@ -772,8 +770,7 @@ EasyRpc* AppFrameWork::CreateRpc(EasyNet* net)
         return NULL;
     }
 
-    // TODO 1个连接上关联多个rpc_call
-    // 如果后端服务响应包顺序和请求包完全一致，则无需异步callback id即可保证
+    // 1个连接关联1个rpc实例，1个rpc实例可以同时发起多个rpc调用
     net->set_rpc_binded(rpc);
 
     return rpc;

@@ -59,6 +59,10 @@ class CoroutineScheduler {
         /// @return
         bool CoroutineBeenAlive(int uct_id);
 
+        inline int GetRunningCoroutineId() {
+            return running_cid_;
+        }
+
     private:
         static void ScheduleFunction(void* arg);
 

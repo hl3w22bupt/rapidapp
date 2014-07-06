@@ -114,6 +114,7 @@ int MyApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t size)
     }
     frame_stub_->SendToFrontEnd(net, resp_str.c_str(), resp.ByteSize());
 
+    /*
     const void* resp_buffer = NULL;
     size_t resp_size = 0;
     LOG(INFO)<<"start rpc call...";
@@ -127,8 +128,9 @@ int MyApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t size)
     rapidapp_sample::Mesg backend_resp;
     backend_resp.ParseFromArray(resp_buffer, resp_size);
     LOG(INFO)<<"RPC resp from backend:"<<std::endl<<backend_resp.DebugString();
+    */
 
-    //frame_stub_->SendToBackEnd(backend_, resp_str.c_str(), resp.ByteSize());
+    frame_stub_->SendToBackEnd(backend_, resp_str.c_str(), resp.ByteSize());
     return 0;
 }
 
