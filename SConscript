@@ -31,3 +31,7 @@ os.system('echo \'genereate c++ code over protobuf...\' && cd tools/echosvr && p
 tools_echosvr_src = Glob('tools/echosvr/*.cpp')
 tools_echosvr_src += Glob('./librapidapp.a')
 env.Program('tools/echo_svr', tools_echosvr_src, LIBS=['event', 'glog', 'gflags', 'protobuf', 'pthread'])
+
+connector_src = Glob('server/connector/*.cpp')
+connector_src += Glob('./librapidapp.a')
+env.Program('server/connector_svr', connector_src, LIBS=['event', 'glog', 'gflags', 'protobuf', 'pthread'])
