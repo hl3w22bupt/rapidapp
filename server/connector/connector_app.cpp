@@ -1,3 +1,14 @@
+/*
+ * connector接入服务器。
+ * connector主要功能：
+ * 1. 连接管理
+ * 2. 广播
+ * 3. 串行汇聚
+ * 4. 过载保护
+ * 5. 断线重连
+ * 6. 无状态，方便平行扩展
+ *
+ * */
 #include "connector_app.h"
 #include <google/protobuf/message.h>
 
