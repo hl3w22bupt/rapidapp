@@ -22,13 +22,15 @@ int ConnectorApp::OnInit(IFrameWork* app_framework)
 {
     if (NULL == app_framework)
     {
-        LOG(ERROR)<<"null app framework";
+        LOG(ERROR)<<"null app framework, assert failed";
         return -1;
     }
 
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
     frame_stub_ = app_framework;
+
+    // TODO 连接的上下文池，状态机驱动
     return 0;
 }
 
@@ -69,7 +71,6 @@ int ConnectorApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t
         LOG(ERROR)<<"assert failed, null frame stub";
         return -1;
     }
-    frame_stub_->SendToFrontEnd(net, msg, size);
 
     return 0;
 }

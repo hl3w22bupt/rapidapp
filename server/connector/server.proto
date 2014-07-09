@@ -1,0 +1,24 @@
+package connector_server;
+
+message Tuple {
+    required uint32 fd  = 1;     // 连接fd
+    required uint64 nid = 2;    // 连接id
+    required uint32 sid = 3;    // 有状态后端服务session id
+}
+
+message SSHead {
+    required fixed32 msglen = 1;
+    required int32 magic = 2[default=0x3443];
+    required int64 sequence = 3;
+    required int32 bodyid = 4;
+}
+
+// connector做透传，游戏客户端数据作为unknown fields
+message SSBody {
+    optional int32 flag = 1;
+}
+
+message SSMsg {
+    required SSHead head = 1;
+    required SSBody body = 2;
+}

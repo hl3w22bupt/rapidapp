@@ -1,0 +1,19 @@
+package connector_client;
+
+message CSHead {
+    required fixed32 msglen = 1;
+    required int32 magic = 2[default=0x1221];
+    required int64 sequence = 3;
+    required int32 bodyid = 4;
+}
+
+// connector做透传，游戏客户端数据作为unknown fields
+// 也可以直接透传，bytes类型
+message CSBody {
+    optional int32 flag = 1;
+}
+
+message CSMsg{
+    required CSHead head = 1;
+    required CSBody body = 2;
+}
