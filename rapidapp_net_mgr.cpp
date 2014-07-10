@@ -44,9 +44,9 @@ void NetHandlerMgr::CleanUp()
             net->CleanUp();
             delete net;
         }
-
-        handler_pool_.erase(it++);
     }
+
+    handler_pool_.clear();
 
     if (recv_buffer_.buffer != NULL)
     {

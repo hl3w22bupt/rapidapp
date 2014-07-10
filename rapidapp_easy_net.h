@@ -44,10 +44,15 @@ class EasyNet {
             return rpc_binded_;
         }
 
+        inline int nid() const {
+            return nid_;
+        }
+
     private:
         struct bufferevent* hevent_;    // net对应的bufferevent实例
         int net_type_;                  // 网络实体类型
         char uri_[MAX_URL_LEN];         // 发起后端连接时，后端服务uri
+        int nid_;
 
     private:
         void* rpc_binded_;              // 捆绑的rpc

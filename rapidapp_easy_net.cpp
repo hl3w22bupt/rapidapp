@@ -5,7 +5,8 @@
 
 namespace rapidapp {
 
-EasyNet::EasyNet() : hevent_(NULL), net_type_(0)
+static int nid_seed = 1;
+EasyNet::EasyNet() : hevent_(NULL), net_type_(0), nid_(nid_seed++)
 {
     uri_[0] = '\0';
     rpc_binded_ = NULL;

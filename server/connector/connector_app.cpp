@@ -30,7 +30,8 @@ int ConnectorApp::OnInit(IFrameWork* app_framework)
 
     frame_stub_ = app_framework;
 
-    // TODO 连接的上下文池，状态机驱动
+    // 连接的上下文池，状态机驱动
+    // TODO 创建后端连接
     return 0;
 }
 
@@ -72,16 +73,27 @@ int ConnectorApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t
         return -1;
     }
 
+    ConnectorSession* session = conn_session_mgr_.CreateInstance(net);
+    if (NULL == session)
+    {
+        LOG(ERROR)<<"create session instance failed";
+        return -1;
+    }
+
+    // TODO 根据路由规则，转发
+
     return 0;
 }
 
 int ConnectorApp::OnRecvBackEnd(EasyNet* net, int type, const char* msg, size_t size)
 {
+    // TODO 根据后端回调，转发
     return 0;
 }
 
 int ConnectorApp::OnTimer(EasyTimer* timer, int timer_id)
 {
+    // TODO 空闲连接检查
     return 0;
 }
 
@@ -107,13 +119,9 @@ size_t ConnectorApp::GetFrontEndMsgLength(const char* buffer, size_t size)
         return 0;
     }
 
-#ifndef _DEBUG
     uint32_t len = 0;
     memcpy(&len, buffer, sizeof(uint32_t));
     return ntohl(len);
-#else
-    return size;
-#endif
 }
 
 size_t ConnectorApp::GetBackEndMsgLength(int type, const char* buffer, size_t size)

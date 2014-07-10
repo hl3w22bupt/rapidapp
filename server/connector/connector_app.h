@@ -2,6 +2,7 @@
 #define RAPIDAPP_IMP_H_
 
 #include "rapidapp.h"
+#include "connector_session.h"
 
 using namespace rapidapp;
 
@@ -37,8 +38,11 @@ class ConnectorApp : public RapidApp {
 
         virtual size_t GetFrontEndMsgLength(const char* buffer, size_t size);
         virtual size_t GetBackEndMsgLength(int type, const char* buffer, size_t size);
+
     private:
         IFrameWork* frame_stub_;
+        ConnectorSessionMgr conn_session_mgr_;
+
 };
 
 #endif

@@ -1,5 +1,10 @@
 package connector_client;
 
+enum BodyCmdId {
+   AUTHENTICATION = 1;
+   DATA_TRANSPARENT = 2;
+}
+
 message CSHead {
     required fixed32 msglen = 1;
     required int32 magic = 2[default=0x1221];
@@ -10,7 +15,8 @@ message CSHead {
 // connector做透传，游戏客户端数据作为unknown fields
 // 也可以直接透传，bytes类型
 message CSBody {
-    optional int32 flag = 1;
+    optional int32 syn = 1;
+    optional bytes data = 2;
 }
 
 message CSMsg{
