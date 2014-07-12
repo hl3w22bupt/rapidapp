@@ -12,7 +12,7 @@
 #include "connector_app.h"
 #include <google/protobuf/message.h>
 
-ConnectorApp::ConnectorApp()
+ConnectorApp::ConnectorApp() : frame_stub_(NULL)
 {}
 
 ConnectorApp::~ConnectorApp()
@@ -31,6 +31,13 @@ int ConnectorApp::OnInit(IFrameWork* app_framework)
     frame_stub_ = app_framework;
 
     // 连接的上下文池，状态机驱动
+    int ret = conn_session_mgr_.Init();
+    if (ret != 0)
+    {
+        LOG(ERROR)<<"connector session mgr initialized failed";
+        return -1;
+    }
+
     // TODO 创建后端连接
     return 0;
 }

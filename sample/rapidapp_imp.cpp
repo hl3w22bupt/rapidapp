@@ -1,7 +1,7 @@
 #include "rapidapp_imp.h"
 #include "sample.pb.h"
 #include <google/protobuf/message.h>
-#include <google/protobuf/message_lite.h>
+#include <google/protobuf/text_format.h>
 #include <google/protobuf/io/coded_stream.h>
 
 MyApp::MyApp()
@@ -100,6 +100,14 @@ int MyApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t size)
     resp.set_msglen(resp.ByteSize());
 
     LOG(INFO)<<"resp to frontend:"<<std::endl<<resp.DebugString();
+
+    // protobuf测试代码，后续删除
+    std::string out;
+    ::google::protobuf::TextFormat::PrintToString(resp, &out);
+    LOG(INFO)<<"text format to frontend:"<<std::endl<<out;
+    rapidapp_sample::Mesg resp_bak;
+    ::google::protobuf::TextFormat::ParseFromString(out, &resp_bak);
+    LOG(INFO)<<"resp bak"<<std::endl<<resp_bak.DebugString();
 
     std::string resp_str;
     resp.SerializeToString(&resp_str);

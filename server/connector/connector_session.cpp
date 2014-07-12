@@ -20,19 +20,40 @@ int ConnectorSession::Init(EasyNet* net)
     }
 
     net_stub_ = net;
+    state_ = STATE_INIT;
     return 0;
 }
 
 void ConnectorSession::CleanUp()
-{}
+{
+    state_ = STATE_INIT;
+}
 
 void ConnectorSession::ChangeState(int status_code)
-{}
+{
+    switch(state_)
+    {
+        case STATE_INIT:
+            {
+                break;
+            }
+        case STATE_AUTH:
+            {
+                break;
+            }
+        case STATE_OK:
+            {
+                break;
+            }
+        default:
+            break;
+    }
+}
 
 void ConnectorSession::SetChannelID(int channel_id)
 {}
 
-
+// session mgr
 ConnectorSessionMgr::ConnectorSessionMgr() :
     overload_limit_(kDefaultOverloadLimit), session_pool_()
 {}
@@ -56,10 +77,25 @@ ConnectorSessionMgr::~ConnectorSessionMgr()
     session_pool_.clear();
 }
 
+int ConnectorSessionMgr::Init()
+{
+    return 0;
+}
+
+void ConnectorSessionMgr::CleanUp()
+{}
+
 ConnectorSession* ConnectorSessionMgr::CreateInstance(EasyNet* net)
 {
     if (NULL == net)
     {
+        return NULL;
+    }
+
+    if (session_pool_.size() >= overload_limit_)
+    {
+        LOG(INFO)<<"connector instance number has reached the overload uplimt:"
+            <<overload_limit_;
         return NULL;
     }
 

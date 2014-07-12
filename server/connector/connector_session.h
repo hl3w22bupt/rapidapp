@@ -46,6 +46,10 @@ class ConnectorSessionMgr {
         ~ConnectorSessionMgr();
 
     public:
+        int Init();
+        void CleanUp();
+
+    public:
         ConnectorSession* CreateInstance(EasyNet* net);
         void DestroyInstance(ConnectorSession** session);
 
