@@ -645,7 +645,14 @@ int AppFrameWork::OnBackEndSocketEvent(struct bufferevent* bev, short events)
     if (events & BEV_EVENT_ERROR)
     {
         PLOG(ERROR)<<"socket error";
-        backend_handler_mgr_.RemoveHandlerByEvent(bev);
+        backend_handler_mgr_.ChangeNetStateByEvent(bev, NET_FAILED);
+        return 0;
+    }
+
+    if (events & BEV_EVENT_CONNECTED)
+    {
+        LOG(INFO)<<"connect fd:"<<bufferevent_getfd(bev)<<"has been established";
+        backend_handler_mgr_.ChangeNetStateByEvent(bev, NET_ESTABLISHED);
         return 0;
     }
 
@@ -701,7 +708,8 @@ int AppFrameWork::SendToFrontEnd(EasyNet* net, const char* buf, size_t buf_size)
         return -1;
     }
 
-    if (net->Send(buf, buf_size) != 0)
+    int ret = net->Send(buf, buf_size);
+    if (ret != EASY_NET_OK)
     {
         LOG(ERROR)<<"send buf size:"<<buf_size<<" to frontend failed";
         return -1;
@@ -720,10 +728,23 @@ int AppFrameWork::SendToBackEnd(EasyNet* net, const char* buf, size_t buf_size)
         return -1;
     }
 
-    if (net->Send(buf, buf_size) != 0)
+    int ret = net->Send(buf, buf_size);
+    if (ret != EASY_NET_OK)
     {
-        LOG(ERROR)<<"send buf size:"<<buf_size<<" failed";
-        return -1;
+        LOG(ERROR)<<"send buf size:"<<buf_size<<" to backend failed";
+    }
+
+    if (EASY_NET_ERR_NOT_YET_ESTABLISHED == ret)
+    {
+        return NET_NOT_ESTABLISHED;
+    }
+    else if (EASY_NET_ERR_ESTABLISH_FAILED == ret)
+    {
+        return NET_CONNECT_FAILED;
+    }
+    else if (EASY_NET_ERR_SEND_ERROR == ret)
+    {
+        return NET_SEND_EXCEPTION;
     }
 
     LOG(INFO)<<"send buf size:"<<buf_size<<" to backend success";

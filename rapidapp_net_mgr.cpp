@@ -44,6 +44,8 @@ void NetHandlerMgr::CleanUp()
             net->CleanUp();
             delete net;
         }
+
+        ++it;
     }
 
     handler_pool_.clear();
@@ -144,6 +146,32 @@ int NetHandlerMgr::RemoveHandler(EasyNet* easy_net_handler)
     }
 
     return RemoveHandlerByEvent(easy_net_handler->bufferevent());
+}
+
+int NetHandlerMgr::ChangeNetStateByEvent(struct bufferevent* event, enum NetState state)
+{
+    if (NULL == event)
+    {
+        LOG(ERROR)<<"null bufferevent handler";
+        return -1;
+    }
+
+    evutil_socket_t fd = bufferevent_getfd(event);
+    HandlerPool::iterator it = handler_pool_.find(fd);
+    if (it != handler_pool_.end())
+    {
+        EasyNet* easy_net_handler = it->second;
+        if (easy_net_handler != NULL)
+        {
+            easy_net_handler->state_ = state;
+        }
+    }
+    else
+    {
+        LOG(INFO)<<"no handler found by fd:"<<fd;
+    }
+
+    return 0;
 }
 
 int NetHandlerMgr::RemoveHandlerByEvent(struct bufferevent* event)

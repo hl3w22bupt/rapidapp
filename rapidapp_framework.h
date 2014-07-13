@@ -5,6 +5,12 @@
 
 namespace rapidapp {
 
+enum {
+    NET_NOT_ESTABLISHED = -1,
+    NET_CONNECT_FAILED = -2,
+    NET_SEND_EXCEPTION = -3,
+};
+
 class EasyTimer;
 class EasyNet;
 class EasyRpc;

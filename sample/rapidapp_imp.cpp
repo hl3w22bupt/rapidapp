@@ -138,7 +138,15 @@ int MyApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t size)
     LOG(INFO)<<"RPC resp from backend:"<<std::endl<<backend_resp.DebugString();
     */
 
-    frame_stub_->SendToBackEnd(backend_, resp_str.c_str(), resp.ByteSize());
+    if (backend_ != NULL)
+    {
+        int ret = frame_stub_->SendToBackEnd(backend_, resp_str.c_str(), resp.ByteSize());
+        if (NET_CONNECT_FAILED == ret || NET_SEND_EXCEPTION == ret)
+        {
+            frame_stub_->DestroyBackEnd(&backend_);
+            backend_ = NULL;
+        }
+    }
     return 0;
 }
 

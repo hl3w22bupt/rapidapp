@@ -6,7 +6,7 @@
 namespace rapidapp {
 
 static int nid_seed = 1;
-EasyNet::EasyNet() : hevent_(NULL), net_type_(0), nid_(nid_seed++)
+EasyNet::EasyNet() : hevent_(NULL), net_type_(0), nid_(nid_seed++), state_(NET_INIT)
 {
     uri_[0] = '\0';
     rpc_binded_ = NULL;
@@ -37,6 +37,7 @@ int EasyNet::Init(evutil_socket_t sock_fd, int type, struct event_base* ev_base)
 
     hevent_ = bev;
     net_type_ = type;
+    state_ = NET_ESTABLISHED;
 
     return 0;
 }
@@ -84,6 +85,7 @@ int EasyNet::Connect(const char* uri, int type, struct event_base* ev_base)
 
     hevent_ = bev;
     net_type_ = type;
+    state_ = NET_CONNECTING;
     strcpy(uri_, uri);
 
     return 0;
@@ -102,19 +104,31 @@ int EasyNet::Send(const char* msg, size_t size)
 {
     if (NULL == msg || 0 == size)
     {
-        return 0;
+        return EASY_NET_OK;
     }
 
     assert(hevent_ != NULL);
 
-    if (0 != bufferevent_write(hevent_, msg, size))
+    if (state_ != NET_ESTABLISHED)
     {
-        PLOG(ERROR)<<"read from uri:"<<uri_<<"sock fd:"<<
-            bufferevent_getfd(hevent_)<<"failed";
-        return -1;
+        if (state_ != NET_FAILED)
+        {
+            return EASY_NET_ERR_NOT_YET_ESTABLISHED;
+        }
+        else
+        {
+            return EASY_NET_ERR_ESTABLISH_FAILED;
+        }
     }
 
-    return 0;
+    if (0 != bufferevent_write(hevent_, msg, size))
+    {
+        PLOG(ERROR)<<"write to uri:"<<uri_<<"sock fd:"<<
+            bufferevent_getfd(hevent_)<<"failed";
+        return EASY_NET_ERR_SEND_ERROR;
+    }
+
+    return EASY_NET_OK;
 }
 
 }

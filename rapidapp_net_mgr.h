@@ -38,6 +38,8 @@ class NetHandlerMgr {
 
         EasyNet* GetHandlerByEvent(struct bufferevent* event);
 
+        int ChangeNetStateByEvent(struct bufferevent* event, enum NetState state);
+
     private:
         HandlerPool handler_pool_;
         struct RapBuffer recv_buffer_;
