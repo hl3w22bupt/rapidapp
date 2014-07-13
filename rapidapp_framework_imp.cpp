@@ -383,7 +383,7 @@ int AppFrameWork::Tick()
 
     if (!running_)
     {
-        PLOG(INFO)<<"exit loop";
+        LOG(INFO)<<"exit loop";
         event_base_loopbreak(event_base_);
     }
 
@@ -458,7 +458,7 @@ int AppFrameWork::OnFrontEndConnect(evutil_socket_t sock, struct sockaddr *addr)
 {
     assert(sock >= 0 && addr != NULL);
 
-    PLOG(INFO)<<"has accepted new tcp connect:"<<
+    LOG(INFO)<<"has accepted new tcp connect:"<<
         inet_ntoa(((struct sockaddr_in*)addr)->sin_addr);
 
 
@@ -639,32 +639,34 @@ int AppFrameWork::OnBackEndSocketEvent(struct bufferevent* bev, short events)
 {
     assert(bev != NULL);
 
-    PLOG(INFO)<<"recv socket event:"<<events;
+    LOG(INFO)<<"recv socket event:"<<events<<", fd:"<<bufferevent_getfd(bev);
 
     // backend event
     if (events & BEV_EVENT_ERROR)
     {
-        PLOG(ERROR)<<"socket error";
+        PLOG(ERROR)<<"socket error, fd:"<<bufferevent_getfd(bev);
         backend_handler_mgr_.ChangeNetStateByEvent(bev, NET_FAILED);
         return 0;
     }
 
+    // libevent client模式（bufferevent_socket_connect）在收到BEV_EVENT_ERROR后
+    // 此时收到TCP RST包，还会收到一次BEV_EVENT_CONNECTED事件，应该是个bug
     if (events & BEV_EVENT_CONNECTED)
     {
-        LOG(INFO)<<"connect fd:"<<bufferevent_getfd(bev)<<"has been established";
+        LOG(INFO)<<"connect fd:"<<bufferevent_getfd(bev)<<" has been established";
         backend_handler_mgr_.ChangeNetStateByEvent(bev, NET_ESTABLISHED);
         return 0;
     }
 
     if (events & BEV_EVENT_TIMEOUT)
     {
-        PLOG(INFO)<<"socket read/write timeout";
+        LOG(INFO)<<"socket read/write timeout";
         return 0;
     }
 
     if (events & BEV_EVENT_EOF)
     {
-        PLOG(INFO)<<"peer close connection actively";
+        LOG(INFO)<<"peer close connection actively";
         backend_handler_mgr_.RemoveHandlerByEvent(bev);
         return 0;
     }
