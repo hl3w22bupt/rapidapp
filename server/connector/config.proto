@@ -1,0 +1,13 @@
+package connector_config;
+
+message EndPoint {
+    required string uri = 1;
+    optional int32 id = 2;
+    optional string name = 3;
+}
+
+message ConnectorConfig {
+    required int32 max_online_num = 1[default=10240];
+    required int32 max_idle_second = 2[default=600];
+    repeated EndPoint backends = 3;
+}

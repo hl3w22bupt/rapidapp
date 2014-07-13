@@ -34,6 +34,8 @@ env.Program('tools/echo_svr', tools_echosvr_src, LIBS=['event', 'glog', 'gflags'
 
 os.system('echo \'genereate c++ code over protobuf [client.proto]...\' && cd server/connector && protoc --cpp_out=. client.proto')
 os.system('echo \'genereate c++ code over protobuf [server.proto]...\' && cd server/connector && protoc --cpp_out=. server.proto')
+os.system('echo \'genereate c++ code over protobuf [config.proto]...\' && cd server/connector && protoc --cpp_out=. config.proto')
 connector_src = Glob('server/connector/*.cpp')
+connector_src += Glob('server/connector/*.cc')
 connector_src += Glob('./librapidapp.a')
 env.Program('server/connector_svr', connector_src, LIBS=['event', 'glog', 'gflags', 'protobuf', 'pthread'])
