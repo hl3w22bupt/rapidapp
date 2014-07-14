@@ -41,6 +41,9 @@ class ConnectorApp : public RapidApp {
         virtual size_t GetBackEndMsgLength(int type, const char* buffer, size_t size);
 
     private:
+        int SetUpConfig();
+
+    private:
         IFrameWork* frame_stub_;
         ConnectorSessionMgr* conn_session_mgr_;
         connector_config::ConnectorConfig config_;

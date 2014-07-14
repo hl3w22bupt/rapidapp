@@ -25,17 +25,9 @@ ConnectorApp::ConnectorApp() : frame_stub_(NULL), conn_session_mgr_(NULL)
 ConnectorApp::~ConnectorApp()
 {}
 
-int ConnectorApp::OnInit(IFrameWork* app_framework)
+int ConnectorApp::SetUpConfig()
 {
-    if (NULL == app_framework)
-    {
-        LOG(ERROR)<<"null app framework, assert failed";
-        return -1;
-    }
-
-    frame_stub_ = app_framework;
-
-    GOOGLE_PROTOBUF_VERIFY_VERSION;
+    LOG(INFO)<<"initialize from conf file: "<<FLAGS_config_file;
 
     FILE* fp = fopen(FLAGS_config_file.c_str(), "r");
     if (NULL == fp)
@@ -44,7 +36,12 @@ int ConnectorApp::OnInit(IFrameWork* app_framework)
         return -1;
     }
 
-    rewind(fp);
+    if (0 != fseek(fp, 0, SEEK_END))
+    {
+        PLOG(ERROR)<<"fseek failed";
+        return -1;
+    }
+
     long filesize = ftell(fp);
     char* conf = static_cast<char*>(calloc(1, filesize));
     if (NULL == conf)
@@ -54,7 +51,9 @@ int ConnectorApp::OnInit(IFrameWork* app_framework)
         return -1;
     }
 
-    if (NULL == fgets(conf, filesize, fp))
+    rewind(fp);
+    fread(conf, filesize, 1, fp);
+    if (ferror(fp))
     {
         LOG(ERROR)<<"fgets failed";
         free(conf);
@@ -67,8 +66,32 @@ int ConnectorApp::OnInit(IFrameWork* app_framework)
     fclose(fp);
 
     ::google::protobuf::TextFormat::ParseFromString(conf_str, &config_);
+    LOG(INFO)<<"config:"<<std::endl<<config_.DebugString();
 
-    LOG(INFO)<<"initialize from conf file: "<<FLAGS_config_file;
+    return 0;
+}
+
+int ConnectorApp::OnInit(IFrameWork* app_framework)
+{
+    if (NULL == app_framework)
+    {
+        LOG(ERROR)<<"null app framework, assert failed";
+        return -1;
+    }
+
+    // 保存框架存根
+    frame_stub_ = app_framework;
+
+    // protobuf 版本校验
+    GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+    // 读取配置文件
+    int ret = SetUpConfig();
+    if (ret != 0)
+    {
+        LOG(ERROR)<<"set up config failed";
+        return -1;
+    }
 
     // 连接的上下文池，状态机驱动
     conn_session_mgr_ = new(std::nothrow) ConnectorSessionMgr(config_.max_online_num());
@@ -78,7 +101,7 @@ int ConnectorApp::OnInit(IFrameWork* app_framework)
         return -1;
     }
 
-    int ret = conn_session_mgr_->Init();
+    ret = conn_session_mgr_->Init();
     if (ret != 0)
     {
         LOG(ERROR)<<"connector session mgr initialized failed";
