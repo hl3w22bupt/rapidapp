@@ -12,7 +12,6 @@ message Tuple {
 }
 
 message SSHead {
-    required fixed32 msglen = 1;
     required int32 magic = 2[default=0x3443];
     required int64 sequence = 3;
     required int32 bodyid = 4;

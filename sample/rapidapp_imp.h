@@ -35,9 +35,6 @@ class MyApp : public RapidApp {
         virtual size_t GetFrontEndMaxMsgSize();
         virtual size_t GetBackEndMaxMsgSize();
 
-        virtual size_t GetFrontEndMsgLength(const char* buffer, size_t size);
-        virtual size_t GetBackEndMsgLength(int type, const char* buffer, size_t size);
-
     private:
         IFrameWork* frame_stub_;
 

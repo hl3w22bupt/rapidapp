@@ -121,6 +121,15 @@ int EasyNet::Send(const char* msg, size_t size)
         }
     }
 
+    // 由于目前bufferevent不支持writev，这里调用2次
+    uint32_t msglen = htonl(size + sizeof(msglen));
+    if (0 != bufferevent_write(hevent_, &msglen, sizeof(msglen)))
+    {
+        PLOG(ERROR)<<"write msglen to uri:"<<uri_<<"sock fd:"<<
+            bufferevent_getfd(hevent_)<<"failed";
+        return EASY_NET_ERR_SEND_ERROR;
+    }
+
     if (0 != bufferevent_write(hevent_, msg, size))
     {
         PLOG(ERROR)<<"write to uri:"<<uri_<<"sock fd:"<<

@@ -6,7 +6,6 @@ enum BodyCmdId {
 }
 
 message CSHead {
-    required fixed32 msglen = 1;
     required int32 magic = 2[default=0x1221];
     required int64 sequence = 3;
     required int32 bodyid = 4;

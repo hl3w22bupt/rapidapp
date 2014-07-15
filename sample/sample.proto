@@ -6,6 +6,5 @@ message EchoBody {
 }
 
 message Mesg {
-    required fixed32 msglen = 1;
     required EchoBody body = 2;
 }

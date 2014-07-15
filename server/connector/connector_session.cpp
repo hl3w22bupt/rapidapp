@@ -92,18 +92,18 @@ ConnectorSession* ConnectorSessionMgr::CreateInstance(EasyNet* net)
         return NULL;
     }
 
-    if (session_pool_.size() >= overload_limit_)
-    {
-        LOG(INFO)<<"connector instance number has reached the overload uplimt:"
-            <<overload_limit_;
-        return NULL;
-    }
-
     int nid = net->nid();
     SessionPool::iterator it = session_pool_.find(nid);
     if (it != session_pool_.end())
     {
-        LOG(WARNING)<<"new session instance id:"<<nid<<" has existed";
+        LOG(INFO)<<"new session instance id:"<<nid<<" has existed";
+        return it->second;
+    }
+
+    if (session_pool_.size() >= overload_limit_)
+    {
+        LOG(INFO)<<"connector instance number has reached the overload uplimt:"
+            <<overload_limit_;
         return NULL;
     }
 

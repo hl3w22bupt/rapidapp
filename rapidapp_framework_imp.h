@@ -131,6 +131,17 @@ class AppFrameWork : public IFrameWork {
             reloading_ = true;
         }
 
+        static int GetMsgLength(const char* buff, size_t size) {
+            int32_t msglen = 0;
+
+            if (size < sizeof(int32_t)) {
+                return 0;
+            }
+
+            msglen = *(int32_t*)buff;
+            return ntohl(msglen);
+        }
+
     private:
         // 作为异步event回调使用
         int Tick();

@@ -10,6 +10,8 @@
  *
  * */
 #include "connector_app.h"
+#include "server.pb.h"
+#include "client.pb.h"
 #include <gflags/gflags.h>
 #include <google/protobuf/message.h>
 #include <google/protobuf/text_format.h>
@@ -168,6 +170,10 @@ int ConnectorApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t
         return -1;
     }
 
+    connector_client::CSMsg up_msg;
+    up_msg.ParseFromArray(msg, size);
+    LOG(INFO)<<"upward req: "<<std::endl<<up_msg.DebugString();
+
     // TODO 根据路由规则，转发
 
     return 0;
@@ -176,6 +182,11 @@ int ConnectorApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t
 int ConnectorApp::OnRecvBackEnd(EasyNet* net, int type, const char* msg, size_t size)
 {
     // TODO 根据后端回调，转发
+    connector_server::SSMsg down_msg;
+    down_msg.ParseFromArray(msg, size);
+
+    LOG(INFO)<<"downward resp: "<<std::endl<<down_msg.DebugString();
+
     return 0;
 }
 
@@ -198,30 +209,6 @@ size_t ConnectorApp::GetFrontEndMaxMsgSize()
 size_t ConnectorApp::GetBackEndMaxMsgSize()
 {
     return 0;
-}
-
-size_t ConnectorApp::GetFrontEndMsgLength(const char* buffer, size_t size)
-{
-    if (NULL == buffer || 4 > size)
-    {
-        return 0;
-    }
-
-    uint32_t len = 0;
-    memcpy(&len, buffer, sizeof(uint32_t));
-    return ntohl(len);
-}
-
-size_t ConnectorApp::GetBackEndMsgLength(int type, const char* buffer, size_t size)
-{
-    if (NULL == buffer || 4 > size)
-    {
-        return 0;
-    }
-
-    uint32_t len = 0;
-    memcpy(&len, buffer, sizeof(uint32_t));
-    return ntohl(len);
 }
 
 const char* ConnectorApp::GetAppVersion()
