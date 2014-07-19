@@ -14,6 +14,7 @@ enum NetState {
     NET_CONNECTING  = 2,
     NET_ESTABLISHED = 3,
     NET_FAILED      = 4,
+    NET_BEEN_CLOSED = 5,
 };
 
 enum SendError {
@@ -34,6 +35,10 @@ class EasyNet {
         int Init(evutil_socket_t sock_fd, int type, struct event_base* ev_base);
         int Connect(const char* uri, int type, struct event_base* ev_base);
         void CleanUp();
+
+    public:
+        int CreateUserContext(size_t uctx_size);
+        void DestroyUserContext();
 
     public:
         int Send(const char* msg, size_t size);
@@ -63,6 +68,10 @@ class EasyNet {
             return nid_;
         }
 
+        inline void* user_context() const {
+            return user_context_;
+        }
+
     private:
         struct bufferevent* hevent_;    // net对应的bufferevent实例
         int net_type_;                  // 网络实体类型
@@ -72,6 +81,10 @@ class EasyNet {
 
     private:
         void* rpc_binded_;              // 捆绑的rpc
+
+    private:
+        void* user_context_;
+
         friend class AppFrameWork;
         friend class NetHandlerMgr;
 };

@@ -13,6 +13,8 @@ DEFINE_int32(fps, 1000, "frame-per-second, MUST >= 1, associated with reload and
 DEFINE_int32(max_cocurrent_rpc, 10240, "max cocurrent rpc number");
 DEFINE_int32(rpc_stack_size, 1024, "rpc stack size to save user context");
 
+DEFINE_int32(context_size, 0, "frontend/backend context size");
+
 namespace rapidapp {
 const int MAX_TCP_BACKLOG = 102400;
 const char* udp_uri = "udp:127.0.0.1:9090";
@@ -472,6 +474,17 @@ int AppFrameWork::OnFrontEndConnect(evutil_socket_t sock, struct sockaddr *addr)
 
     bufferevent_setcb(easy_net_handler->hevent_, on_frontend_data_cb_func, NULL,
                       on_frontend_nondata_event_cb_func, this);
+
+    if (FLAGS_context_size > 0)
+    {
+        if (easy_net_handler->CreateUserContext(FLAGS_context_size) != 0)
+        {
+            PLOG(ERROR)<<"create context size:"<<FLAGS_context_size;
+            frontend_handler_mgr_.RemoveHandler(easy_net_handler);
+            return -1;
+        }
+    }
+
     // TODO setwatermark
 
     return 0;
@@ -667,7 +680,7 @@ int AppFrameWork::OnBackEndSocketEvent(struct bufferevent* bev, short events)
     if (events & BEV_EVENT_EOF)
     {
         LOG(INFO)<<"peer close connection actively";
-        backend_handler_mgr_.RemoveHandlerByEvent(bev);
+        backend_handler_mgr_.ChangeNetStateByEvent(bev,NET_BEEN_CLOSED);
         return 0;
     }
 
@@ -685,6 +698,15 @@ EasyNet* AppFrameWork::CreateBackEnd(const char* uri, int type)
 
     bufferevent_setcb(easy_net_handler->hevent_, on_backend_data_cb_func, NULL,
                       on_backend_nondata_event_cb_func, this);
+
+    if (FLAGS_context_size > 0)
+    {
+        if (easy_net_handler->CreateUserContext(FLAGS_context_size) != 0)
+        {
+            PLOG(ERROR)<<"create context size:"<<FLAGS_context_size;
+            DestroyBackEnd(&easy_net_handler);
+        }
+    }
 
     return easy_net_handler;
 }
@@ -752,6 +774,27 @@ int AppFrameWork::SendToBackEnd(EasyNet* net, const char* buf, size_t buf_size)
     LOG(INFO)<<"send buf size:"<<buf_size<<" to backend success";
 
     return 0;
+}
+
+EasyNet* AppFrameWork::GetFrontEndByAsyncIds(uint32_t fd, uint64_t nid)
+{
+    EasyNet* net = backend_handler_mgr_.GetHandlerByAsyncIds(fd, nid);
+    if (NULL == net)
+    {
+        return NULL;
+    }
+
+    return net;
+}
+
+void* AppFrameWork::GetUserContext(EasyNet* net)
+{
+    if (NULL == net)
+    {
+        return NULL;
+    }
+
+    return net->user_context();
 }
 
 EasyTimer* AppFrameWork::CreateTimer(size_t time, int timer_id)

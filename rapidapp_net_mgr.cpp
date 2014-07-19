@@ -148,6 +148,10 @@ int NetHandlerMgr::RemoveHandler(EasyNet* easy_net_handler)
     return RemoveHandlerByEvent(easy_net_handler->bufferevent());
 }
 
+/*
+ * 在系统内部，fd是唯一的，并且系统对fd变化是敏感的。
+ * 因而内部接口以fd为key，是可以保证一致的
+ * */
 int NetHandlerMgr::ChangeNetStateByEvent(struct bufferevent* event, enum NetState state)
 {
     if (NULL == event)
@@ -189,6 +193,7 @@ int NetHandlerMgr::RemoveHandlerByEvent(struct bufferevent* event)
         EasyNet* easy_net_handler = it->second;
         if (easy_net_handler != NULL)
         {
+            easy_net_handler->DestroyUserContext();
             easy_net_handler->CleanUp();
             delete easy_net_handler;
         }
@@ -214,6 +219,24 @@ EasyNet* NetHandlerMgr::GetHandlerByEvent(struct bufferevent* event)
     evutil_socket_t fd = bufferevent_getfd(event);
     HandlerPool::iterator it = handler_pool_.find(fd);
     if (it != handler_pool_.end())
+    {
+        return it->second;
+    }
+    else
+    {
+        return NULL;
+    }
+}
+
+/*
+ * 当外部异步事件到达后，需要通过fd 和 nid两个因子来找到对应的net context
+ * 以下接口保证能够通过异步回调数据来找到正确的net context
+ * */
+EasyNet* NetHandlerMgr::GetHandlerByAsyncIds(uint32_t fd, uint64_t nid)
+{
+    HandlerPool::iterator it = handler_pool_.find(fd);
+    if (it != handler_pool_.end() && it->second != NULL &&
+        nid == (it->second)->nid())
     {
         return it->second;
     }

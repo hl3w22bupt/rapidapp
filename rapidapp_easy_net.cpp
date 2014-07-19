@@ -2,6 +2,7 @@
 #include "utils/rap_net_uri.h"
 #include <glog/logging.h>
 #include <cassert>
+#include <cstdlib>
 
 namespace rapidapp {
 
@@ -10,6 +11,7 @@ EasyNet::EasyNet() : hevent_(NULL), net_type_(0), nid_(nid_seed++), state_(NET_I
 {
     uri_[0] = '\0';
     rpc_binded_ = NULL;
+    user_context_ = NULL;
 }
 
 EasyNet::~EasyNet()
@@ -97,6 +99,32 @@ void EasyNet::CleanUp()
     {
         bufferevent_free(hevent_);
         hevent_ = NULL;
+    }
+}
+
+int EasyNet::CreateUserContext(size_t uctx_size)
+{
+    if (0 == uctx_size)
+    {
+        return 0;
+    }
+
+    user_context_ = calloc(1, uctx_size);
+    if (NULL == user_context_)
+    {
+        PLOG(ERROR)<<"calloc context size:"<<uctx_size<<" failed";
+        return -1;
+    }
+
+    return 0;
+}
+
+void EasyNet::DestroyUserContext()
+{
+    if (NULL != user_context_)
+    {
+        free(user_context_);
+        user_context_ = NULL;
     }
 }
 

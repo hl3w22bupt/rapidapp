@@ -37,8 +37,9 @@ class NetHandlerMgr {
         int RemoveHandlerByEvent(struct bufferevent* event);
 
         EasyNet* GetHandlerByEvent(struct bufferevent* event);
-
         int ChangeNetStateByEvent(struct bufferevent* event, enum NetState state);
+
+        EasyNet* GetHandlerByAsyncIds(uint32_t fd, uint64_t nid);
 
     private:
         HandlerPool handler_pool_;
