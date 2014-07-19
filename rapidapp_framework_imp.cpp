@@ -13,8 +13,6 @@ DEFINE_int32(fps, 1000, "frame-per-second, MUST >= 1, associated with reload and
 DEFINE_int32(max_cocurrent_rpc, 10240, "max cocurrent rpc number");
 DEFINE_int32(rpc_stack_size, 1024, "rpc stack size to save user context");
 
-DEFINE_int32(context_size, 0, "frontend/backend context size");
-
 namespace rapidapp {
 const int MAX_TCP_BACKLOG = 102400;
 const char* udp_uri = "udp:127.0.0.1:9090";
@@ -458,7 +456,7 @@ int AppFrameWork::OnCtrlMsg(struct bufferevent* bev)
 
 int AppFrameWork::OnFrontEndConnect(evutil_socket_t sock, struct sockaddr *addr)
 {
-    assert(sock >= 0 && addr != NULL);
+    assert(sock >= 0 && addr != NULL && app_ != NULL);
 
     LOG(INFO)<<"has accepted new tcp connect:"<<
         inet_ntoa(((struct sockaddr_in*)addr)->sin_addr);
@@ -475,11 +473,12 @@ int AppFrameWork::OnFrontEndConnect(evutil_socket_t sock, struct sockaddr *addr)
     bufferevent_setcb(easy_net_handler->hevent_, on_frontend_data_cb_func, NULL,
                       on_frontend_nondata_event_cb_func, this);
 
-    if (FLAGS_context_size > 0)
+    size_t uctx_size = app_->GetFrontEndContextSize();
+    if (uctx_size > 0)
     {
-        if (easy_net_handler->CreateUserContext(FLAGS_context_size) != 0)
+        if (easy_net_handler->CreateUserContext(uctx_size) != 0)
         {
-            PLOG(ERROR)<<"create context size:"<<FLAGS_context_size;
+            PLOG(ERROR)<<"create context size:"<<uctx_size;
             frontend_handler_mgr_.RemoveHandler(easy_net_handler);
             return -1;
         }
@@ -699,11 +698,12 @@ EasyNet* AppFrameWork::CreateBackEnd(const char* uri, int type)
     bufferevent_setcb(easy_net_handler->hevent_, on_backend_data_cb_func, NULL,
                       on_backend_nondata_event_cb_func, this);
 
-    if (FLAGS_context_size > 0)
+    size_t uctx_size = app_->GetBackEndContextSize();
+    if (uctx_size > 0)
     {
-        if (easy_net_handler->CreateUserContext(FLAGS_context_size) != 0)
+        if (easy_net_handler->CreateUserContext(uctx_size) != 0)
         {
-            PLOG(ERROR)<<"create context size:"<<FLAGS_context_size;
+            PLOG(ERROR)<<"create backend net context size:"<<uctx_size;
             DestroyBackEnd(&easy_net_handler);
         }
     }

@@ -33,6 +33,10 @@ class ConnectorApp : public RapidApp {
         virtual int OnReportRundata();
 
     public:
+        virtual size_t GetFrontEndContextSize();
+        virtual size_t GetBackEndContextSize();
+
+    public:
         virtual const char* GetAppVersion();
         virtual size_t GetFrontEndMaxMsgSize();
         virtual size_t GetBackEndMaxMsgSize();
@@ -42,7 +46,6 @@ class ConnectorApp : public RapidApp {
 
     private:
         IFrameWork* frame_stub_;
-        ConnectorSessionMgr* conn_session_mgr_;
         connector_config::ConnectorConfig config_;
 };
 

@@ -4,9 +4,6 @@
 #include "rapidapp_easy_net.h"
 #include <tr1/unordered_map>
 
-class ConnectorSession;
-typedef std::tr1::unordered_map<int, ConnectorSession*> SessionPool;
-
 using namespace rapidapp;
 
 enum SessionState {
@@ -15,7 +12,6 @@ enum SessionState {
     STATE_OK   = 2,
 };
 
-class ConnectorSessionMgr;
 class ConnectorSession {
     public:
         ConnectorSession();
@@ -37,25 +33,6 @@ class ConnectorSession {
         int channel_id_;    // 后端服务器channel id
 
         friend class ConnectorSessionMgr;
-};
-
-class ConnectorSessionMgr {
-    public:
-        ConnectorSessionMgr();
-        ConnectorSessionMgr(unsigned int overload_limit);
-        ~ConnectorSessionMgr();
-
-    public:
-        int Init();
-        void CleanUp();
-
-    public:
-        ConnectorSession* CreateInstance(EasyNet* net);
-        void DestroyInstance(ConnectorSession** session);
-
-    private:
-        unsigned int overload_limit_;
-        SessionPool session_pool_;
 };
 
 #endif

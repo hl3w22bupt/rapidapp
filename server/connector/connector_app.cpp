@@ -21,7 +21,7 @@
 
 DEFINE_string(config_file, "config.ini", "config file path name");
 
-ConnectorApp::ConnectorApp() : frame_stub_(NULL), conn_session_mgr_(NULL)
+ConnectorApp::ConnectorApp() : frame_stub_(NULL)
 {}
 
 ConnectorApp::~ConnectorApp()
@@ -95,22 +95,7 @@ int ConnectorApp::OnInit(IFrameWork* app_framework)
         return -1;
     }
 
-    // 连接的上下文池，状态机驱动
-    conn_session_mgr_ = new(std::nothrow) ConnectorSessionMgr(config_.max_online_num());
-    if (NULL == conn_session_mgr_)
-    {
-        PLOG(ERROR)<<"new ConnectorSessionMgr failed";
-        return -1;
-    }
-
-    ret = conn_session_mgr_->Init();
-    if (ret != 0)
-    {
-        LOG(ERROR)<<"connector session mgr initialized failed";
-        return -1;
-    }
-
-    // TODO 创建后端连接
+    // 创建后端连接
     for (int i=0; i<config_.backends_size(); ++i)
     {
         const connector_config::EndPoint& end_point = config_.backends(i);
@@ -157,22 +142,36 @@ int ConnectorApp::OnRecvCtrl(const char* msg)
 
 int ConnectorApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t size)
 {
-    if (NULL == frame_stub_ || NULL == conn_session_mgr_)
+    if (NULL == frame_stub_)
     {
         LOG(ERROR)<<"assert failed, null frame stub | null conn session mgr";
         return -1;
     }
 
-    ConnectorSession* session = conn_session_mgr_->CreateInstance(net);
+    void* uctx = frame_stub_->GetUserContext(net);
+    if (NULL == uctx)
+    {
+        LOG(ERROR)<<"null user context";
+        return -1;
+    }
+
+    ConnectorSession* session = new(uctx) ConnectorSession();
     if (NULL == session)
     {
-        LOG(ERROR)<<"create session instance failed";
+        LOG(ERROR)<<"assert failed";
+        return -1;
+    }
+
+    int ret = session->Init(net);
+    if (ret != 0)
+    {
+        LOG(ERROR)<<"init user session failed";
         return -1;
     }
 
     connector_client::CSMsg up_msg;
     up_msg.ParseFromArray(msg, size);
-    LOG(INFO)<<"upward req: "<<std::endl<<up_msg.DebugString();
+    LOG(INFO)<<"upside req: "<<std::endl<<up_msg.DebugString();
 
     // TODO 根据路由规则，转发
 
@@ -181,11 +180,24 @@ int ConnectorApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t
 
 int ConnectorApp::OnRecvBackEnd(EasyNet* net, int type, const char* msg, size_t size)
 {
-    // TODO 根据后端回调，转发
+    assert(frame_stub_ != NULL);
+    // 根据后端回调，转发
     connector_server::SSMsg down_msg;
     down_msg.ParseFromArray(msg, size);
 
-    LOG(INFO)<<"downward resp: "<<std::endl<<down_msg.DebugString();
+    LOG(INFO)<<"downside resp: "<<std::endl<<down_msg.DebugString();
+    EasyNet* front_net = frame_stub_->GetFrontEndByAsyncIds(
+                                        down_msg.head().session().fd(),
+                                        down_msg.head().session().nid());
+    if (NULL == front_net)
+    {
+        LOG(ERROR)<<"no net found by session fd:"<<
+            down_msg.head().session().fd()<<", nid:"<<
+            down_msg.head().session().nid();
+        return -1;
+    }
+
+    // TODO 中转至前端网络连接，同时update状态机
 
     return 0;
 }
@@ -197,6 +209,16 @@ int ConnectorApp::OnTimer(EasyTimer* timer, int timer_id)
 }
 
 int ConnectorApp::OnReportRundata()
+{
+    return 0;
+}
+
+size_t ConnectorApp::GetFrontEndContextSize()
+{
+    return sizeof(ConnectorSession);
+}
+
+size_t ConnectorApp::GetBackEndContextSize()
 {
     return 0;
 }

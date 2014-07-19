@@ -36,6 +36,10 @@ class RapidApp {
         virtual int OnReportRundata() = 0;
 
     public:
+        virtual size_t GetFrontEndContextSize() {return 0;}
+        virtual size_t GetBackEndContextSize() {return 0;}
+
+    public:
         virtual size_t GetFrontEndMaxMsgSize() = 0;
         virtual size_t GetBackEndMaxMsgSize() = 0;
         virtual const char* GetAppVersion() = 0;
