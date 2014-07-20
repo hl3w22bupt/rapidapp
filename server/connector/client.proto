@@ -1,12 +1,16 @@
 package connector_client;
 
+enum ConnectorMagic {
+    MAGIC_CS_V1 = 0x3344;
+};
+
 enum BodyCmdId {
    AUTHENTICATION = 1;
    DATA_TRANSPARENT = 2;
 }
 
 message CSHead {
-    required int32 magic = 2[default=0x1221];
+    required int32 magic = 2[default=0x3344];
     required int64 sequence = 3;
     required int32 bodyid = 4;
 }

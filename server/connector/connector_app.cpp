@@ -155,6 +155,7 @@ int ConnectorApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t
         return -1;
     }
 
+    // context 初始化
     ConnectorSession* session = new(uctx) ConnectorSession();
     if (NULL == session)
     {
@@ -181,6 +182,7 @@ int ConnectorApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t
 int ConnectorApp::OnRecvBackEnd(EasyNet* net, int type, const char* msg, size_t size)
 {
     assert(frame_stub_ != NULL);
+
     // 根据后端回调，转发
     connector_server::SSMsg down_msg;
     down_msg.ParseFromArray(msg, size);
@@ -198,6 +200,21 @@ int ConnectorApp::OnRecvBackEnd(EasyNet* net, int type, const char* msg, size_t 
     }
 
     // TODO 中转至前端网络连接，同时update状态机
+    connector_client::CSMsg down_msg_2client;
+    down_msg_2client.mutable_head()->set_magic(0x3344);
+    down_msg_2client.mutable_head()->set_sequence(1);
+    down_msg_2client.mutable_head()->set_bodyid(connector_client::DATA_TRANSPARENT);
+    down_msg_2client.mutable_body()->set_data(down_msg.body().data().data());
+    std::string down_buff;
+    down_msg_2client.SerializeToString(&down_buff);
+
+    int ret = frame_stub_->SendToFrontEnd(front_net,
+                                          down_buff.c_str(), down_buff.size());
+    if (ret != 0)
+    {
+        LOG(ERROR)<<"transfer to frontend failed";
+        return -1;
+    }
 
     return 0;
 }
