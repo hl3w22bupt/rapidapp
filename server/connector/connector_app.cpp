@@ -199,21 +199,42 @@ int ConnectorApp::OnRecvBackEnd(EasyNet* net, int type, const char* msg, size_t 
         return -1;
     }
 
-    // TODO 中转至前端网络连接，同时update状态机
-    connector_client::CSMsg down_msg_2client;
-    down_msg_2client.mutable_head()->set_magic(0x3344);
-    down_msg_2client.mutable_head()->set_sequence(1);
-    down_msg_2client.mutable_head()->set_bodyid(connector_client::DATA_TRANSPARENT);
-    down_msg_2client.mutable_body()->set_data(down_msg.body().data().data());
-    std::string down_buff;
-    down_msg_2client.SerializeToString(&down_buff);
-
-    int ret = frame_stub_->SendToFrontEnd(front_net,
-                                          down_buff.c_str(), down_buff.size());
-    if (ret != 0)
+    ConnectorSession* session = static_cast<ConnectorSession*>(
+                                    frame_stub_->GetUserContext(front_net));
+    if (NULL == session)
     {
-        LOG(ERROR)<<"transfer to frontend failed";
+        LOG(ERROR)<<"no session found by frontend net";
         return -1;
+    }
+
+    // 中转至前端网络连接，同时update状态机
+    if (connector_server::DATA != down_msg.head().bodyid())
+    {
+        session->ChangeState(0);
+    }
+    else
+    {
+        if (session->state() != STATE_OK)
+        {
+            LOG(ERROR)<<"state NOT been STATE_OK, data can NOT transfer";
+            return -1;
+        }
+
+        connector_client::CSMsg down_msg_2client;
+        down_msg_2client.mutable_head()->set_magic(0x3344);
+        down_msg_2client.mutable_head()->set_sequence(1);
+        down_msg_2client.mutable_head()->set_bodyid(connector_client::DATA_TRANSPARENT);
+        down_msg_2client.mutable_body()->set_data(down_msg.body().data().data());
+        std::string down_buff;
+        down_msg_2client.SerializeToString(&down_buff);
+
+        int ret = frame_stub_->SendToFrontEnd(front_net,
+                                              down_buff.c_str(), down_buff.size());
+        if (ret != 0)
+        {
+            LOG(ERROR)<<"transfer to frontend failed";
+            return -1;
+        }
     }
 
     return 0;

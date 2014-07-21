@@ -24,6 +24,11 @@ class ConnectorSession {
     public:
         void ChangeState(int status_code);
 
+    public:
+        inline int state() const {
+            return state_;
+        }
+
     private:
         void SetChannelID(int channel_id);
 

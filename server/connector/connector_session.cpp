@@ -35,10 +35,12 @@ void ConnectorSession::ChangeState(int status_code)
     {
         case STATE_INIT:
             {
+                state_ = STATE_AUTH;
                 break;
             }
         case STATE_AUTH:
             {
+                state_ = STATE_OK;
                 break;
             }
         case STATE_OK:
