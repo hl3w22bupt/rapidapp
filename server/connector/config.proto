@@ -9,5 +9,6 @@ message EndPoint {
 message ConnectorConfig {
     required int32 max_online_num = 1[default=10240];
     required int32 max_idle_second = 2[default=600];
+    required int32 max_pkg_speed = 3[default=100];  // package speed control, package number per second
     repeated EndPoint backends = 3;
 }

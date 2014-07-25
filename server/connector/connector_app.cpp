@@ -6,7 +6,8 @@
  * 3. 串行汇聚
  * 4. 过载保护
  * 5. 断线重连
- * 6. 无状态，方便平行扩展
+ * 6. traffic control
+ * 7. 无状态，方便平行扩展
  *
  * */
 #include "connector_app.h"
