@@ -459,7 +459,8 @@ int AppFrameWork::OnFrontEndConnect(evutil_socket_t sock, struct sockaddr *addr)
     assert(sock >= 0 && addr != NULL && app_ != NULL);
 
     LOG(INFO)<<"has accepted new tcp connect:"<<
-        inet_ntoa(((struct sockaddr_in*)addr)->sin_addr);
+        inet_ntoa(((struct sockaddr_in*)addr)->sin_addr)<<
+        ntohs(((struct sockaddr_in*)addr)->sin_port);
 
 
     EasyNet* easy_net_handler = frontend_handler_mgr_.AddHandlerBySocket
