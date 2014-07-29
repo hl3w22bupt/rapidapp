@@ -42,11 +42,12 @@ class ConnectorApp : public RapidApp {
         virtual size_t GetBackEndMaxMsgSize();
 
     private:
-        int SetUpConfig();
+        int SetUpAndCheckConfig();
 
     private:
         IFrameWork* frame_stub_;
         connector_config::ConnectorConfig config_;
+        int backend_pos_;
 };
 
 #endif

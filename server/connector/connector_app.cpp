@@ -22,13 +22,13 @@
 
 DEFINE_string(config_file, "config.ini", "config file path name");
 
-ConnectorApp::ConnectorApp() : frame_stub_(NULL)
+ConnectorApp::ConnectorApp() : frame_stub_(NULL), backend_pos_(-1)
 {}
 
 ConnectorApp::~ConnectorApp()
 {}
 
-int ConnectorApp::SetUpConfig()
+int ConnectorApp::SetUpAndCheckConfig()
 {
     LOG(INFO)<<"initialize from conf file: "<<FLAGS_config_file;
 
@@ -71,6 +71,13 @@ int ConnectorApp::SetUpConfig()
     ::google::protobuf::TextFormat::ParseFromString(conf_str, &config_);
     LOG(INFO)<<"config:"<<std::endl<<config_.DebugString();
 
+    if (config_.backends_size() <= 0)
+    {
+        LOG(ERROR)<<"need at least 1 backend";
+        return -1;
+    }
+
+    backend_pos_ = 0;
     return 0;
 }
 
@@ -89,7 +96,7 @@ int ConnectorApp::OnInit(IFrameWork* app_framework)
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
     // 读取配置文件
-    int ret = SetUpConfig();
+    int ret = SetUpAndCheckConfig();
     if (ret != 0)
     {
         LOG(ERROR)<<"set up config failed";
@@ -176,6 +183,12 @@ int ConnectorApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t
     LOG(INFO)<<"upside req: "<<std::endl<<up_msg.DebugString();
 
     // TODO 根据路由规则，转发
+
+    ++backend_pos_;
+    if (backend_pos_ >= config_.backends_size())
+    {
+        backend_pos_ = 0;
+    }
 
     return 0;
 }
