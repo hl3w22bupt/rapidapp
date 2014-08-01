@@ -48,6 +48,10 @@ class EasyNet {
             return hevent_;
         }
 
+        inline char* uri() {
+            return uri_;
+        }
+
         inline int net_type() {
             return net_type_;
         }

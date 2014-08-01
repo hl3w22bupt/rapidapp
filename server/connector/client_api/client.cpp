@@ -11,14 +11,13 @@
 bool connected = false;
 bool ready_to_exit = false;
 
-const char* uri = "tcp:127.0.0.1:8888";
-
 typedef struct {
     struct bufferevent* bev;
     struct event_base* evbase;
 } CTX;
 
 DEFINE_int32(timer_us, 1000, "timer time period");
+DEFINE_string(uri, "tcp:127.0.0.1:8888", "connector server uri");
 
 void on_timer_cb_func(evutil_socket_t fd, short what, void *arg) {
     std::cout<<"timer trigger"<<std::endl;
@@ -80,10 +79,10 @@ int main(int argc, char** argv)
     }
 
     struct sockaddr_in sin;
-    int ret = rap_uri_get_socket_addr(uri, &sin);
+    int ret = rap_uri_get_socket_addr(FLAGS_uri.c_str(), &sin);
     if (ret != 0)
     {
-        std::cout<<"get sockaddr_in failed by uri:"<<uri<<std::endl;
+        std::cout<<"get sockaddr_in failed by uri:"<<FLAGS_uri<<std::endl;
         return -1;
     }
 
@@ -91,7 +90,7 @@ int main(int argc, char** argv)
                                                      BEV_OPT_CLOSE_ON_FREE);
     if (NULL == bev)
     {
-        std::cout<<"create bufferevent for uri:"<<uri<<" failed"<<std::endl;
+        std::cout<<"create bufferevent for uri:"<<FLAGS_uri<<" failed"<<std::endl;
         return -1;
     }
     bufferevent_enable(bev, EV_READ|EV_WRITE);
@@ -101,7 +100,7 @@ int main(int argc, char** argv)
                                      sizeof(sin));
     if (ret != 0)
     {
-        std::cout<<"start connect to uri:"<<uri<<" failed"<<std::endl;
+        std::cout<<"start connect to uri:"<<FLAGS_uri<<" failed"<<std::endl;
         bufferevent_free(bev);
         return -1;
     }

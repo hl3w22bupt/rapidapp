@@ -474,17 +474,22 @@ int AppFrameWork::OnFrontEndConnect(evutil_socket_t sock, struct sockaddr *addr)
 {
     assert(sock >= 0 && addr != NULL && app_ != NULL);
 
-    LOG(INFO)<<"has accepted new tcp connect:"<<
-        inet_ntoa(((struct sockaddr_in*)addr)->sin_addr)<<
-        ntohs(((struct sockaddr_in*)addr)->sin_port);
-
-    // TODO record uri
+    char* ip = inet_ntoa(((struct sockaddr_in*)addr)->sin_addr);
+    unsigned short port = ntohs(((struct sockaddr_in*)addr)->sin_port);
+    LOG(INFO)<<"has accepted new tcp connect:"<<ip<<":"<<port;
 
     EasyNet* easy_net_handler = frontend_handler_mgr_.AddHandlerBySocket
         (sock, 0/*前端服务目前不区分类型*/, event_base_);
     if (NULL == easy_net_handler)
     {
         LOG(ERROR)<<"AddHandlerBySocket failed, socket:"<<sock;
+        return -1;
+    }
+
+    int len = snprintf(easy_net_handler->uri(), MAX_URL_LEN - 1, "%s:%d", ip, (int)port);
+    if (len < 0 || len >= MAX_URL_LEN)
+    {
+        LOG(ERROR)<<"format frontend uri failed";
         return -1;
     }
 
@@ -501,6 +506,8 @@ int AppFrameWork::OnFrontEndConnect(evutil_socket_t sock, struct sockaddr *addr)
             return -1;
         }
     }
+
+    easy_net_handler->set_active_time(now_);
 
     // TODO setwatermark
 
@@ -726,6 +733,7 @@ EasyNet* AppFrameWork::CreateBackEnd(const char* uri, int type)
             DestroyBackEnd(&easy_net_handler);
         }
     }
+    easy_net_handler->set_active_time(now_);
 
     return easy_net_handler;
 }
@@ -893,7 +901,7 @@ int AppFrameWork::DoSomething(EasyNet* net)
     if (net != NULL && (now_ - net->last_active_time() >= setting_.max_idle))
     {
         // erase
-        LOG(INFO)<<"net has been idle for: "<<now_ - net->last_active_time()
+        LOG(INFO)<<"net:"<<net->uri()<<" has been idle for: "<<now_ - net->last_active_time()
             <<" s, bigger than max uplimit: "<<setting_.max_idle<<" s, close it";
         return 1;
     }
