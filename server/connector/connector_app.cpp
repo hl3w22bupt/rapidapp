@@ -22,7 +22,7 @@
 
 DEFINE_string(config_file, "config.ini", "config file path name");
 
-ConnectorApp::ConnectorApp() : frame_stub_(NULL), backend_pos_(-1)
+ConnectorApp::ConnectorApp() : frame_stub_(NULL), backend_pos_(-1), backend_used_(0)
 {}
 
 ConnectorApp::~ConnectorApp()
@@ -113,6 +113,8 @@ int ConnectorApp::OnInit(IFrameWork* app_framework)
             LOG(ERROR)<<"create backend failed, "<<"uri: "<<end_point.uri();
             return -1;
         }
+
+        backends_[backend_used_++] = net;
     }
 
     return 0;
@@ -180,9 +182,31 @@ int ConnectorApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t
 
     connector_client::CSMsg up_msg;
     up_msg.ParseFromArray(msg, size);
-    LOG(INFO)<<"upside req: "<<std::endl<<up_msg.DebugString();
+    LOG(INFO)<<"upside req from client: "<<std::endl<<up_msg.DebugString();
 
-    // TODO 根据路由规则，转发
+    // 根据路由规则，转发
+    // TODO sequence id
+    uint32_t fd = 0;
+    uint64_t nid = 0;
+    frame_stub_->GetNetIds(net, fd, nid);
+    connector_server::SSMsg msg_to_backend;
+    msg_to_backend.mutable_head()->set_magic(connector_server::MAGIC_SS_V1);
+    msg_to_backend.mutable_head()->set_sequence(1);
+    msg_to_backend.mutable_head()->set_bodyid(connector_server::DATA);
+    msg_to_backend.mutable_head()->mutable_session()->set_fd(fd);
+    msg_to_backend.mutable_head()->mutable_session()->set_nid(nid);
+    msg_to_backend.mutable_head()->mutable_session()->set_sid(session->sid());
+    msg_to_backend.mutable_body()->mutable_data()->set_data(up_msg.body().data());
+    LOG(INFO)<<"upside req to server: "<<std::endl<<msg_to_backend.DebugString();
+
+    std::string up_buff;
+    msg_to_backend.SerializeToString(&up_buff);
+    ret = frame_stub_->SendToBackEnd(backends_[backend_pos_], up_buff.c_str(), up_buff.size());
+    if (ret != 0)
+    {
+        LOG(INFO)<<"send to backend pos: "<<backend_pos_<<" failed";
+        return -1;
+    }
 
     ++backend_pos_;
     if (backend_pos_ >= config_.backends_size())
@@ -201,7 +225,7 @@ int ConnectorApp::OnRecvBackEnd(EasyNet* net, int type, const char* msg, size_t 
     connector_server::SSMsg down_msg;
     down_msg.ParseFromArray(msg, size);
 
-    LOG(INFO)<<"downside resp: "<<std::endl<<down_msg.DebugString();
+    LOG(INFO)<<"downside resp from server: "<<std::endl<<down_msg.DebugString();
     EasyNet* front_net = frame_stub_->GetFrontEndByAsyncIds(
                                         down_msg.head().session().fd(),
                                         down_msg.head().session().nid());
@@ -221,6 +245,8 @@ int ConnectorApp::OnRecvBackEnd(EasyNet* net, int type, const char* msg, size_t 
         return -1;
     }
 
+    session->set_sid(down_msg.head().session().sid());
+
     // 中转至前端网络连接，同时update状态机
     if (connector_server::DATA != down_msg.head().bodyid())
     {
@@ -228,17 +254,21 @@ int ConnectorApp::OnRecvBackEnd(EasyNet* net, int type, const char* msg, size_t 
     }
     else
     {
+#if 0
         if (session->state() != STATE_OK)
         {
             LOG(ERROR)<<"state NOT been STATE_OK, data can NOT transfer";
             return -1;
         }
+#endif
 
         connector_client::CSMsg down_msg_2client;
         down_msg_2client.mutable_head()->set_magic(0x3344);
         down_msg_2client.mutable_head()->set_sequence(1);
         down_msg_2client.mutable_head()->set_bodyid(connector_client::DATA_TRANSPARENT);
         down_msg_2client.mutable_body()->set_data(down_msg.body().data().data());
+        LOG(INFO)<<"downside resp to client: "<<std::endl<<down_msg_2client.DebugString();
+
         std::string down_buff;
         down_msg_2client.SerializeToString(&down_buff);
 
@@ -256,7 +286,7 @@ int ConnectorApp::OnRecvBackEnd(EasyNet* net, int type, const char* msg, size_t 
 
 int ConnectorApp::OnTimer(EasyTimer* timer, int timer_id)
 {
-    // TODO 空闲连接检查
+    // TODO 后端心跳管理
     return 0;
 }
 

@@ -806,13 +806,27 @@ int AppFrameWork::SendToBackEnd(EasyNet* net, const char* buf, size_t buf_size)
 
 EasyNet* AppFrameWork::GetFrontEndByAsyncIds(uint32_t fd, uint64_t nid)
 {
-    EasyNet* net = backend_handler_mgr_.GetHandlerByAsyncIds(fd, nid);
+    EasyNet* net = frontend_handler_mgr_.GetHandlerByAsyncIds(fd, nid);
     if (NULL == net)
     {
         return NULL;
     }
 
     return net;
+}
+
+int AppFrameWork::GetNetIds(EasyNet* net, uint32_t& fd, uint64_t& nid)
+{
+    if (NULL == net)
+    {
+        LOG(ERROR)<<"net is null";
+        return -1;
+    }
+
+    fd = bufferevent_getfd(net->bufferevent());
+    nid = net->nid();
+
+    return 0;
 }
 
 void* AppFrameWork::GetUserContext(EasyNet* net)
@@ -898,7 +912,7 @@ int AppFrameWork::RpcCall(EasyRpc* rpc, const void* request, size_t request_size
 
 int AppFrameWork::DoSomething(EasyNet* net)
 {
-    if (net != NULL && (now_ - net->last_active_time() >= setting_.max_idle))
+    if (net != NULL && (now_ - net->last_active_time() > setting_.max_idle))
     {
         // erase
         LOG(INFO)<<"net:"<<net->uri()<<" has been idle for: "<<now_ - net->last_active_time()

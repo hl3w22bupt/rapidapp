@@ -29,6 +29,14 @@ class ConnectorSession {
             return state_;
         }
 
+        inline void set_sid(uint32_t sid) {
+            sid_ = sid;
+        }
+
+        inline uint32_t sid() const {
+            return sid_;
+        }
+
     private:
         void SetChannelID(int channel_id);
 
@@ -36,6 +44,7 @@ class ConnectorSession {
         int state_;         // 状态机状态
         EasyNet* net_stub_; // 网络连接stub
         int channel_id_;    // 后端服务器channel id
+        uint32_t sid_;
 
         friend class ConnectorSessionMgr;
 };

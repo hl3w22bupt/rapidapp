@@ -31,6 +31,8 @@ int NetHandlerMgr::Init(size_t recv_buff_size)
     }
     recv_buffer_.size = recv_buff_size;
 
+    it_cursor_ = handler_pool_.begin();
+
     return 0;
 }
 
@@ -199,6 +201,11 @@ int NetHandlerMgr::RemoveHandlerByEvent(struct bufferevent* event)
             delete easy_net_handler;
         }
 
+        if (it == it_cursor_)
+        {
+            it_cursor_++;
+        }
+
         handler_pool_.erase(it);
     }
     else
@@ -255,29 +262,28 @@ void NetHandlerMgr::WalkThrough(IWalkEach* act)
         return;
     }
 
-    static HandlerPool::iterator it_cursor = handler_pool_.begin();
-
-    for (int i = 0; i < kSingleRoundLoopNum && it_cursor != handler_pool_.end(); ++i)
+    //static HandlerPool::iterator it_cursor = handler_pool_.begin();
+    for (int i = 0; i < kSingleRoundLoopNum && it_cursor_ != handler_pool_.end(); ++i)
     {
-        EasyNet* net = it_cursor->second;
+        EasyNet* net = it_cursor_->second;
         if (net != NULL && 0 != act->DoSomething(net))
         {
             net->DestroyUserContext();
             net->CleanUp();
             delete net;
 
-            handler_pool_.erase(it_cursor++);
+            handler_pool_.erase(it_cursor_++);
         }
         else
         {
-            ++it_cursor;
+            ++it_cursor_;
         }
     }
 
     // 完成1轮遍历
-    if (it_cursor == handler_pool_.end())
+    if (it_cursor_ == handler_pool_.end())
     {
-        it_cursor = handler_pool_.begin();
+        it_cursor_ = handler_pool_.begin();
     }
 }
 

@@ -57,6 +57,7 @@ class NetHandlerMgr {
     private:
         HandlerPool handler_pool_;
         struct RapBuffer recv_buffer_;
+        HandlerPool::iterator it_cursor_;
 
         friend class AppFrameWork;
 };

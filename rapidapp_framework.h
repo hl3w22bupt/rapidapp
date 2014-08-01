@@ -28,6 +28,7 @@ class IFrameWork {
         // 异步上下文相关
         virtual EasyNet* GetFrontEndByAsyncIds(uint32_t fd, uint64_t nid) = 0;
         virtual void* GetUserContext(EasyNet* net) = 0;
+        virtual int GetNetIds(EasyNet* net, uint32_t& fd, uint64_t& nid) = 0;
 
         virtual int SendToFrontEnd(EasyNet* net, const char* buf, size_t buf_size) = 0;
         virtual int SendToBackEnd(EasyNet* net, const char* buf, size_t buf_size) = 0;

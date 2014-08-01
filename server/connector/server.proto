@@ -5,6 +5,10 @@ enum BodyCmdId {
     DATA = 2;
 }
 
+enum ConnectorMagic {
+    MAGIC_SS_V1 = 0x3443;
+}
+
 message Tuple {
     required uint32 fd  = 1;     // 连接fd
     required uint64 nid = 2;    // 连接id
