@@ -9,6 +9,16 @@
 
 namespace rapidapp {
 
+class IWalkEach {
+    public:
+        IWalkEach(){}
+        virtual ~IWalkEach(){}
+
+    public:
+        ///< return !0:erase 0:no erase
+        virtual int DoSomething(EasyNet* net) = 0;
+};
+
 struct RapBuffer {
     char* buffer;
     size_t size;
@@ -40,6 +50,9 @@ class NetHandlerMgr {
         int ChangeNetStateByEvent(struct bufferevent* event, enum NetState state);
 
         EasyNet* GetHandlerByAsyncIds(uint32_t fd, uint64_t nid);
+
+    public:
+        void WalkThrough(IWalkEach* act);
 
     private:
         HandlerPool handler_pool_;

@@ -52,6 +52,14 @@ class EasyNet {
             return net_type_;
         }
 
+        inline void set_active_time(time_t now) {
+            last_active_timestamp_ = now;
+        }
+
+        inline time_t last_active_time() const {
+            return last_active_timestamp_;
+        }
+
         inline void set_rpc_binded(void* rpc) {
             rpc_binded_ = rpc;
         }
@@ -78,6 +86,7 @@ class EasyNet {
         char uri_[MAX_URL_LEN];         // 发起后端连接时，后端服务uri
         int nid_;                       // net id
         int state_;                     // state
+        time_t last_active_timestamp_;  // 最近1次活跃时间点
 
     private:
         void* rpc_binded_;              // 捆绑的rpc

@@ -9,11 +9,13 @@
 DEFINE_string(uri, "tcp:0.0.0.0:80", "server listen uri, format: [proto:ip:port]");
 DEFINE_string(log_file, "", "logging file name");
 DEFINE_int32(fps, 1000, "frame-per-second, MUST >= 1, associated with reload and timer");
+DEFINE_int32(max_idle, -1, "max idle time of frontend, time unit s, default no idle limit");
 
 DEFINE_int32(max_cocurrent_rpc, 10240, "max cocurrent rpc number");
 DEFINE_int32(rpc_stack_size, 1024, "rpc stack size to save user context");
 
 namespace rapidapp {
+// global variable & function
 const int MAX_TCP_BACKLOG = 102400;
 const char* udp_uri = "udp:127.0.0.1:9090";
 
@@ -23,6 +25,7 @@ const int DEFAULT_MAX_FD_LIMIT = 10240;
 
 bool AppFrameWork::running_ = false;
 bool AppFrameWork::reloading_ = false;
+time_t AppFrameWork::now_ = 0;
 
 void libevent_log_cb_func(int severity, const char *msg) {
     if (msg != NULL) {
@@ -91,12 +94,16 @@ int AppFrameWork::ParseCmdLine(int argc, char** argv)
     }
     strcpy(setting_.log_file_name, FLAGS_log_file.c_str());
 
+    // fps
     if (FLAGS_fps < 1)
     {
         fprintf(stderr, "fps MUST >= 1");
         return -1;
     }
     setting_.fps = FLAGS_fps;
+
+    // max idle
+    setting_.max_idle = FLAGS_max_idle;
 
     return 0;
 }
@@ -311,6 +318,7 @@ int AppFrameWork::Init(RapidApp* app, int argc, char** argv)
         return -1;
     }
 
+    now_ = time(NULL);
     return 0;
 }
 
@@ -375,6 +383,8 @@ int AppFrameWork::Tick()
     assert(app_ != NULL);
     assert(event_base_ != NULL);
 
+    now_ = time(NULL);
+
     if (reloading_)
     {
         Reload();
@@ -400,6 +410,12 @@ int AppFrameWork::Tick()
         {
             app_->OnTimer(timer, timer->timer_id());
         }
+    }
+
+    // 空闲连接检查
+    if (setting_.max_idle > 0)
+    {
+        frontend_handler_mgr_.WalkThrough(this);
     }
 
     return 0;
@@ -462,6 +478,7 @@ int AppFrameWork::OnFrontEndConnect(evutil_socket_t sock, struct sockaddr *addr)
         inet_ntoa(((struct sockaddr_in*)addr)->sin_addr)<<
         ntohs(((struct sockaddr_in*)addr)->sin_port);
 
+    // TODO record uri
 
     EasyNet* easy_net_handler = frontend_handler_mgr_.AddHandlerBySocket
         (sock, 0/*前端服务目前不区分类型*/, event_base_);
@@ -545,6 +562,7 @@ int AppFrameWork::OnFrontEndMsg(struct bufferevent* bev)
         elapsed_msglen += msglen;
     }
     evbuffer_drain(evbuf, elapsed_msglen);
+    easy_net->set_active_time(now_);
 
     return 0;
 }
@@ -772,6 +790,7 @@ int AppFrameWork::SendToBackEnd(EasyNet* net, const char* buf, size_t buf_size)
         return NET_SEND_EXCEPTION;
     }
 
+    net->set_active_time(now_);
     LOG(INFO)<<"send buf size:"<<buf_size<<" to backend success";
 
     return 0;
@@ -866,6 +885,20 @@ int AppFrameWork::RpcCall(EasyRpc* rpc, const void* request, size_t request_size
     }
 
     return rpc->RpcCall(request, request_size, response, response_size);
+}
+
+
+int AppFrameWork::DoSomething(EasyNet* net)
+{
+    if (net != NULL && (now_ - net->last_active_time() >= setting_.max_idle))
+    {
+        // erase
+        LOG(INFO)<<"net has been idle for: "<<now_ - net->last_active_time()
+            <<" s, bigger than max uplimit: "<<setting_.max_idle<<" s, close it";
+        return 1;
+    }
+
+    return 0;
 }
 
 

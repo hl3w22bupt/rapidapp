@@ -5,6 +5,7 @@
 namespace rapidapp {
 
 const int kDefaultUpSize = 1024 * 1024;  // 1M
+const int kSingleRoundLoopNum = 1024;
 
 NetHandlerMgr::NetHandlerMgr()
 {
@@ -243,6 +244,40 @@ EasyNet* NetHandlerMgr::GetHandlerByAsyncIds(uint32_t fd, uint64_t nid)
     else
     {
         return NULL;
+    }
+}
+
+void NetHandlerMgr::WalkThrough(IWalkEach* act)
+{
+    if (NULL == act)
+    {
+        LOG(ERROR)<<"null net walkthrough act";
+        return;
+    }
+
+    static HandlerPool::iterator it_cursor = handler_pool_.begin();
+
+    for (int i = 0; i < kSingleRoundLoopNum && it_cursor != handler_pool_.end(); ++i)
+    {
+        EasyNet* net = it_cursor->second;
+        if (net != NULL && 0 != act->DoSomething(net))
+        {
+            net->DestroyUserContext();
+            net->CleanUp();
+            delete net;
+
+            handler_pool_.erase(it_cursor++);
+        }
+        else
+        {
+            ++it_cursor;
+        }
+    }
+
+    // 完成1轮遍历
+    if (it_cursor == handler_pool_.end())
+    {
+        it_cursor = handler_pool_.begin();
     }
 }
 

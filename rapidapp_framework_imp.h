@@ -21,11 +21,12 @@ const int MAX_FILE_NAME_LEN = 128;
 
 struct AppSetting {
     int  fps;       // 每秒帧率
+    int  max_idle;  // 前段最大空闲时间，-1为无空闲限制
     char listen_uri[MAX_URL_LEN];
     char log_file_name[MAX_FILE_NAME_LEN];
 };
 
-class AppFrameWork : public IFrameWork {
+class AppFrameWork : public IFrameWork, public IWalkEach {
     public:
         AppFrameWork();
         ~AppFrameWork();
@@ -55,6 +56,9 @@ class AppFrameWork : public IFrameWork {
         virtual int RpcCall(EasyRpc* rpc,
                             const void* request, size_t request_size,
                             const void** response, size_t* response_size);
+
+    public:
+        int DoSomething(EasyNet* net);
 
     // 事件回调
     public:
@@ -178,6 +182,7 @@ class AppFrameWork : public IFrameWork {
     private:
         static bool running_;
         static bool reloading_;
+        static time_t now_;
 
     private:
         class NetHandlerMgr frontend_handler_mgr_;
