@@ -910,6 +910,8 @@ int AppFrameWork::RpcCall(EasyRpc* rpc, const void* request, size_t request_size
 }
 
 
+// 前端net遍历操作
+// 返回值!0 遍历后删除，0 遍历不删除
 int AppFrameWork::DoSomething(EasyNet* net)
 {
     if (net != NULL && (now_ - net->last_active_time() > setting_.max_idle))
