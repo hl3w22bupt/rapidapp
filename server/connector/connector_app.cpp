@@ -77,7 +77,6 @@ int ConnectorApp::SetUpAndCheckConfig()
         return -1;
     }
 
-    backend_pos_ = 0;
     return 0;
 }
 
@@ -102,6 +101,7 @@ int ConnectorApp::OnInit(IFrameWork* app_framework)
         LOG(ERROR)<<"set up config failed";
         return -1;
     }
+    backend_pos_ = 0;
 
     // 创建后端连接
     for (int i=0; i<config_.backends_size(); ++i)

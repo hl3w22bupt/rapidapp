@@ -1,13 +1,8 @@
-package connector_client;
+package ball_game_protocol;
 
 enum ConnectorMagic {
-    MAGIC_CS_V1 = 0x3344;
+    MAGIC_BGAME_CS_V1 = 0x3344;
 };
-
-enum BodyCmdId {
-   AUTHENTICATION = 1;
-   DATA_TRANSPARENT = 2;
-}
 
 message CSHead {
     required int32 magic = 1[default=0x3344];
@@ -15,11 +10,20 @@ message CSHead {
     required int32 bodyid = 3;
 }
 
+message CSLogin {
+    required string username = 1;
+    required string password = 2;
+}
+
+message CSLogout {
+    required int32 reason = 1;
+};
+
 // connector做透传，游戏客户端数据作为unknown fields
 // 也可以直接透传，bytes类型
 message CSBody {
-    optional int32 syn = 1;
-    optional bytes data = 2;
+    optional CSLogin login = 1;
+    optional CSLogout logout = 2;
 }
 
 message CSMsg{
