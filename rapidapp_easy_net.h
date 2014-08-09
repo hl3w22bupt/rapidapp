@@ -93,10 +93,18 @@ class EasyNet {
         time_t last_active_timestamp_;  // 最近1次活跃时间点
 
     private:
+        // 每帧包量、流量，用于做流量控制，
+        // 避免单个前端的连接过载对其它连接造成过大影响
+        uint64_t prev_pkg_count_;
+        uint64_t curr_pkg_count_;
+        uint64_t prev_traffic_bytes_;
+        uint64_t curr_traffic_bytes_;
+
+    private:
         void* rpc_binded_;              // 捆绑的rpc
 
     private:
-        void* user_context_;
+        void* user_context_;            // user context
 
         friend class AppFrameWork;
         friend class NetHandlerMgr;

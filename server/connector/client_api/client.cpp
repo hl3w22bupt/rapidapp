@@ -64,6 +64,12 @@ void on_eventable_cb_func(struct bufferevent* bev, short events, void *arg) {
         std::cout<<"connect success"<<std::endl;
         connected = true;
     }
+
+    if (events & BEV_EVENT_EOF)
+    {
+        std::cout<<"peer close connection"<<std::endl;
+        ready_to_exit = true;
+    }
 }
 
 int main(int argc, char** argv)

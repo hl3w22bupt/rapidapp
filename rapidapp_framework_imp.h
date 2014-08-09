@@ -20,8 +20,10 @@ namespace rapidapp {
 const int MAX_FILE_NAME_LEN = 128;
 
 struct AppSetting {
-    int  fps;       // 每秒帧率
-    int  max_idle;  // 前段最大空闲时间，-1为无空闲限制
+    int  fps;               // 每秒帧率
+    int  max_idle;          // 前端最大空闲时间，-1为无空闲限制
+    int  max_pkg_speed;     // 前端最大包速
+    int  max_traffic_speed; // 前端最大流量速度
     char listen_uri[MAX_URL_LEN];
     char log_file_name[MAX_FILE_NAME_LEN];
 };

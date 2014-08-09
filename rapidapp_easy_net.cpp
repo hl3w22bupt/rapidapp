@@ -7,7 +7,9 @@
 namespace rapidapp {
 
 static int nid_seed = 1;
-EasyNet::EasyNet() : hevent_(NULL), net_type_(0), nid_(nid_seed++), state_(NET_INIT), last_active_timestamp_(0)
+EasyNet::EasyNet() : hevent_(NULL), net_type_(0), nid_(nid_seed++), state_(NET_INIT),
+                      last_active_timestamp_(0), prev_pkg_count_(0), curr_pkg_count_(0),
+                      prev_traffic_bytes_(0), curr_traffic_bytes_(0)
 {
     uri_[0] = '\0';
     rpc_binded_ = NULL;

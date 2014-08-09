@@ -9,7 +9,9 @@
 DEFINE_string(uri, "tcp:0.0.0.0:80", "server listen uri, format: [proto:ip:port]");
 DEFINE_string(log_file, "", "logging file name");
 DEFINE_int32(fps, 1000, "frame-per-second, MUST >= 1, associated with reload and timer");
-DEFINE_int32(max_idle, -1, "max idle time of frontend, time unit s, default no idle limit");
+DEFINE_int32(max_idle, -1, "max idle time on frontend, time unit s, default no idle limit");
+DEFINE_int32(max_pkg_speed, -1, "max pkg number per frame on frontend, default no limit");
+DEFINE_int32(max_traffic_speed, -1, "max traffic per frame on frontend, default no limit");
 
 DEFINE_int32(max_cocurrent_rpc, 10240, "max cocurrent rpc number");
 DEFINE_int32(rpc_stack_size, 1024, "rpc stack size to save user context");
@@ -104,6 +106,8 @@ int AppFrameWork::ParseCmdLine(int argc, char** argv)
 
     // max idle
     setting_.max_idle = FLAGS_max_idle;
+    setting_.max_pkg_speed = FLAGS_max_pkg_speed;
+    setting_.max_traffic_speed = FLAGS_max_traffic_speed;
 
     return 0;
 }
@@ -413,7 +417,9 @@ int AppFrameWork::Tick()
     }
 
     // 空闲连接检查
-    if (setting_.max_idle > 0)
+    // 上行包速检查
+    if (setting_.max_idle > 0 || setting_.max_pkg_speed > 0 ||
+        setting_.max_traffic_speed > 0)
     {
         frontend_handler_mgr_.WalkThrough(this);
     }
@@ -566,9 +572,12 @@ int AppFrameWork::OnFrontEndMsg(struct bufferevent* bev)
                              frontend_handler_mgr_.recv_buffer_.buffer\
                              + elapsed_msglen + sizeof(uint32_t),
                              msglen - sizeof(uint32_t));
+        ++(easy_net->curr_pkg_count_);
         elapsed_msglen += msglen;
     }
     evbuffer_drain(evbuf, elapsed_msglen);
+
+    easy_net->curr_traffic_bytes_ += elapsed_msglen;
     easy_net->set_active_time(now_);
 
     return 0;
@@ -914,12 +923,51 @@ int AppFrameWork::RpcCall(EasyRpc* rpc, const void* request, size_t request_size
 // 返回值!0 遍历后删除，0 遍历不删除
 int AppFrameWork::DoSomething(EasyNet* net)
 {
-    if (net != NULL && (now_ - net->last_active_time() > setting_.max_idle))
+    if (setting_.max_idle > 0 && net != NULL)
     {
-        // erase
-        LOG(INFO)<<"net:"<<net->uri()<<" has been idle for: "<<now_ - net->last_active_time()
-            <<" s, bigger than max uplimit: "<<setting_.max_idle<<" s, close it";
-        return 1;
+        if (now_ - net->last_active_time() > setting_.max_idle)
+        {
+            // erase
+            LOG(WARNING)<<"net:"<<net->uri()<<" has been idle for: "<<now_ - net->last_active_time()
+                <<" s, bigger than max uplimit: "<<setting_.max_idle<<" s, close it";
+            return 1;
+        }
+    }
+
+    if (setting_.max_pkg_speed > 0 && net != NULL)
+    {
+        if (net->curr_pkg_count_ - net->prev_pkg_count_ > setting_.max_pkg_speed)
+        {
+            // erase
+            LOG(WARNING)<<"net:"<<net->uri()<<" has sent "
+                <<net->curr_pkg_count_ - net->prev_pkg_count_
+                <<" pkgs during 1 frame, bigger than max uplimit: "
+                <<setting_.max_pkg_speed<<", close it";
+            return 1;
+        }
+        else
+        {
+            net->prev_pkg_count_ = 0;
+            net->curr_pkg_count_ = 0;
+        }
+    }
+
+    if (setting_.max_traffic_speed > 0 && net != NULL)
+    {
+        if (net->curr_traffic_bytes_ - net->prev_traffic_bytes_ > setting_.max_traffic_speed)
+        {
+            // erase
+            LOG(WARNING)<<"net:"<<net->uri()<<" has sent "
+                <<net->curr_traffic_bytes_ - net->prev_traffic_bytes_
+                <<" bytes during 1 frame, bigger than max uplimit: "
+                <<setting_.max_traffic_speed<<", close it";
+            return 1;
+        }
+        else
+        {
+            net->prev_traffic_bytes_ = 0;
+            net->curr_traffic_bytes_ = 0;
+        }
     }
 
     return 0;
