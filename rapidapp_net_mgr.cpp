@@ -201,6 +201,7 @@ int NetHandlerMgr::RemoveHandlerByEvent(struct bufferevent* event)
             delete easy_net_handler;
         }
 
+        // 如果清理的迭代器为遍历的游标，游标先后移
         if (it == it_cursor_)
         {
             it_cursor_++;
@@ -254,6 +255,7 @@ EasyNet* NetHandlerMgr::GetHandlerByAsyncIds(uint32_t fd, uint64_t nid)
     }
 }
 
+// 目前主要用于frontend连接的控制
 void NetHandlerMgr::WalkThrough(IWalkEach* act)
 {
     if (NULL == act)
@@ -268,6 +270,10 @@ void NetHandlerMgr::WalkThrough(IWalkEach* act)
         EasyNet* net = it_cursor_->second;
         if (net != NULL && 0 != act->DoSomething(net))
         {
+            // 大部分情况下，idle时间过长主动关闭不会存在数据未发送完的情况，
+            // 可以通过设置NO_LINGER直接触发RST，不进行FIN方式的4次握手。或者将LINGER时间设置短些
+            // 更好的优化方式：通知客户端，让客户端主动关闭连接
+            // 避免大量TIME_WAIT造成的fd资源占用
             net->DestroyUserContext();
             net->CleanUp();
             delete net;
