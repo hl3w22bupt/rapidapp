@@ -401,6 +401,9 @@ int AppFrameWork::Tick()
         event_base_loopbreak(event_base_);
     }
 
+    // TODO system max CPU overload, getloadavg
+    // TODO system max memcory useage, /proc/$pid/meminfo
+
     // 检查定时器事件是否触发
     while(true)
     {
@@ -514,6 +517,8 @@ int AppFrameWork::OnFrontEndConnect(evutil_socket_t sock, struct sockaddr *addr)
     }
 
     easy_net_handler->set_active_time(now_);
+
+    // TODO record max connector number
 
     // TODO setwatermark
 
