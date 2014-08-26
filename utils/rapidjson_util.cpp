@@ -1,4 +1,5 @@
 #include "rapidjson_util.h"
+#include <stdio.h>
 
 namespace json_util {
 
@@ -91,11 +92,11 @@ int JsonReader::GetCount(const char* key, int* count)
         return -1;
     }
 
-    if (curr_value_->HasMember(key)) 
+    if (curr_value_->HasMember(key))
     {
         if ((*curr_value_)[key].IsArray())
         {
-            *count = (*curr_value_)[key].Size(); 
+            *count = (*curr_value_)[key].Size();
         }
         else
         {
@@ -113,10 +114,10 @@ int JsonReader::Enter(const char* key)
         return -1;
     }
 
-    if (curr_value_->HasMember(key) && (*curr_value_)[key].IsObject()) 
+    if (curr_value_->HasMember(key) && (*curr_value_)[key].IsObject())
     {
         prev_value_ = curr_value_;
-        curr_value_ = &(*curr_value_)[key]; 
+        curr_value_ = &(*curr_value_)[key];
         return 0;
     }
 
@@ -131,7 +132,7 @@ int JsonReader::EnterAt(const char* key, size_t pos)
     }
 
     if (curr_value_->HasMember(key) && (*curr_value_)[key].IsArray() &&
-        pos < (*curr_value_)[key].Size() && (*curr_value_)[key][pos].IsObject()) 
+        pos < (*curr_value_)[key].Size() && (*curr_value_)[key][pos].IsObject())
     {
         prev_value_ = curr_value_;
         curr_value_ = &(*curr_value_)[key][pos];

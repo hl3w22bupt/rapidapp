@@ -73,17 +73,17 @@ class JsonWriter {
 };
 
 // inline
-inline const char* JsonReader::GetLastError()
-{
-    if (docu_.HasParseError())
-    {
-        return docu_.GetParseError();
-    }
-    else
-    {
-        return NULL;
-    }
-}
+/*inline const char* JsonReader::GetLastError()*/
+/*{*/
+/*if (docu_.HasParseError())*/
+/*{*/
+/*return docu_.GetParseError();*/
+/*}*/
+/*else*/
+/*{*/
+/*return NULL;*/
+/*}*/
+/*}*/
 
 JsonReader& JsonReaderSingleton::GetInstance()
 {
