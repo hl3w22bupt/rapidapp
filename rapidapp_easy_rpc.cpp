@@ -24,6 +24,7 @@ int EasyRpc::Init(magic_cube::CoroutineScheduler* scheduler, EasyNet* net)
 {
     if (NULL == net || NULL == scheduler)
     {
+        LOG(ERROR)<<"null net OR null scheduler";
         return -1;
     }
 
@@ -36,7 +37,7 @@ int EasyRpc::Init(magic_cube::CoroutineScheduler* scheduler, EasyNet* net)
 int EasyRpc::RpcCall(const void* request, size_t request_size,
                      const void** response, size_t* response_size)
 {
-    if (NULL == request || 0 == response_size ||
+    if (NULL == request || 0 == request_size ||
         NULL == response || NULL == response_size)
     {
         return -1;
@@ -48,7 +49,7 @@ int EasyRpc::RpcCall(const void* request, size_t request_size,
     }
 
     request_ = request;
-    response_size_ = response_size;
+    request_size_ = request_size;
     response_ = response;
     response_size_ = response_size;
 
