@@ -5,6 +5,14 @@
 
 namespace rapidapp {
 
+const int MAX_MESSAGE_NAME = 1024;
+
+typedef struct MessageStamp {
+    unsigned char message_type;
+    unsigned short message_name_len;
+    char message_name[MAX_MESSAGE_NAME];
+} MessageStamp;
+
 class MessageReflectionFactory {
     public:
         MessageReflectionFactory();
