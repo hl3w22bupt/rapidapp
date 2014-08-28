@@ -36,12 +36,17 @@ class RapidApp {
         virtual int OnReportRundata() = 0;
 
     public:
+        ///< frontend connector context size
         virtual size_t GetFrontEndContextSize() {return 0;}
+        ///< backend connector context size
         virtual size_t GetBackEndContextSize() {return 0;}
 
     public:
+        ///< frontend max msg wired size
         virtual size_t GetFrontEndMaxMsgSize() = 0;
+        ///< backend max msg wired size
         virtual size_t GetBackEndMaxMsgSize() = 0;
+        ///< app version
         virtual const char* GetAppVersion() = 0;
 };
 
