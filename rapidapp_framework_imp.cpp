@@ -2,6 +2,7 @@
 #include "rapidapp_easy_rpc.h"
 #include "utils/rap_net_uri.h"
 #include <event2/buffer.h>
+#include <gflags/gflags.h>
 #include <cassert>
 #include <cstring>
 #include <sys/resource.h>
