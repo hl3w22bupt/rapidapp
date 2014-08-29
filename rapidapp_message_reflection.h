@@ -13,6 +13,8 @@ typedef struct MessageStamp {
     char message_name[MAX_MESSAGE_NAME];
 } MessageStamp;
 
+const int MIN_MESSAGE_STAMP_LEN = sizeof(unsigned char) + sizeof(unsigned short);
+
 class MessageReflectionFactory {
     public:
         MessageReflectionFactory();
