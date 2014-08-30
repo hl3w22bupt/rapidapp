@@ -670,14 +670,14 @@ int AppFrameWork::OnBackEndMsg(struct bufferevent* bev)
         EasyRpc* rpc = static_cast<EasyRpc*>(easy_net->rpc_binded());
         if (easy_net->is_rpc_binded() && rpc != NULL && rpc->IsActive())
         {
-            rpc->Resume(backend_handler_mgr_.recv_buffer_.buffer\
+            rpc->Resume(backend_handler_mgr_.recv_buffer_.buffer \
                         + elapsed_msglen + sizeof(uint32_t),
                         msglen - sizeof(uint32_t));
         }
         else
         {
             app_->OnRecvBackEnd(easy_net, easy_net->net_type(),
-                                backend_handler_mgr_.recv_buffer_.buffer\
+                                backend_handler_mgr_.recv_buffer_.buffer \
                                 + elapsed_msglen + sizeof(uint32_t),
                                 msglen - sizeof(uint32_t));
         }
@@ -913,15 +913,16 @@ int AppFrameWork::DestroyRpc(EasyRpc** rpc)
 }
 
 int AppFrameWork::RpcCall(EasyRpc* rpc, const void* request, size_t request_size,
-                          const void** response, size_t* response_size)
+                          ON_RPC_REPLY_FUNCTION callback)
 {
-    if (NULL == rpc || NULL == request || 0 == request_size
-        || NULL == response || NULL == response_size)
+    if (NULL == rpc || NULL == callback ||
+        NULL == request || 0 == request_size)
     {
+        LOG(ERROR)<<"invalid rpc call arguments";
         return -1;
     }
 
-    return rpc->RpcCall(request, request_size, response, response_size);
+    return rpc->RpcCall(request, request_size, callback);
 }
 
 

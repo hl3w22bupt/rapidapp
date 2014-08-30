@@ -1,16 +1,9 @@
 #ifndef RAPIDAPP_FRAMEWORK_H_
 #define RAPIDAPP_FRAMEWORK_H_
 
-#include <cstdio>
-#include <inttypes.h>
+#include "rapidapp_defines.h"
 
 namespace rapidapp {
-
-enum {
-    NET_NOT_ESTABLISHED = -1,
-    NET_CONNECT_FAILED = -2,
-    NET_SEND_EXCEPTION = -3,
-};
 
 class EasyTimer;
 class EasyNet;
@@ -48,7 +41,7 @@ class IFrameWork {
         virtual int DestroyRpc(EasyRpc** rpc) = 0;
         virtual int RpcCall(EasyRpc* rpc,
                             const void* request, size_t request_size,
-                            const void** response, size_t* response_size) = 0;
+                            ON_RPC_REPLY_FUNCTION callback) = 0;
 };
 
 }

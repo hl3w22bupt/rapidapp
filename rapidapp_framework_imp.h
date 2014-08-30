@@ -56,9 +56,8 @@ class AppFrameWork : public IFrameWork, public IWalkEach {
     public:
         virtual EasyRpc* CreateRpc(EasyNet* net);
         virtual int DestroyRpc(EasyRpc** rpc);
-        virtual int RpcCall(EasyRpc* rpc,
-                            const void* request, size_t request_size,
-                            const void** response, size_t* response_size);
+        virtual int RpcCall(EasyRpc* rpc, const void* request, size_t request_size,
+                            ON_RPC_REPLY_FUNCTION callback);
 
     public:
         int DoSomething(EasyNet* net);

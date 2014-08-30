@@ -2,7 +2,7 @@
 #define RAPIDAPP_EASY_RPC_H_
 
 #include "coroutine/mc_coroutine.h"
-#include "rapidapp_framework.h"
+#include "rapidapp_defines.h"
 #include <queue>
 
 namespace rapidapp {
@@ -19,7 +19,7 @@ class EasyRpc {
     public:
         int Init(magic_cube::CoroutineScheduler* scheduler, EasyNet* net);
         int RpcCall(const void* request, size_t request_size,
-                    const void** response, size_t* response_size);
+                    ON_RPC_REPLY_FUNCTION callback);
 
         inline bool IsActive() {
             return (!crid_list_.empty());
@@ -38,8 +38,8 @@ class EasyRpc {
         EasyNet* net_;
         const void* request_;
         size_t request_size_;
-        const void** response_;
-        size_t* response_size_;
+        const void* response_;
+        size_t response_size_;
 
         std::queue<int> crid_list_;
 
