@@ -33,9 +33,9 @@ class IFrameWork {
         virtual void DestroyTimer(EasyTimer** timer) = 0;
 
         // 目前实现的rpc，依赖于rpc服务端保证按顺序返回响应
-        // （单线程服务肯定可以保证，多线程需要代码去保证）
         // 目前rpc基于协程的实现暂未完成预期功能，统一放到后面来完成
         // TODO 后续会在封装的IPC组件上集成rpc，将rpc coroutine id放入协议首部
+        // 后续以EasyRpc为基础，结合Message Reflection来完成rpc
     public:
         virtual EasyRpc* CreateRpc(EasyNet* net) = 0;
         virtual int DestroyRpc(EasyRpc** rpc) = 0;

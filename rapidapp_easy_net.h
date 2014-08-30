@@ -26,6 +26,7 @@ enum SendError {
 
 class AppFrameWork;
 class NetHandlerMgr;
+// TODO net除了TCP通信以外，后面会进一步支持IPC等
 class EasyNet {
     public:
         EasyNet();
