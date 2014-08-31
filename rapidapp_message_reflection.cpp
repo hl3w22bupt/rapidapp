@@ -1,4 +1,5 @@
 #include "rapidapp_message_reflection.h"
+#include <google/protobuf/descriptor.h>
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/io/coded_stream.h>
 #include <glog/logging.h>
@@ -7,6 +8,44 @@
 namespace rapidapp {
 
 using ::google::protobuf::Message;
+using ::google::protobuf::MessageFactory;
+using ::google::protobuf::Descriptor;
+using ::google::protobuf::DescriptorPool;
+
+inline Message* NewInstance(const std::string& mesg_name)
+{
+    Message* mesg = NULL;
+    // get message type
+    const Descriptor* descriptor = DescriptorPool::generated_pool()
+        ->FindMessageTypeByName(mesg_name);
+    if (descriptor != NULL)
+    {
+        // get default instance
+        const Message* prototype = MessageFactory::generated_factory()
+            ->GetPrototype(descriptor);
+        if (prototype != NULL)
+        {
+            // new instance
+            return prototype->New();
+        }
+    }
+
+    return mesg;
+}
+
+inline const Message* DefaultInstance(const std::string& mesg_name)
+{
+    // get message type
+    const Descriptor* descriptor = DescriptorPool::generated_pool()
+        ->FindMessageTypeByName(mesg_name);
+    if (descriptor != NULL)
+    {
+        // default instance
+        return MessageFactory::generated_factory()->GetPrototype(descriptor);
+    }
+
+    return NULL;
+}
 
 MessageReflectionFactory::MessageReflectionFactory()
 {}
@@ -37,11 +76,13 @@ MessageReflectionFactory::SpawnMessage(const char* msg_bin, size_t msg_bin_size)
             MIN_MESSAGE_STAMP_LEN + message_name_len;
         return NULL;
     }
+    std::string message_name = std::string(msg_bin + MIN_MESSAGE_STAMP_LEN,
+                                           message_name_len - 1);
 
-    return NULL;
+    return NewInstance(message_name);
 }
 
-Message*
+const Message*
 MessageReflectionFactory::SharedMessage(const char* msg_bin, size_t msg_bin_size)
 {
     if (NULL == msg_bin)
@@ -64,8 +105,10 @@ MessageReflectionFactory::SharedMessage(const char* msg_bin, size_t msg_bin_size
             MIN_MESSAGE_STAMP_LEN + message_name_len;
         return NULL;
     }
+    std::string message_name = std::string(msg_bin + MIN_MESSAGE_STAMP_LEN,
+                                           message_name_len - 1);
 
-    return NULL;
+    return DefaultInstance(message_name);
 }
 
 }

@@ -22,7 +22,7 @@ class MessageReflectionFactory {
 
     public:
         static ::google::protobuf::Message* SpawnMessage(const char* msg_bin, size_t msg_bin_size);
-        static ::google::protobuf::Message* SharedMessage(const char* msg_bin, size_t msg_bin_size);
+        static const ::google::protobuf::Message* SharedMessage(const char* msg_bin, size_t msg_bin_size);
 };
 
 }
