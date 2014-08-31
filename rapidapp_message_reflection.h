@@ -15,14 +15,23 @@ typedef struct MessageStamp {
 
 const int MIN_MESSAGE_STAMP_LEN = sizeof(unsigned char) + sizeof(unsigned short);
 
-class MessageReflectionFactory {
+class MessageGenerator {
     public:
-        MessageReflectionFactory();
-        virtual ~MessageReflectionFactory();
+        MessageGenerator();
+        virtual ~MessageGenerator();
 
     public:
         static ::google::protobuf::Message* SpawnMessage(const char* msg_bin, size_t msg_bin_size);
         static const ::google::protobuf::Message* SharedMessage(const char* msg_bin, size_t msg_bin_size);
+};
+
+class SmartMessanger {
+    public:
+        SmartMessanger();
+        virtual ~SmartMessanger();
+
+    public:
+        int SendMessage(::google::protobuf::Message* message);
 };
 
 }

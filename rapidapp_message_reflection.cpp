@@ -47,14 +47,14 @@ inline const Message* DefaultInstance(const std::string& mesg_name)
     return NULL;
 }
 
-MessageReflectionFactory::MessageReflectionFactory()
+MessageGenerator::MessageGenerator()
 {}
 
-MessageReflectionFactory::~MessageReflectionFactory()
+MessageGenerator::~MessageGenerator()
 {}
 
 Message*
-MessageReflectionFactory::SpawnMessage(const char* msg_bin, size_t msg_bin_size)
+MessageGenerator::SpawnMessage(const char* msg_bin, size_t msg_bin_size)
 {
     if (NULL == msg_bin)
     {
@@ -83,7 +83,7 @@ MessageReflectionFactory::SpawnMessage(const char* msg_bin, size_t msg_bin_size)
 }
 
 const Message*
-MessageReflectionFactory::SharedMessage(const char* msg_bin, size_t msg_bin_size)
+MessageGenerator::SharedMessage(const char* msg_bin, size_t msg_bin_size)
 {
     if (NULL == msg_bin)
     {
@@ -109,6 +109,25 @@ MessageReflectionFactory::SharedMessage(const char* msg_bin, size_t msg_bin_size
                                            message_name_len - 1);
 
     return DefaultInstance(message_name);
+}
+
+SmartMessanger::SmartMessanger()
+{}
+
+SmartMessanger::~SmartMessanger()
+{}
+
+int SmartMessanger::SendMessage(Message* message)
+{
+    if (NULL == message)
+    {
+        return -1;
+    }
+
+    const std::string message_name = message->GetTypeName();
+
+    // TODO
+    return 0;
 }
 
 }
