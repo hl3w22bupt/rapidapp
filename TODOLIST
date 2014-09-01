@@ -1,0 +1,4 @@
+1. redis proxy encapsulating component
+2. rpc improvement
+3. ipc component, boost.interprocess? zmq?
+4. OM & monitor
