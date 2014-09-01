@@ -63,6 +63,7 @@ int EasyRpc::RpcCall(const void* request, size_t request_size,
     int cid = scheduler_->CreateCoroutine(RpcFunction, &context);
     if (cid < 0)
     {
+        LOG(ERROR)<<"create coroutine failed, net:"<<net_->uri();
         return -1;
     }
 
@@ -77,14 +78,16 @@ int EasyRpc::RpcFunction(void* arg)
 {
     if (NULL == arg)
     {
+        LOG(ERROR)<<"null argument";
         return -1;
     }
 
     RPC_CONTEXT* rpc_ctx = static_cast<RPC_CONTEXT*>(arg);
     EasyRpc* the_handler = rpc_ctx->rpc_stub;
     if (NULL == the_handler || NULL == the_handler->net_ ||
-        NULL == the_handler->scheduler_)
+        NULL == the_handler->scheduler_ || NULL == rpc_ctx->callback)
     {
+        LOG(ERROR)<<"invalid rpc handler OR invalid callback";
         return -1;
     }
 
@@ -103,7 +106,7 @@ int EasyRpc::RpcFunction(void* arg)
     return 0;
 }
 
-// 目前暂时认为1个rpc request的reply是严格按顺序的，因为去除队列最前面的。
+// 目前暂时认为每1个rpc request的reply是严格按顺序的，因此取队列最前面的。
 // 可以认为目前是不可用状态，后续通过协议封装异步rpc call id
 int EasyRpc::Resume(const char* buffer, size_t size)
 {

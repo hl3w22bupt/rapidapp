@@ -79,7 +79,22 @@ MessageGenerator::SpawnMessage(const char* msg_bin, size_t msg_bin_size)
     std::string message_name = std::string(msg_bin + MIN_MESSAGE_STAMP_LEN,
                                            message_name_len - 1);
 
-    return NewInstance(message_name);
+    Message* message = NewInstance(message_name);
+    if (NULL == message)
+    {
+        LOG(ERROR)<<"NewInstance by name:"<<message_name<<" failed";
+        return NULL;
+    }
+
+    if (!message->ParseFromArray(msg_bin + MIN_MESSAGE_STAMP_LEN + message_name_len,
+                                 msg_bin_size - (MIN_MESSAGE_STAMP_LEN + message_name_len)))
+    {
+        LOG(ERROR)<<"ParseFromArray failed, msg size:"<<msg_bin_size - (MIN_MESSAGE_STAMP_LEN + message_name_len);
+        delete message;
+        return NULL;
+    }
+
+    return message;
 }
 
 const Message*
@@ -108,7 +123,21 @@ MessageGenerator::SharedMessage(const char* msg_bin, size_t msg_bin_size)
     std::string message_name = std::string(msg_bin + MIN_MESSAGE_STAMP_LEN,
                                            message_name_len - 1);
 
-    return DefaultInstance(message_name);
+    Message* message = const_cast<Message*>(DefaultInstance(message_name));
+    if (NULL == message)
+    {
+        LOG(ERROR)<<"DefaultInstance by name:"<<message_name<<" failed";
+        return NULL;
+    }
+
+    if (!message->ParseFromArray(msg_bin + MIN_MESSAGE_STAMP_LEN + message_name_len,
+                                 msg_bin_size - (MIN_MESSAGE_STAMP_LEN + message_name_len)))
+    {
+        LOG(ERROR)<<"ParseFromArray failed, msg size:"<<msg_bin_size - (MIN_MESSAGE_STAMP_LEN + message_name_len);
+        return NULL;
+    }
+
+    return message;
 }
 
 SmartMessanger::SmartMessanger()
@@ -125,8 +154,21 @@ int SmartMessanger::SendMessage(Message* message)
     }
 
     const std::string message_name = message->GetTypeName();
+    if (message_name.size() >= MAX_MESSAGE_NAME)
+    {
+        return -1;
+    }
 
-    // TODO
+    static char stamp[MIN_MESSAGE_STAMP_LEN + MAX_MESSAGE_NAME];
+    stamp[0] = 0; // type 0
+    *(unsigned short*)&stamp[1] = htons(message_name.size() + 1);
+    strcpy(stamp + MIN_MESSAGE_STAMP_LEN, message_name.c_str());
+    std::string message_packed;
+    LOG(INFO)<<"message to send:"<<message->DebugString();
+    message->SerializeToString(&message_packed);
+
+    // TODO send to wire
+
     return 0;
 }
 
