@@ -23,7 +23,7 @@ class ConnectorApp : public RapidApp {
         virtual int OnUpdate();
         virtual int OnReload();
 
-        virtual int OnRecvCtrl(const char* msg);
+        virtual int OnRecvCtrl(int argc, char** argv);
 
         virtual int OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t size);
         virtual int OnRecvBackEnd(EasyNet* net, int type, const char* msg, size_t size);

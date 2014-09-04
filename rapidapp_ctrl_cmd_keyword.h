@@ -7,15 +7,13 @@
 
 namespace rapidapp {
 
-const char CTRL_CMD_DELIMETER = ' ';
-
 class ICommandEventListener {
     public:
         ICommandEventListener(){};
         virtual ~ICommandEventListener(){};
 
     public:
-        virtual void OnCommand(const char* cmd) = 0;
+        virtual void OnCommand(int argc, char** argv) = 0;
 };
 
 inline int BKDRHash(const char* str)
@@ -63,17 +61,13 @@ class AppControlDispatcher {
             commad_dictionary_[cmd] = listener;
         }
 
-        inline int Dispatch(const char* command) {
-            std::string cmd(command);
-            size_t pos = cmd.find(CTRL_CMD_DELIMETER);
-            if (pos > 0)
-            {
-                cmd = std::string(command, pos);
-            }
+        inline int Dispatch(int argc, char** argv) {
+            if (argc <= 0 || NULL == argv)
+                return -1;
 
-            ICommandEventListener* listener = GetEventListener(cmd);
+            ICommandEventListener* listener = GetEventListener(std::string(argv[0]));
             if (listener != NULL) {
-                listener->OnCommand(command);
+                listener->OnCommand(argc, argv);
                 return 0;
             } else {
                 return -1;

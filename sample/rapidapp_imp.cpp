@@ -80,7 +80,7 @@ int MyApp::OnReload()
     return 0;
 }
 
-int MyApp::OnRecvCtrl(const char* msg)
+int MyApp::OnRecvCtrl(int argc, char** argv)
 {
     return 0;
 }

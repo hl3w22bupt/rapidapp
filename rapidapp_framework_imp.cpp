@@ -26,9 +26,13 @@ const int MAX_CTRL_MSG_LEN = 2048;
 
 const int DEFAULT_MAX_FD_LIMIT = 10240;
 
+const int MAX_ARGUMENTS_NUM = 32;
+
 bool AppFrameWork::running_ = false;
 bool AppFrameWork::reloading_ = false;
 time_t AppFrameWork::now_ = 0;
+
+const char CTRL_CMD_DELIMETER = ' ';
 
 void libevent_log_cb_func(int severity, const char *msg) {
     if (msg != NULL) {
@@ -36,8 +40,27 @@ void libevent_log_cb_func(int severity, const char *msg) {
     }
 }
 
-AppFrameWork::AppFrameWork() : event_base_(NULL), internal_timer_(NULL),
-                                 listener_(NULL), udp_ctrl_keeper_(NULL), ctrl_dispatcher_(),
+inline int libevent_get_arguments(char* command, int& argc, char** argv) {
+    if (NULL == argv || NULL == command) {
+        return -1;
+    }
+
+    int i = 0;
+    char* start_ptr = command;
+    char* ptr = NULL;
+    while (strtok_r(start_ptr, const_cast<char*>(&CTRL_CMD_DELIMETER), &ptr) != NULL
+           && i < MAX_ARGUMENTS_NUM) {
+        argv[i++] = start_ptr;
+        *ptr = '\0';
+        start_ptr = ptr + 1;
+    }
+    argc = i;
+
+    return 0;
+}
+
+AppFrameWork::AppFrameWork() : event_base_(NULL), internal_timer_(NULL), listener_(NULL),
+                                 udp_ctrl_keeper_(NULL), ctrl_dispatcher_(),
                                  app_(NULL), has_been_cleanup_(false),
                                  frontend_handler_mgr_(), backend_handler_mgr_(),
                                  timer_mgr_(), rpc_scheduler_(NULL)
@@ -466,11 +489,20 @@ int AppFrameWork::OnCtrlMsg(struct bufferevent* bev)
 
     LOG(INFO)<<"recv ctrl msg:"<<ctrl_msg;
 
-    int ret = ctrl_dispatcher_.Dispatch(ctrl_msg);
+    int argc = 0;
+    char* argv[MAX_ARGUMENTS_NUM];
+    int ret = libevent_get_arguments(ctrl_msg, argc, argv);
+    if (ret != 0)
+    {
+        LOG(ERROR)<<"get arguments:"<<ctrl_msg<<" failed";
+        return -1;
+    }
+
+    ret = ctrl_dispatcher_.Dispatch(argc, argv);
     if (ret != 0)
     {
         // non-rapidapp inner control command, user specified control msg
-        ret = app_->OnRecvCtrl(ctrl_msg);
+        ret = app_->OnRecvCtrl(argc, argv);
         if (ret < 0)
         {
             LOG(ERROR)<<"invalid control command:"<<ctrl_msg;

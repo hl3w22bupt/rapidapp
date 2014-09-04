@@ -147,7 +147,7 @@ int ConnectorApp::OnReload()
     return 0;
 }
 
-int ConnectorApp::OnRecvCtrl(const char* msg)
+int ConnectorApp::OnRecvCtrl(int argc, char** argv)
 {
     return 0;
 }

@@ -47,7 +47,7 @@ int LogicApp::OnReload()
     return 0;
 }
 
-int LogicApp::OnRecvCtrl(const char* msg)
+int LogicApp::OnRecvCtrl(int argc, char** argv)
 {
     return 0;
 }

@@ -23,7 +23,7 @@ class RapidApp {
         virtual int OnUpdate() = 0;
         virtual int OnReload() = 0;
 
-        virtual int OnRecvCtrl(const char* msg) {
+        virtual int OnRecvCtrl(int argc, char** argv) {
             return -1;
         }
 
