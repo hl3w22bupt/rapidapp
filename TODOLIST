@@ -2,3 +2,13 @@
 2. rpc improvement
 3. ipc component, boost.interprocess? zmq?
 4. OM & monitor
+
+
+protobuf优化
+尽量少用ByteSize，可调用GetCachedSize(),编解码采用*WithCachedSizes*版本
+能用Swap的地方不用Copy。Clear只清理不释放，可重用无需再分配。SpaceUsed可以估算PB对象内存使用量
+
+修改protobuf源码优化(protobuf新版本好像支持懒解析)
+性能优化效果 lazy partial >> bytes optimization > message pool > tcmalloc > no optimization
+通过修改descriptor.proto懒解析，第1步：readBytes 第2步：ParseFromPartialString
+选择性解析(不分配、不处理)

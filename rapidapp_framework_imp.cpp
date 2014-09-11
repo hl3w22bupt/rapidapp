@@ -466,6 +466,7 @@ int AppFrameWork::Reload()
     return 0;
 }
 
+// string command supported only
 int AppFrameWork::OnCtrlMsg(struct bufferevent* bev)
 {
     assert(app_ != NULL);
