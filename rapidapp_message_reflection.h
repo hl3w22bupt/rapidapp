@@ -7,6 +7,7 @@ namespace rapidapp {
 
 const int MAX_MESSAGE_NAME = 1024;
 
+// message stamp || type | name length | name ||
 typedef struct MessageStamp {
     unsigned char message_type;
     unsigned short message_name_len;
@@ -15,6 +16,7 @@ typedef struct MessageStamp {
 
 const int MIN_MESSAGE_STAMP_LEN = sizeof(unsigned char) + sizeof(unsigned short);
 
+// message generator
 class MessageGenerator {
     public:
         MessageGenerator();
@@ -23,15 +25,9 @@ class MessageGenerator {
     public:
         static ::google::protobuf::Message* SpawnMessage(const char* msg_bin, size_t msg_bin_size);
         static const ::google::protobuf::Message* SharedMessage(const char* msg_bin, size_t msg_bin_size);
-};
+        static const char* GetMessageName(const char* msg_bin, size_t msg_bin_size);
 
-class SmartMessanger {
-    public:
-        SmartMessanger();
-        virtual ~SmartMessanger();
-
-    public:
-        int SendMessage(::google::protobuf::Message* message);
+        static int MessageToBinary(::google::protobuf::Message* message, char* data, size_t size);
 };
 
 }
