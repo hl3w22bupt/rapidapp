@@ -8,3 +8,7 @@ message EchoBody {
 message Mesg {
     required EchoBody body = 2;
 }
+
+service EchoService {
+  rpc echo(Mesg) returns(Mesg);
+}

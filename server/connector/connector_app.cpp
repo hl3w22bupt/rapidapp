@@ -152,7 +152,7 @@ int ConnectorApp::OnRecvCtrl(int argc, char** argv)
     return 0;
 }
 
-int ConnectorApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t size)
+int ConnectorApp::OnFrontEndConnect(EasyNet* net, int type)
 {
     if (NULL == frame_stub_)
     {
@@ -182,12 +182,34 @@ int ConnectorApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t
         return -1;
     }
 
+    return 0;
+}
+
+int ConnectorApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t size)
+{
+    if (NULL == frame_stub_)
+    {
+        LOG(ERROR)<<"assert failed, null frame stub | null conn session mgr";
+        return -1;
+    }
+
+    void* uctx = frame_stub_->GetUserContext(net);
+    if (NULL == uctx)
+    {
+        LOG(ERROR)<<"null user context";
+        return -1;
+    }
+    ConnectorSession* session = static_cast<ConnectorSession*>(uctx);
+
+    // context 查找
+    int ret = 0;
     connector_client::CSMsg up_msg;
     up_msg.ParseFromArray(msg, size);
     LOG(INFO)<<"upside req from client: "<<std::endl<<up_msg.DebugString();
 
     // 根据路由规则，转发
     // TODO sequence id
+    // TODO DriveStateMachine
     uint32_t fd = 0;
     uint64_t nid = 0;
     frame_stub_->GetNetIds(net, fd, nid);
@@ -252,7 +274,7 @@ int ConnectorApp::OnRecvBackEnd(EasyNet* net, int type, const char* msg, size_t 
     // 中转至前端网络连接，同时update状态机
     if (connector_server::DATA != down_msg.head().bodyid())
     {
-        session->ChangeState(0);
+        session->DriveStateMachine();
     }
     else
     {

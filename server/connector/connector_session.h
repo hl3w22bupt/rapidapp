@@ -7,9 +7,16 @@
 using namespace rapidapp;
 
 enum SessionState {
-    STATE_INIT = 0,
-    STATE_AUTH = 1,
-    STATE_OK   = 2,
+    STATE_INIT   = 0,
+    STATE_AUTH   = 1,
+    STATE_SYNING = 2,
+    STATE_OK     = 3,
+};
+
+enum OperationCode {
+    OPERATION_NONE  = 0,
+    OPERATION_CSTOP = 1,
+    OPERATION_SSTOP = 2,
 };
 
 class ConnectorSession {
@@ -22,7 +29,9 @@ class ConnectorSession {
         void CleanUp();
 
     public:
-        void ChangeState(int status_code);
+        int DriveStateMachine();
+
+        int HandShake_StopSession();
 
     public:
         inline int state() const {
@@ -36,6 +45,13 @@ class ConnectorSession {
         inline uint32_t sid() const {
             return sid_;
         }
+
+    private:
+        int DoAuthRequest();
+
+        int HandShake_StartSession();
+        int HandShake_OnStartAcked();
+        int HandShake_OnStopNotify();
 
     private:
         void SetChannelID(int channel_id);

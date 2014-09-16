@@ -553,8 +553,9 @@ int AppFrameWork::OnFrontEndConnect(evutil_socket_t sock, struct sockaddr *addr)
     easy_net_handler->set_active_time(now_);
 
     // TODO record max connector number
-
     // TODO setwatermark
+
+    app_->OnFrontEndConnect(easy_net_handler, easy_net_handler->net_type());
 
     return 0;
 }

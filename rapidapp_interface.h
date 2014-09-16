@@ -27,6 +27,10 @@ class RapidApp {
             return -1;
         }
 
+        virtual int OnFrontEndConnect(EasyNet* net, int type) {
+            return 0;
+        }
+
         virtual int OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t size) = 0;
         virtual int OnRecvBackEnd(EasyNet* net, int type, const char* msg, size_t size) = 0;
 

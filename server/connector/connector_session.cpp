@@ -4,7 +4,7 @@
 const int kDefaultOverloadLimit = 1024;
 
 ConnectorSession::ConnectorSession() :
-    state_(STATE_INIT), net_stub_(NULL), channel_id_(-1)
+    state_(STATE_INIT), net_stub_(NULL), channel_id_(-1), sid_(-1)
 {}
 
 ConnectorSession::~ConnectorSession()
@@ -29,27 +29,61 @@ void ConnectorSession::CleanUp()
     state_ = STATE_INIT;
 }
 
-void ConnectorSession::ChangeState(int status_code)
+int ConnectorSession::DriveStateMachine()
 {
     switch(state_)
     {
         case STATE_INIT:
             {
                 state_ = STATE_AUTH;
+                return DoAuthRequest();
                 break;
             }
         case STATE_AUTH:
             {
+                state_ = STATE_SYNING;
+                return HandShake_StartSession();
+                break;
+            }
+        case STATE_SYNING:
+            {
                 state_ = STATE_OK;
+                return HandShake_OnStartAcked();
                 break;
             }
         case STATE_OK:
             {
+                return 0;
                 break;
             }
         default:
-            break;
+            return -1;
     }
+}
+
+int ConnectorSession::DoAuthRequest()
+{
+    return 0;
+}
+
+int ConnectorSession::HandShake_StartSession()
+{
+    return 0;
+}
+
+int ConnectorSession::HandShake_OnStartAcked()
+{
+    return 0;
+}
+
+int ConnectorSession::HandShake_StopSession()
+{
+    return 0;
+}
+
+int ConnectorSession::HandShake_OnStopNotify()
+{
+    return 0;
 }
 
 void ConnectorSession::SetChannelID(int channel_id)

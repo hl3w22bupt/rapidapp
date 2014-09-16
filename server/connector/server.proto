@@ -10,26 +10,35 @@ enum ConnectorMagic {
 }
 
 message Tuple {
-    required uint32 fd  = 1;     // 连接fd
+    required uint32 fd  = 1;    // 连接fd
     required uint64 nid = 2;    // 连接id
     required uint32 sid = 3;    // 有状态后端服务session id
 }
 
 message SSHead {
-    required int32 magic = 2[default=0x3443];
-    required int64 sequence = 3;
-    required int32 bodyid = 4;
-    required Tuple session = 5;
+    required int32 magic = 1[default=0x3443];
+    required int64 sequence = 2;
+    required int32 bodyid = 3;
+    required Tuple session = 4;
 }
 
 message SSData {
     optional bytes data = 1;
 }
 
+message SSSyn {
+  optional int32 result = 1;
+}
+
+message SSAck {
+  optional int32 result = 1;
+}
+
 // connector做透传，游戏客户端数据作为unknown fields
 message SSBody {
-    optional int32 flag = 1;
-    optional SSData data = 2;
+    optional SSData data = 1;
+    optional SSSyn syn = 2;
+    optional SSAck ack = 3;
 }
 
 message SSMsg {
