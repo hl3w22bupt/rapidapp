@@ -42,6 +42,8 @@ class AppFrameWork : public IFrameWork, public IWalkEach {
     public:
         virtual EasyNet* CreateBackEnd(const char* url, int type);
         virtual void DestroyBackEnd(EasyNet** net);
+        virtual void DestroyFrontEnd(EasyNet** net);
+
         virtual EasyNet* GetFrontEndByAsyncIds(uint32_t fd, uint64_t nid);
         virtual int GetNetIds(EasyNet* net, uint32_t& fd, uint64_t& nid);
         virtual void* GetUserContext(EasyNet* net);

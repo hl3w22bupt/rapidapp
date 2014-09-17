@@ -38,12 +38,20 @@ class ConnectorSession {
             return state_;
         }
 
+        inline EasyNet* net() {
+            return net_stub_;
+        }
+
         inline void set_sid(uint32_t sid) {
             sid_ = sid;
         }
 
         inline uint32_t sid() const {
             return sid_;
+        }
+
+        inline bool BeenReady() const {
+            return (STATE_OK == state_);
         }
 
     private:

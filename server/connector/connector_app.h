@@ -48,6 +48,12 @@ class ConnectorApp : public RapidApp {
         int SetUpAndCheckConfig();
 
     private:
+        int ForwardUpSideMessage(EasyNet* net, ConnectorSession* session,
+                                 const char* msg, size_t size);
+        int ForwardDownSideMessage(EasyNet* net, ConnectorSession* session,
+                                   const char* msg, size_t size);
+
+    private:
         IFrameWork* frame_stub_;
         connector_config::ConnectorConfig config_;
         int backend_pos_;

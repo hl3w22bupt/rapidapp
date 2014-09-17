@@ -152,6 +152,7 @@ int ConnectorApp::OnRecvCtrl(int argc, char** argv)
     return 0;
 }
 
+// 新连接建立，发起与后端的握手
 int ConnectorApp::OnFrontEndConnect(EasyNet* net, int type)
 {
     if (NULL == frame_stub_)
@@ -182,10 +183,22 @@ int ConnectorApp::OnFrontEndConnect(EasyNet* net, int type)
         return -1;
     }
 
+    // 驱动连接状态机
+    // DoAuth
+    ret = session->DriveStateMachine();
+    if (ret < 0)
+    {
+        LOG(ERROR)<<"Drive Statue error, close frontend connection";
+        frame_stub_->DestroyFrontEnd(&net);
+        return -1;
+    }
+
     return 0;
 }
 
-int ConnectorApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t size)
+// 转发上行消息
+int ConnectorApp::ForwardUpSideMessage(EasyNet* net, ConnectorSession* session,
+                                       const char* msg, size_t size)
 {
     if (NULL == frame_stub_)
     {
@@ -193,23 +206,24 @@ int ConnectorApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t
         return -1;
     }
 
-    void* uctx = frame_stub_->GetUserContext(net);
-    if (NULL == uctx)
+    if (NULL == net || NULL == session)
     {
-        LOG(ERROR)<<"null user context";
+        LOG(ERROR)<<"null net | null session";
         return -1;
     }
-    ConnectorSession* session = static_cast<ConnectorSession*>(uctx);
 
-    // context 查找
-    int ret = 0;
+    if (NULL == msg || 0 == size)
+    {
+        LOG(ERROR)<<"invalid msg size:"<<size;
+        return -1;
+    }
+
     connector_client::CSMsg up_msg;
     up_msg.ParseFromArray(msg, size);
     LOG(INFO)<<"upside req from client: "<<std::endl<<up_msg.DebugString();
 
     // 根据路由规则，转发
     // TODO sequence id
-    // TODO DriveStateMachine
     uint32_t fd = 0;
     uint64_t nid = 0;
     frame_stub_->GetNetIds(net, fd, nid);
@@ -225,7 +239,8 @@ int ConnectorApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t
 
     std::string up_buff;
     msg_to_backend.SerializeToString(&up_buff);
-    ret = frame_stub_->SendToBackEnd(backends_[backend_pos_], up_buff.c_str(), up_buff.size());
+    int ret = frame_stub_->SendToBackEnd(backends_[backend_pos_],
+                                         up_buff.c_str(), up_buff.size());
     if (ret != 0)
     {
         LOG(INFO)<<"send to backend pos: "<<backend_pos_<<" failed";
@@ -239,6 +254,56 @@ int ConnectorApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t
     }
 
     return 0;
+}
+
+// 转发下行消息
+int ConnectorApp::ForwardDownSideMessage(EasyNet* net, ConnectorSession* session,
+                                         const char* msg, size_t size)
+{
+    connector_client::CSMsg down_msg_2client;
+    down_msg_2client.mutable_head()->set_magic(0x3344);
+    down_msg_2client.mutable_head()->set_sequence(1);
+    down_msg_2client.mutable_head()->set_bodyid(connector_client::DATA_TRANSPARENT);
+    down_msg_2client.mutable_body()->set_data(std::string(msg, size));
+    LOG(INFO)<<"downside resp to client: "<<std::endl<<down_msg_2client.DebugString();
+
+    std::string down_buff;
+    down_msg_2client.SerializeToString(&down_buff);
+
+    int ret = frame_stub_->SendToFrontEnd(net, down_buff.c_str(), down_buff.size());
+    if (ret != 0)
+    {
+        LOG(ERROR)<<"transfer to frontend failed";
+        return -1;
+    }
+
+    return 0;
+}
+
+int ConnectorApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t size)
+{
+    if (NULL == frame_stub_)
+    {
+        LOG(ERROR)<<"assert failed, null frame stub | null conn session mgr";
+        return -1;
+    }
+
+    // context 查找
+    void* uctx = frame_stub_->GetUserContext(net);
+    if (NULL == uctx)
+    {
+        LOG(ERROR)<<"null user context";
+        return -1;
+    }
+    ConnectorSession* session = static_cast<ConnectorSession*>(uctx);
+
+    if (!session->BeenReady())
+    {
+        LOG(ERROR)<<"handshake uncompletedly, can NOT push data now";
+        return -1;
+    }
+
+    return ForwardUpSideMessage(net, session, msg, size);
 }
 
 int ConnectorApp::OnRecvBackEnd(EasyNet* net, int type, const char* msg, size_t size)
@@ -269,43 +334,46 @@ int ConnectorApp::OnRecvBackEnd(EasyNet* net, int type, const char* msg, size_t 
         return -1;
     }
 
-    session->set_sid(down_msg.head().session().sid());
-
     // 中转至前端网络连接，同时update状态机
     if (connector_server::DATA != down_msg.head().bodyid())
     {
-        session->DriveStateMachine();
+        if (session->DriveStateMachine() < 0)
+        {
+            // 删除net时，会同时清理session空间
+            LOG(ERROR)<<"state machine run failed, close frontend";
+            frame_stub_->DestroyFrontEnd(&front_net);
+            return -1;
+        }
+        else
+        {
+            session->set_sid(down_msg.head().session().sid());
+            return 0;
+        }
     }
     else
     {
+// 由于目前后端测试工具不发送syn握手包，为了联调方便，暂时注释掉
 #if 0
         if (session->state() != STATE_OK)
         {
             LOG(ERROR)<<"state NOT been STATE_OK, data can NOT transfer";
+            frame_stub_->DestroyFrontEnd(&front_net);
+            return -1;
+        }
+
+        if (session->sid() != down_msg.head().session().sid())
+        {
+            LOG(ERROR)<<"session id NOT unexpected. local sid:"<<session->sid()
+                <<", down sid:"i<<down_msg.head().session().sid();
+            frame_stub_->DestroyFrontEnd(&front_net);
             return -1;
         }
 #endif
 
-        connector_client::CSMsg down_msg_2client;
-        down_msg_2client.mutable_head()->set_magic(0x3344);
-        down_msg_2client.mutable_head()->set_sequence(1);
-        down_msg_2client.mutable_head()->set_bodyid(connector_client::DATA_TRANSPARENT);
-        down_msg_2client.mutable_body()->set_data(down_msg.body().data().data());
-        LOG(INFO)<<"downside resp to client: "<<std::endl<<down_msg_2client.DebugString();
-
-        std::string down_buff;
-        down_msg_2client.SerializeToString(&down_buff);
-
-        int ret = frame_stub_->SendToFrontEnd(front_net,
-                                              down_buff.c_str(), down_buff.size());
-        if (ret != 0)
-        {
-            LOG(ERROR)<<"transfer to frontend failed";
-            return -1;
-        }
+        return ForwardDownSideMessage(front_net, session,
+                                      down_msg.body().data().data().c_str(),
+                                      down_msg.body().data().data().size());
     }
-
-    return 0;
 }
 
 int ConnectorApp::OnTimer(EasyTimer* timer, int timer_id)

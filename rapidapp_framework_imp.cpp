@@ -800,6 +800,19 @@ void AppFrameWork::DestroyBackEnd(EasyNet** net)
     *net = NULL;
 }
 
+void AppFrameWork::DestroyFrontEnd(EasyNet** net)
+{
+    if (NULL == net || NULL == *net)
+    {
+        LOG(WARNING)<<"invalid net";
+        return;
+    }
+
+    frontend_handler_mgr_.RemoveHandler((*net));
+
+    *net = NULL;
+}
+
 int AppFrameWork::SendToFrontEnd(EasyNet* net, const char* buf, size_t buf_size)
 {
     if (NULL == net || NULL == buf || 0 == buf_size)
