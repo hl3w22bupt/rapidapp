@@ -48,7 +48,6 @@ public std::binary_function<std::string, std::string, bool> {
     }
 };
 
-// TODO 命令使用描述
 typedef std::tr1::unordered_map<std::string, ICommandEventListener*, Equal, Compare> CmdDictionary;
 
 class AppControlDispatcher {
@@ -73,6 +72,9 @@ class AppControlDispatcher {
                 return -1;
             }
         }
+
+    public:
+        void AddDefaultSupportedCommand();
 
     private:
         inline ICommandEventListener* GetEventListener(std::string cmd) {

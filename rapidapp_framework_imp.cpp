@@ -272,8 +272,8 @@ int AppFrameWork::Init(RapidApp* app, int argc, char** argv)
     }
 
     // ctrl udp socket
-    // TODO 添加内部支持命令字
-    //ctrl_dispatcher_.AddSupportedCommand();
+    // 添加内部支持命令字
+    ctrl_dispatcher_.AddDefaultSupportedCommand();
 
     evutil_socket_t udp_ctrl_sockfd = rap_uri_open_socket(udp_uri);
     if (udp_ctrl_sockfd < 0)

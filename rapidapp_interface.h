@@ -1,5 +1,5 @@
-#ifndef RAPIDAPP_BASE_H_
-#define RAPIDAPP_BASE_H_
+#ifndef RAPIDAPP_INTERFACE_H_
+#define RAPIDAPP_INTERFACE_H_
 
 #include "rapidapp_framework.h"
 #include <cstdio>
