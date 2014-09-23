@@ -1,23 +1,23 @@
 package connector_client;
 
 enum ConnectorMagic {
-    MAGIC_CS_V1 = 0x3344;
+  MAGIC_CS_V1 = 0x3344;
 };
 
 enum BodyCmdId {
-   SYN              = 1;
-   SYNACK           = 2;
-   AUTHENTICATION   = 3;
-   PASSPORT         = 4;
-   DATA_TRANSPARENT = 16;
-   ERROR            = 100;
+  SYN              = 1;
+  SYNACK           = 2;
+  AUTHENTICATION   = 3;
+  PASSPORT         = 4;
+  DATA_TRANSPARENT = 16;
+  ERROR            = 100;
 }
 
 message CSHead {
-    required int32 magic = 1[default=0x3344];
-    required int64 sequence = 2;
-    required int32 bodyid = 3;
-    required int32 checksum = 4;
+  required int32 magic = 1[default=0x3344];
+  required int64 sequence = 2;
+  required int32 bodyid = 3;
+  required int32 checksum = 4;
 }
 
 // 不同时间、不同uin协商出的秘钥不一样
@@ -45,15 +45,15 @@ message CSError {
 // connector做透传，游戏客户端数据作为unknown fields
 // 也可以直接透传，bytes类型
 message CSBody {
-    optional CSSyn syn    = 1;
-    optional CSSynAck ack = 2;
-    optional CSAuth auth  = 3;
-    optional CSPassport   = 4;
-    optional bytes data   = 16;
-    optional CSError      = 100;
+  optional CSSyn syn            = 1;
+  optional CSSynAck ack         = 2;
+  optional CSAuth auth          = 3;
+  optional CSPassport passport  = 4;
+  optional bytes data           = 16;
+  optional CSError error        = 100;
 }
 
 message CSMsg {
-    required CSHead head = 1;
-    required CSBody body = 2;
+  required CSHead head = 1;
+  required CSBody body = 2;
 }
