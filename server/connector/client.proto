@@ -21,6 +21,7 @@ message CSHead {
 }
 
 // 不同时间、不同uin协商出的秘钥不一样
+// 或者采用uin的MD5或二次MD5计算秘钥
 message CSSyn {
   required string uin = 1;
 }

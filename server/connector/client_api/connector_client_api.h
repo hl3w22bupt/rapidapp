@@ -3,18 +3,37 @@
 
 namespace hmoon_connector_api {
 
-class ConnectorClientApi {
+class IProtocolEventListener {
     public:
-        ConnectorClientApi();
-        virtual ~ConnectorClientApi();
+        IProtocolEventListener();
+        virtual ~IProtocolEventListener();
 
     public:
-        int Init();
-        void CleanUp();
+        virtual int Init();
+        virtual void CleanUp();
 
-        int Start();
-        int Stop();
-        int Resume();
+        virtual int Start();
+        virtual int Stop();
+        virtual int Resume();
+};
+
+class ConnectorClientProtocol {
+    public:
+        static ConnectorClientProtocol& Singleton() {
+            static ConnectorClientProtocol instance;
+            return instance;
+        }
+
+    public:
+        static int Run() {
+            return 0;
+        }
+        static int RunWithThread() {
+            return 0;
+        }
+
+    private:
+        IProtocolEventListener* protocol_event_listener_;
 };
 
 }
