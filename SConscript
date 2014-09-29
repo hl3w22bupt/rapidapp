@@ -46,7 +46,7 @@ clientsrc = Glob('server/connector/client_api/*.cpp')
 clientsrc += Glob('server/connector/*.cc')
 clientsrc += Glob('utils/rap_net_uri.c')
 clientsrc += Glob('./librapidapp.a')
-env.Program('server/connector/client_api/connector_client', clientsrc, OBJPREFIX='cclient_', LIBS=['event', 'glog', 'gflags', 'protobuf', 'pthread'])
+env.Program('server/connector/client_api/connector_client', clientsrc, OBJPREFIX='cclient_', LIBS=['event', 'glog', 'gflags', 'protobuf', 'pthread', 'boost_thread'])
 
 #game server
 SConscript('server/ballgame/SConscript')

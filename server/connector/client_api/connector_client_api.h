@@ -5,16 +5,18 @@ namespace hmoon_connector_api {
 
 class IProtocolEventListener {
     public:
-        IProtocolEventListener();
-        virtual ~IProtocolEventListener();
+        IProtocolEventListener(){}
+        virtual ~IProtocolEventListener(){};
 
     public:
-        virtual int Init();
-        virtual void CleanUp();
+        virtual int Init() = 0;
+        virtual void CleanUp() = 0;
 
-        virtual int Start();
-        virtual int Stop();
-        virtual int Resume();
+        virtual int OnHandShakeSucceed() = 0;
+        virtual int OnHandShakeFailed() = 0;
+        virtual int OnServerClose() = 0;
+        virtual int OnQueuing() = 0;
+        virtual int OnIncoming() = 0;
 };
 
 class ConnectorClientProtocol {
@@ -24,13 +26,21 @@ class ConnectorClientProtocol {
             return instance;
         }
 
+        static ConnectorClientProtocol* Create() {
+            return new ConnectorClientProtocol;
+        }
+
     public:
-        static int Run() {
-            return 0;
-        }
-        static int RunWithThread() {
-            return 0;
-        }
+        int Run(IProtocolEventListener* protocol_evlistener);
+        int RunWithThread(IProtocolEventListener* protocol_evlistener);
+
+        int Resume();
+        int Terminate();
+
+    private:
+        ConnectorClientProtocol();
+        ConnectorClientProtocol(const ConnectorClientProtocol&);
+        ConnectorClientProtocol& operator=(const ConnectorClientProtocol&);
 
     private:
         IProtocolEventListener* protocol_event_listener_;
