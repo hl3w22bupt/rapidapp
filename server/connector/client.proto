@@ -1,3 +1,5 @@
+// 接入层C/S协议
+
 package connector_client;
 
 enum ConnectorMagic {
@@ -20,16 +22,19 @@ message CSHead {
   required int32 checksum = 4;
 }
 
-// 不同时间、不同uin协商出的秘钥不一样
-// 或者采用uin的MD5或二次MD5计算秘钥
+// 不同时间、不同uin/openid协商出的秘钥不一样
+// 如果是自营账号系统，直接采用密码的MD5或二次MD5计算秘钥，无需秘钥协商过程
 message CSSyn {
-  required string uin = 1;
+  required string appid  = 1;
+  required string openid = 2;
 }
 
 message CSSynAck {
   required string secretkey = 1;
 }
 
+// 从OAuth2.0的方式来理解的话，token等价于refreshtoken 或 code，
+// passport等价于accesstoken
 message CSAuth {
   required string token = 1;
 }
