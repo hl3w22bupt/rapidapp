@@ -4,6 +4,10 @@
 4. OM & monitor
 
 
+ipc:
+boost.interprocess & boost.lockfree
+
+
 protobuf优化
 尽量少用ByteSize，可调用GetCachedSize(),编解码采用*WithCachedSizes*版本
 能用Swap的地方不用Copy。Clear只清理不释放，可重用无需再分配。SpaceUsed可以估算PB对象内存使用量
