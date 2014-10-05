@@ -31,9 +31,11 @@ class IProtocolEventListener {
         virtual int OnHandShakeFailed() = 0;
         virtual int OnServerClose() = 0;
         virtual int OnQueuing() = 0;
+
         virtual int OnIncoming() = 0;
 };
 
+// 异步Connector协议处理类
 class ConnectorClientProtocol {
     public:
         static ConnectorClientProtocol& Singleton() {
@@ -46,19 +48,51 @@ class ConnectorClientProtocol {
         }
 
     public:
+        /// @brief  发起TCP会话
+        ///
+        /// @param[in]  pel
+        ///
+        /// @return 0: success
+        ///        !0: failed
         int Start(IProtocolEventListener* pel);
+
+        /// @brief  终止通信会话
+        ///
+        /// @return 0: success
+        ///        !0: failed
         int Terminate();
+
+        /// @brief  恢复TCP会话
+        ///
+        /// @return 0: success
+        ///        !0: failed
         int Resume();
 
+
+        /// @brief  更新会话状态
+        ///
+        /// @return 0: success
+        ///        !0: failed
         int Update();
 
+
+        /// @brief  发送消息
+        ///
+        /// @return 0: success
+        ///        !0: failed
         int PushMessage();
+
+        /// @brief  接收消息
+        ///
+        /// @return 0: success
+        ///        !0: failed
         int PopMessage();
 
     // 为了编程方便，同时考虑到短期类成员变量变化不频繁，
     // 所有类的非public成员都不采用pimpl实现
     private:
         int Connect();
+        void Close();
 
     private:
         ConnectorClientProtocol();
@@ -79,7 +113,9 @@ class ConnectorClientProtocol {
         int server_port_;
 };
 
+// 独占线程的异步Connector协议处理类
 class ConnectorClientProtocolThread {
+    // 所有 public 接口都由主线程调用
     public:
         static ConnectorClientProtocolThread& Singleton() {
             static ConnectorClientProtocolThread instance;
@@ -91,10 +127,31 @@ class ConnectorClientProtocolThread {
         }
 
     public:
+        /// @brief  启动网络协议交互线程
+        ///
+        /// @param[in]  protocol_evlistener
+        ///
+        /// @return 0: success
+        ///        !0: failed
         int RunWithThread(IProtocolEventListener* protocol_evlistener);
+
+        /// @brief  终止网络协议交互线程
+        ///
+        /// @return 0: success
+        ///        !0: failed
         int TerminateThread();
 
+
+        /// @brief  push消息到消息队列
+        ///
+        /// @return 0: success
+        ///        !0: failed
         int PushMessageToSendQ();
+
+        /// @brief  从消息队列中pop出消息
+        ///
+        /// @return 0: success
+        ///        !0: failed
         int PopMessageFromRecvQ();
 
     private:
