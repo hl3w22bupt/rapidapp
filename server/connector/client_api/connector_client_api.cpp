@@ -1,5 +1,6 @@
 #include "connector_client_api.h"
 #include "../client.pb.h"
+#include "utils/tcp_socket.h"
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
 #include <iostream>
@@ -9,25 +10,50 @@
 // TODO 错误码统一
 namespace hmoon_connector_api {
 
+enum {
+    SESSION_STATE_INITED      = 0,
+    SESSION_STATE_TCP_SYNING  = 1,
+    SESSION_STATE_KEY_SYNING  = 2,
+    SESSION_STATE_AUTHING     = 3,
+    SESSION_STATE_READY       = 4,
+    SESSION_STATE_DONE        = 5,
+    SESSION_STATE_FINI        = 6,
+};
+
 ////////////////////////////////////////////////
 ////////////// Connector Protocol //////////////
 ////////////////////////////////////////////////
 ConnectorClientProtocol::ConnectorClientProtocol() :
-    protocol_event_listener_(NULL)
+    protocol_event_listener_(NULL), fd_(-1), session_state_(SESSION_STATE_INITED)
 {}
 
 ConnectorClientProtocol::~ConnectorClientProtocol()
 {}
 
-int ConnectorClientProtocol::Connect()
+int ConnectorClientProtocol::Connect(const std::string& server_uri)
 {
     assert(protocol_event_listener_ != NULL);
 
+    int fd = tcpsocket_connect_nonblock(server_uri.c_str());
+    if (fd < 0)
+    {
+        return -1;
+    }
+
+    session_state_ = SESSION_STATE_TCP_SYNING;
+    fd_ = fd;
     return 0;
 }
 
 void ConnectorClientProtocol::Close()
-{}
+{
+    if (fd_ >= 0)
+    {
+        tcpsocket_close(fd_);
+        fd_ = -1;
+    }
+    session_state_ = SESSION_STATE_FINI;
+}
 
 int ConnectorClientProtocol::Start(IProtocolEventListener* protocol_evlistener)
 {
@@ -40,9 +66,9 @@ int ConnectorClientProtocol::Start(IProtocolEventListener* protocol_evlistener)
     // 设置一些参数，比如登录帐号、token、密码等
     protocol_event_listener_->OnGetSettings(appid_, openid_, token_,
                                             encrypt_mode_, auth_type_,
-                                            server_ip_, server_port_);
+                                            server_uri_);
     // 发起服务连接
-    int ret = Connect();
+    int ret = Connect(server_uri_);
     if (ret != 0)
     {
         return -1;
@@ -70,7 +96,7 @@ int ConnectorClientProtocol::Resume()
 
     // 准备至RESUME状态
     // 发起连接
-    int ret = Connect();
+    int ret = Connect(server_uri_);
     if (ret != 0)
     {
         return -1;
@@ -82,7 +108,42 @@ int ConnectorClientProtocol::Resume()
 // 驱动异步事件
 int ConnectorClientProtocol::Update()
 {
+    int ret = 0;
+
     // 驱动状态机
+    switch (session_state_)
+    {
+        case SESSION_STATE_INITED:
+            {
+                ret = Connect(server_uri_);
+                if (ret != 0)
+                {
+                    return -1;
+                }
+                break;
+            }
+        case SESSION_STATE_TCP_SYNING:
+            {
+                break;
+            }
+        case SESSION_STATE_KEY_SYNING:
+            {
+                break;
+            }
+        case SESSION_STATE_AUTHING:
+            {
+                break;
+            }
+        case SESSION_STATE_READY:
+            {
+                break;
+            }
+        case SESSION_STATE_DONE:
+            {
+                break;
+            }
+    }
+
     return 0;
 }
 
