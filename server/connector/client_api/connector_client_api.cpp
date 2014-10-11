@@ -6,7 +6,6 @@
 #include <iostream>
 #include <cassert>
 
-// TODO 引用自封装的跨平台socket文件，封装成Socket类
 // TODO 错误码统一
 namespace hmoon_connector_api {
 
@@ -168,7 +167,7 @@ ConnectorClientProtocolThread::ConnectorClientProtocolThread() : ccproto_(NULL),
 ConnectorClientProtocolThread::~ConnectorClientProtocolThread()
 {}
 
-int ConnectorClientProtocolThread::RunWithThread(IProtocolEventListener* protocol_evlistener)
+int ConnectorClientProtocolThread::StartThread(IProtocolEventListener* protocol_evlistener)
 {
     if (NULL == protocol_evlistener)
     {

@@ -137,7 +137,7 @@ class ConnectorClientProtocolThread {
         ///
         /// @return 0: success
         ///        !0: failed
-        int RunWithThread(IProtocolEventListener* protocol_evlistener);
+        int StartThread(IProtocolEventListener* protocol_evlistener);
 
         /// @brief  终止网络协议交互线程
         ///
