@@ -70,7 +70,7 @@ class ConnectorSession {
         int channel_id_;    // 后端服务器channel id
         uint32_t sid_;
 
-        friend class ConnectorSessionMgr;
+        /*friend class ConnectorSessionMgr;*/
 };
 
 #endif

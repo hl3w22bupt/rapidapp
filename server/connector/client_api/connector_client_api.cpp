@@ -123,22 +123,27 @@ int ConnectorClientProtocol::Update()
             }
         case SESSION_STATE_TCP_SYNING:
             {
+                // 检查 TCP三次握手
                 break;
             }
         case SESSION_STATE_KEY_SYNING:
             {
+                // 尝试接收 协商出来掉密钥KEY
                 break;
             }
         case SESSION_STATE_AUTHING:
             {
+                // 尝试获取 鉴权结果
                 break;
             }
         case SESSION_STATE_READY:
             {
+                // 查看 是否可以开始数据通信，同时尝试刷新排队信息
                 break;
             }
         case SESSION_STATE_DONE:
             {
+                // 检查 是否收到对端数据
                 break;
             }
     }
