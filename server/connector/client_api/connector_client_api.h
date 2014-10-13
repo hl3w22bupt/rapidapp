@@ -93,7 +93,15 @@ class ConnectorClientProtocol {
     // 所有类的非public成员都不采用pimpl实现
     private:
         int Connect(const std::string& server_uri);
+        int CheckConnect();
         void Close();
+
+    private:
+        int HandShake_SYN();
+        int HandShake_TRY_ACK();
+        int HandShake_AUTH();
+        int HandShake_TRY_READY();
+        int HandShake_TRY_DONE();
 
     private:
         ConnectorClientProtocol();

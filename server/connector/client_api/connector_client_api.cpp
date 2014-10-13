@@ -44,6 +44,24 @@ int ConnectorClientProtocol::Connect(const std::string& server_uri)
     return 0;
 }
 
+int ConnectorClientProtocol::CheckConnect()
+{
+    int ret = tcpsocket_check_connect(fd_, 0);
+    if (ret < 0)
+    {
+        return -1;
+    }
+    else if(0 == ret)
+    {
+        session_state_ = SESSION_STATE_KEY_SYNING;
+        return HandShake_SYN();
+    }
+    else
+    {
+        return 0;
+    }
+}
+
 void ConnectorClientProtocol::Close()
 {
     if (fd_ >= 0)
@@ -104,6 +122,36 @@ int ConnectorClientProtocol::Resume()
     return 0;
 }
 
+// 发起SYN 密钥协商请求
+int ConnectorClientProtocol::HandShake_SYN()
+{
+    return 0;
+}
+
+// 试图接收 ACK密钥协商回应
+int ConnectorClientProtocol::HandShake_TRY_ACK()
+{
+    return 0;
+}
+
+// 发起AUTH鉴权请求
+int ConnectorClientProtocol::HandShake_AUTH()
+{
+    return 0;
+}
+
+// 试图接收AUTH鉴权结果
+int ConnectorClientProtocol::HandShake_TRY_READY()
+{
+    return 0;
+}
+
+// 试图检查接入握手是否成功完成
+int ConnectorClientProtocol::HandShake_TRY_DONE()
+{
+    return 0;
+}
+
 // 驱动异步事件
 int ConnectorClientProtocol::Update()
 {
@@ -124,27 +172,64 @@ int ConnectorClientProtocol::Update()
         case SESSION_STATE_TCP_SYNING:
             {
                 // 检查 TCP三次握手
+                ret = CheckConnect();
+                if (ret != 0)
+                {
+                    return -1;
+                }
                 break;
             }
         case SESSION_STATE_KEY_SYNING:
             {
                 // 尝试接收 协商出来掉密钥KEY
+                ret = HandShake_TRY_ACK();
+                if (ret != 0)
+                {
+                    return -1;
+                }
                 break;
             }
         case SESSION_STATE_AUTHING:
             {
                 // 尝试获取 鉴权结果
+                ret = HandShake_TRY_READY();
+                if (ret != 0)
+                {
+                    return -1;
+                }
                 break;
             }
         case SESSION_STATE_READY:
             {
                 // 查看 是否可以开始数据通信，同时尝试刷新排队信息
+                ret = HandShake_TRY_DONE();
+                if (ret != 0)
+                {
+                    return -1;
+                }
                 break;
             }
         case SESSION_STATE_DONE:
             {
                 // 检查 是否收到对端数据
+                static bool handshake_done = false;
+                if (protocol_event_listener_ != NULL)
+                {
+                    if (!handshake_done)
+                    {
+                        protocol_event_listener_->OnHandShakeSucceed();
+                    }
+                    else
+                    {
+                        // TODO check DATA_IN event
+                        protocol_event_listener_->OnIncoming();
+                    }
+                }
                 break;
+            }
+        default:
+            {
+                return -1;
             }
     }
 
