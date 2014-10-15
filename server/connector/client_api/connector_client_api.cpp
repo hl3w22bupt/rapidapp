@@ -1,5 +1,4 @@
 #include "connector_client_api.h"
-#include "../client.pb.h"
 #include "utils/tcp_socket.h"
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
@@ -125,6 +124,18 @@ int ConnectorClientProtocol::Resume()
 // 发起SYN 密钥协商请求
 int ConnectorClientProtocol::HandShake_SYN()
 {
+    up_msg.mutable_head()->set_magic(connector_client::MAGIC_CS_V1);
+    up_msg.mutable_head()->set_sequence(0); // sequence NOT care
+    up_msg.mutable_head()->set_bodyid(connector_client::SYN);
+    // calculate encrypt-key by openid&appid
+    up_msg.mutable_body()->mutable_syn()->set_openid(openid_);
+    up_msg.mutable_body()->mutable_syn()->set_appid(appid_);
+
+    std::string bin_to_send;
+    up_msg.SerializeToString(&bin_to_send);
+
+    // TODO send
+
     return 0;
 }
 

@@ -1,6 +1,7 @@
 #ifndef _CONNECTOR_CLIENT_API_H_
 #define _CONNECTOR_CLIENT_API_H_
 
+#include "../client.pb.h"
 #include <string>
 
 namespace hmoon_connector_api {
@@ -123,6 +124,10 @@ class ConnectorClientProtocol {
     private:
         int fd_;
         int session_state_;
+
+    private:
+        connector_client::CSMsg up_msg;
+        connector_client::CSMsg down_msg;
 };
 
 // 独占线程的异步Connector协议处理类

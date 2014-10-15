@@ -24,6 +24,7 @@ message CSHead {
 
 // 不同时间、不同uin/openid协商出的秘钥不一样
 // 如果是自营账号系统，直接采用密码的MD5或二次MD5计算秘钥，无需秘钥协商过程
+// 在另一种Kerberos鉴权体系中，首先需要去换取业务对应的票据（凭证）
 message CSSyn {
   required string appid  = 1;
   required string openid = 2;
