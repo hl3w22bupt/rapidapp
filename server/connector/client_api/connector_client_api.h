@@ -2,9 +2,12 @@
 #define _CONNECTOR_CLIENT_API_H_
 
 #include "../client.pb.h"
+#include "utils/tsocket_util.h"
 #include <string>
 
 namespace hmoon_connector_api {
+
+using namespace tsocket_util;
 
 enum {
     NOT_ENCRYPT = 0,  // 不加密 - 适用于早期测试阶段
@@ -122,7 +125,7 @@ class ConnectorClientProtocol {
         std::string server_uri_;
 
     private:
-        int fd_;
+        TcpSocketUtil tcp_sock_;
         int session_state_;
 
     private:

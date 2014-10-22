@@ -146,7 +146,7 @@ class TcpSocketUtil {
         bool HasNewPkg();
 
     public:
-        inline SOCKET socket_fd() const {
+        inline TSOCKET socket_fd() const {
             return fd_;
         }
 
@@ -184,12 +184,9 @@ class TcpSocketUtil {
         }
 
     private:
-        int Url2InetAddr(const char* url, TNETADDR& tnet_addr);
-
-    private:
         int socket_state_;  // socket状态：比如网络异常、连接已被关闭
         std::string url_;
-        SOCKET fd_;
+        TSOCKET fd_;
         size_t last_request_timestamp_;
         size_t last_response_timestamp_;
         ITcpPkgParser* tcp_pkg_parser_imp_;

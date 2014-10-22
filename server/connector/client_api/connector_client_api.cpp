@@ -8,6 +8,27 @@
 // TODO 错误码统一
 namespace hmoon_connector_api {
 
+const int kMaxPkgSize = 1024 * 1024;
+class ConnectorPkgParser : public ITcpPkgParser {
+    public:
+        ConnectorPkgParser(){};
+        ~ConnectorPkgParser(){};
+
+    public:
+        virtual int GetPkgLen(const char* buf, size_t buf_len) {
+            if (NULL == buf || buf_len <= 4) {
+                return 0;
+            }
+
+            int32_t msglen = 0;
+            // mobile game, SIGBUS
+            msglen = *(int32_t*)buf;
+
+            return ntohl(msglen);
+        }
+};
+ConnectorPkgParser g_pkgparser_imp;
+
 enum {
     SESSION_STATE_INITED      = 0,
     SESSION_STATE_TCP_SYNING  = 1,
@@ -22,7 +43,7 @@ enum {
 ////////////// Connector Protocol //////////////
 ////////////////////////////////////////////////
 ConnectorClientProtocol::ConnectorClientProtocol() :
-    protocol_event_listener_(NULL), fd_(-1), session_state_(SESSION_STATE_INITED)
+    protocol_event_listener_(NULL), tcp_sock_(), session_state_(SESSION_STATE_INITED)
 {}
 
 ConnectorClientProtocol::~ConnectorClientProtocol()
@@ -32,25 +53,24 @@ int ConnectorClientProtocol::Connect(const std::string& server_uri)
 {
     assert(protocol_event_listener_ != NULL);
 
-    int fd = tcpsocket_connect_nonblock(server_uri.c_str());
-    if (fd < 0)
+    int ret = tcp_sock_.ConnectNonBlock(server_uri.c_str());
+    if (ret != NORMAL)
     {
         return -1;
     }
 
     session_state_ = SESSION_STATE_TCP_SYNING;
-    fd_ = fd;
     return 0;
 }
 
 int ConnectorClientProtocol::CheckConnect()
 {
-    int ret = tcpsocket_check_connect(fd_, 0);
-    if (ret < 0)
+    int ret = tcp_sock_.CheckNonBlock();
+    if (ret != NORMAL && ret != NET_CONNECTED)
     {
         return -1;
     }
-    else if(0 == ret)
+    else if(NET_CONNECTED == ret)
     {
         session_state_ = SESSION_STATE_KEY_SYNING;
         return HandShake_SYN();
@@ -63,11 +83,7 @@ int ConnectorClientProtocol::CheckConnect()
 
 void ConnectorClientProtocol::Close()
 {
-    if (fd_ >= 0)
-    {
-        tcpsocket_close(fd_);
-        fd_ = -1;
-    }
+    tcp_sock_.Close();
     session_state_ = SESSION_STATE_FINI;
 }
 
@@ -83,6 +99,7 @@ int ConnectorClientProtocol::Start(IProtocolEventListener* protocol_evlistener)
     protocol_event_listener_->OnGetSettings(appid_, openid_, token_,
                                             encrypt_mode_, auth_type_,
                                             server_uri_);
+    tcp_sock_.Init(&g_pkgparser_imp, kMaxPkgSize * 2);
     // 发起服务连接
     int ret = Connect(server_uri_);
     if (ret != 0)
@@ -134,7 +151,20 @@ int ConnectorClientProtocol::HandShake_SYN()
     std::string bin_to_send;
     up_msg.SerializeToString(&bin_to_send);
 
-    // TODO send
+    // send
+    int ret = tcp_sock_.PushToSendQ(bin_to_send.c_str(), bin_to_send.size());
+    if (ret != NORMAL)
+    {
+        // send buffer is full
+        return -1;
+    }
+
+    ret = tcp_sock_.Send();
+    if (ret != NORMAL && ret != SEND_UNCOMPLETED)
+    {
+        // send error
+        return -1;
+    }
 
     return 0;
 }
@@ -142,7 +172,35 @@ int ConnectorClientProtocol::HandShake_SYN()
 // 试图接收 ACK密钥协商回应
 int ConnectorClientProtocol::HandShake_TRY_ACK()
 {
-    return 0;
+    int ret = tcp_sock_.Recv();
+    if (ret != NORMAL)
+    {
+        return -1;
+    }
+
+    if (!tcp_sock_.HasNewPkg())
+    {
+        return 0;
+    }
+
+    // get key, and start authing
+    const char* buf = NULL;
+    int buflen = 0;
+    ret = tcp_sock_.PeekFromRecvQ(&buf, &buflen);
+    if (ret != NORMAL && ASSERT_FAILED == ret)
+    {
+        return -1;
+    }
+
+    down_msg.ParseFromArray(buf + 4, buflen - 4);
+
+    ret = tcp_sock_.PopFromRecvQ();
+    if (ASSERT_FAILED == ret)
+    {
+        return -1;
+    }
+
+    return HandShake_AUTH();
 }
 
 // 发起AUTH鉴权请求

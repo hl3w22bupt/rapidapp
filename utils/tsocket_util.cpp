@@ -62,77 +62,17 @@ void TcpSocketUtil::Reset()
     socket_state_ = NET_INITED;
 }
 
-// 内部私有函数，返回值只有0和-1之分
-int TcpSocketUtil::Url2InetAddr(const char* url, TNETADDR& tnet_addr)
-{
-    if (NULL == url)
-    {
-        socket_state_ = NET_ASSERT_FAIL;
-        return ASSERT_FAILED;
-    }
-
-    TNETOPT tnet_opt;
-    if (-1 == tnet_get_opt(&tnet_opt, url))
-    {
-        return -1;
-    }
-
-    const TNETPROTODEF* proto = tnet_find_proto(tnet_opt.szProto);
-    if (NULL == proto)
-    {
-        return -1;
-    }
-
-    //分析地址
-    if (proto->iID != TNET_ID_TCP && proto->iID != TNET_ID_UDP)
-    {
-        return -1;
-    }
-
-    if (0 != tnet_str2inet(tnet_opt.szAddr, &tnet_addr.stIn))
-    {
-        return -1;
-    }
-
-    if (0 == tnet_addr.stIn.sin_port)
-    {
-        return -1;
-    }
-
-    return 0;
-}
-
 int TcpSocketUtil::ConnectNonBlock(const char* url)
 {
-    if (NULL == url)
-    {
-        return INVLD_ARGUMENT;
-    }
-
-    TNETADDR tnet_addr;
-    int ret = Url2InetAddr(url, tnet_addr);
-    if (ret != 0)
-    {
-        return INVLD_URL;
-    }
-
-    SOCKET fd = tnet_open(url);
-    if (fd < 0)
+    fd_ = tcpsocket_connect_nonblock(url);
+    if (fd_ < 0)
     {
         return CONNECT_FAILED;
     }
 
-    tnet_set_nonblock(fd, 1);
+    tcpsocket_set_recvbuff(fd_, recv_buf_.buff_size * 2);
+    tcpsocket_set_sendbuff(fd_, send_buf_.buff_size * 2);
 
-    ret = tsocket_start_connect(fd, (struct sockaddr*)&tnet_addr.stIn,
-                                    sizeof(tnet_addr.stIn));
-    if (ret < 0)
-    {
-        tnet_close(fd);
-        return CONNECT_FAILED;
-    }
-
-    fd_ = fd;
     socket_state_ = NET_CONNECTING;
     url_ = url;
     return NORMAL;
@@ -146,7 +86,7 @@ int TcpSocketUtil::CheckNonBlock()
         return ASSERT_FAILED;
     }
 
-    int ret = tsocket_check_connect(fd_, 0);
+    int ret = tcpsocket_check_connect(fd_, 0);
     if (0 == ret)
     {
         // TCP 3 handshake success
@@ -168,11 +108,14 @@ int TcpSocketUtil::Connect(const char* url, size_t timeout)
         return INVLD_ARGUMENT;
     }
 
-    fd_ = tnet_connect(url, timeout);
+    fd_ = tcpsocket_connect(url, timeout);
     if (fd_ < 0)
     {
         return CONNECT_FAILED;
     }
+
+    tcpsocket_set_recvbuff(fd_, recv_buf_.buff_size * 2);
+    tcpsocket_set_sendbuff(fd_, send_buf_.buff_size * 2);
 
     socket_state_ = NET_CONNECTED;
     url_ = url;
@@ -183,7 +126,7 @@ void TcpSocketUtil::Close()
 {
     if (fd_ >= 0)
     {
-        tnet_close(fd_);
+        tcpsocket_close(fd_);
         fd_ = -1;
     }
 
