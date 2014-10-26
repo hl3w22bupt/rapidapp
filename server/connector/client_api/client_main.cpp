@@ -4,6 +4,9 @@ using namespace hmoon_connector_api;
 
 class ConnectorProtocolListener : public IProtocolEventListener {
     public:
+        ConnectorProtocolListener();
+        ~ConnectorProtocolListener();
+    public:
         virtual void OnGetSettings(std::string& appid, std::string& openid,
                                    std::string& token,
                                    int& encrypt_mode, int& auth_type,
@@ -19,15 +22,32 @@ class ConnectorProtocolListener : public IProtocolEventListener {
     public:
         int Init();
         void Fini();
+        int MainLoop();
+
+    private:
+      bool exit_;
 };
 
+ConnectorProtocolListener::ConnectorProtocolListener() : exit_(false)
+{}
+
+ConnectorProtocolListener::~ConnectorProtocolListener()
+{}
+
 int ConnectorProtocolListener::Init()
+{
+    ConnectorClientProtocolThread::Default().StartThread(this);
+    return 0;
+}
+
+int ConnectorProtocolListener::MainLoop()
 {
     return 0;
 }
 
 void ConnectorProtocolListener::Fini()
 {
+    ConnectorClientProtocolThread::Default().TerminateThread();
 }
 
 void ConnectorProtocolListener::OnGetSettings(std::string& appid,
@@ -47,12 +67,13 @@ int ConnectorProtocolListener::OnHandShakeSucceed()
 
 int ConnectorProtocolListener::OnHandShakeFailed()
 {
+    exit_ = true;
     return 0;
 }
 
 int ConnectorProtocolListener::OnServerClose()
 {
-    ConnectorClientProtocolThread::Default().TerminateThread();
+    exit_ = true;
     return 0;
 }
 
@@ -70,11 +91,18 @@ int ConnectorProtocolListener::OnIncoming()
     return 0;
 }
 
-class ConnectorProtocolListener listener;
-
 int main(int argc, char** argv)
 {
-    ConnectorClientProtocolThread::Default().StartThread(&listener);
+    class ConnectorProtocolListener client_protocol_handler;
+    int ret = client_protocol_handler.Init();
+    if (ret != 0)
+    {
+        exit(-1);
+    }
+
+    ret = client_protocol_handler.MainLoop();
+
+    client_protocol_handler.Fini();
 
     return 0;
 }
