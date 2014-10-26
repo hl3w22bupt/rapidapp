@@ -96,6 +96,8 @@ int ConnectorClientProtocol::Start(IProtocolEventListener* protocol_evlistener)
         return -1;
     }
 
+    tcpsocket_ignore_pipe();
+
     return 0;
 }
 
