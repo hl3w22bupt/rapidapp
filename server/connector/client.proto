@@ -11,6 +11,7 @@ enum BodyCmdId {
   SYNACK           = 2;
   AUTHENTICATION   = 3;
   PASSPORT         = 4;
+  START_APP        = 5;
   DATA_TRANSPARENT = 16;
   ERROR            = 100;
 }
@@ -40,8 +41,13 @@ message CSAuth {
   required string token = 1;
 }
 
+// 鉴权通过通行证
 message CSPassport {
   optional int64 passport = 1;
+}
+
+message CSStart {
+  optional int32 code = 1;
 }
 
 message CSError {
@@ -56,6 +62,7 @@ message CSBody {
   optional CSSynAck ack         = 2;
   optional CSAuth auth          = 3;
   optional CSPassport passport  = 4;
+  optional CSStart start        = 5;
   optional bytes data           = 16;
   optional CSError error        = 100;
 }

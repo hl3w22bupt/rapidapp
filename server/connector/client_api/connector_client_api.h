@@ -85,9 +85,15 @@ class ConnectorClientProtocol {
         ///
         /// @return 0: success
         ///        !0: failed
-        int PushMessage();
+        int PushMessage(const char* data, size_t size);
 
-        /// @brief  接收消息
+        /// @brief  接收消息 - ZeroCopy
+        ///
+        /// @return 0: success
+        ///        !0: failed
+        int PeekMessage(const char** buf_ptr, int* buflen_ptr);
+
+        /// @brief  接收消息A - pop
         ///
         /// @return 0: success
         ///        !0: failed
@@ -108,6 +114,10 @@ class ConnectorClientProtocol {
         int HandShake_TRY_DONE();
 
     private:
+        int TryToRecvFromPeerAndParse();
+        int SerializeAndSendToPeer();
+
+    private:
         ConnectorClientProtocol();
         ~ConnectorClientProtocol();
         ConnectorClientProtocol(const ConnectorClientProtocol&);
@@ -123,6 +133,9 @@ class ConnectorClientProtocol {
         int encrypt_mode_;
         int auth_type_;
         std::string server_uri_;
+
+    private:
+        std::string encrypt_skey_;
 
     private:
         TcpSocketUtil tcp_sock_;
@@ -166,13 +179,13 @@ class ConnectorClientProtocolThread {
         ///
         /// @return 0: success
         ///        !0: failed
-        int PushMessageToSendQ();
+        int PushMessageToSendQ(const char* data, size_t size);
 
         /// @brief  从消息队列中pop出消息
         ///
         /// @return 0: success
         ///        !0: failed
-        int PopMessageFromRecvQ();
+        int PopMessageFromRecvQ(char* buf_ptr, size_t* buflen_ptr);
 
     private:
         int MainLoop(IProtocolEventListener* protocol_evlistener);

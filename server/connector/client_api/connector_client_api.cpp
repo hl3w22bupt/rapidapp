@@ -9,6 +9,8 @@
 namespace hmoon_connector_api {
 
 const int kMaxPkgSize = 1024 * 1024;
+
+const int kMsgLenFieldSize = sizeof(int32_t);
 class ConnectorPkgParser : public ITcpPkgParser {
     public:
         ConnectorPkgParser(){};
@@ -16,7 +18,7 @@ class ConnectorPkgParser : public ITcpPkgParser {
 
     public:
         virtual int GetPkgLen(const char* buf, size_t buf_len) {
-            if (NULL == buf || buf_len <= 4) {
+            if (NULL == buf || buf_len <= kMsgLenFieldSize) {
                 return 0;
             }
 
@@ -65,20 +67,7 @@ int ConnectorClientProtocol::Connect(const std::string& server_uri)
 
 int ConnectorClientProtocol::CheckConnect()
 {
-    int ret = tcp_sock_.CheckNonBlock();
-    if (ret != NORMAL && ret != NET_CONNECTED)
-    {
-        return -1;
-    }
-    else if(NET_CONNECTED == ret)
-    {
-        session_state_ = SESSION_STATE_KEY_SYNING;
-        return HandShake_SYN();
-    }
-    else
-    {
-        return 0;
-    }
+    return tcp_sock_.CheckNonBlock();
 }
 
 void ConnectorClientProtocol::Close()
@@ -138,6 +127,67 @@ int ConnectorClientProtocol::Resume()
     return 0;
 }
 
+int ConnectorClientProtocol::SerializeAndSendToPeer()
+{
+    std::string bin_to_send;
+    up_msg.SerializeToString(&bin_to_send);
+
+    // send
+    int ret = tcp_sock_.PushToSendQ(bin_to_send.c_str(), bin_to_send.size());
+    if (ret != NORMAL)
+    {
+        // send buffer is full
+        return ret;
+    }
+
+    ret = tcp_sock_.Send();
+    if (ret != NORMAL && ret != SEND_UNCOMPLETED)
+    {
+        // send error
+        return ret;
+    }
+
+    return NORMAL;
+}
+
+int ConnectorClientProtocol::TryToRecvFromPeerAndParse()
+{
+    int ret = tcp_sock_.Recv();
+    if (ret != NORMAL)
+    {
+        return ret;
+    }
+
+    if (!tcp_sock_.HasNewPkg())
+    {
+        return 0;
+    }
+
+    const char* buf = NULL;
+    int buflen = 0;
+    ret = tcp_sock_.PeekFromRecvQ(&buf, &buflen);
+    if (ret != NORMAL && ASSERT_FAILED == ret)
+    {
+        return ret;
+    }
+
+    down_msg.ParseFromArray(buf + kMsgLenFieldSize, buflen - kMsgLenFieldSize);
+
+    ret = tcp_sock_.PopFromRecvQ();
+    if (ASSERT_FAILED == ret)
+    {
+        return ret;
+    }
+
+    // error -- get error code
+    if (connector_client::ERROR == down_msg.mutable_head()->bodyid())
+    {
+        return -1;
+    }
+
+    return 0;
+}
+
 // 发起SYN 密钥协商请求
 int ConnectorClientProtocol::HandShake_SYN()
 {
@@ -148,82 +198,99 @@ int ConnectorClientProtocol::HandShake_SYN()
     up_msg.mutable_body()->mutable_syn()->set_openid(openid_);
     up_msg.mutable_body()->mutable_syn()->set_appid(appid_);
 
-    std::string bin_to_send;
-    up_msg.SerializeToString(&bin_to_send);
-
-    // send
-    int ret = tcp_sock_.PushToSendQ(bin_to_send.c_str(), bin_to_send.size());
+    int ret = SerializeAndSendToPeer();
     if (ret != NORMAL)
     {
-        // send buffer is full
-        return -1;
+        return ret;
     }
 
-    ret = tcp_sock_.Send();
-    if (ret != NORMAL && ret != SEND_UNCOMPLETED)
-    {
-        // send error
-        return -1;
-    }
-
+    session_state_ =  SESSION_STATE_KEY_SYNING;
     return 0;
 }
 
 // 试图接收 ACK密钥协商回应
 int ConnectorClientProtocol::HandShake_TRY_ACK()
 {
-    int ret = tcp_sock_.Recv();
-    if (ret != NORMAL)
+    // 获取密钥key, 然后发起鉴权
+    int ret = TryToRecvFromPeerAndParse();
+    if (ret != 0)
+    {
+        return ret;
+    }
+
+    if (down_msg.mutable_head()->bodyid() != connector_client::SYNACK)
     {
         return -1;
     }
 
-    if (!tcp_sock_.HasNewPkg())
-    {
-        return 0;
-    }
-
-    // get key, and start authing
-    const char* buf = NULL;
-    int buflen = 0;
-    ret = tcp_sock_.PeekFromRecvQ(&buf, &buflen);
-    if (ret != NORMAL && ASSERT_FAILED == ret)
-    {
-        return -1;
-    }
-
-    down_msg.ParseFromArray(buf + 4, buflen - 4);
-
-    ret = tcp_sock_.PopFromRecvQ();
-    if (ASSERT_FAILED == ret)
-    {
-        return -1;
-    }
-
-    return HandShake_AUTH();
+    encrypt_skey_ = down_msg.mutable_body()->mutable_ack()->secretkey();
+    return 0;
 }
 
 // 发起AUTH鉴权请求
 int ConnectorClientProtocol::HandShake_AUTH()
 {
+    up_msg.mutable_head()->set_magic(connector_client::MAGIC_CS_V1);
+    up_msg.mutable_head()->set_sequence(0); // sequence NOT care
+    up_msg.mutable_head()->set_bodyid(connector_client::AUTHENTICATION);
+    // calculate encrypt-key by openid&appid
+    up_msg.mutable_body()->mutable_auth()->set_token(token_);
+
+    int ret = SerializeAndSendToPeer();
+    if (ret != NORMAL)
+    {
+        return ret;
+    }
+
+    session_state_ = SESSION_STATE_AUTHING;
     return 0;
 }
 
 // 试图接收AUTH鉴权结果
 int ConnectorClientProtocol::HandShake_TRY_READY()
 {
+    int ret = TryToRecvFromPeerAndParse();
+    if (ret != 0)
+    {
+        return ret;
+    }
+
+    if (down_msg.mutable_head()->bodyid() != connector_client::PASSPORT)
+    {
+        return -1;
+    }
+    
+    int64_t passport = down_msg.mutable_body()->mutable_passport()->passport();
+    session_state_ = SESSION_STATE_READY;
     return 0;
 }
 
 // 试图检查接入握手是否成功完成
 int ConnectorClientProtocol::HandShake_TRY_DONE()
 {
+    int ret = TryToRecvFromPeerAndParse();
+    if (ret != 0)
+    {
+        return ret;
+    }
+
+    if (down_msg.mutable_head()->bodyid() != connector_client::START_APP)
+    {
+        return -1;
+    }
+    
+    session_state_ = SESSION_STATE_DONE;
     return 0;
 }
 
 // 驱动异步事件
 int ConnectorClientProtocol::Update()
 {
+    if (NULL == protocol_event_listener_)
+    {
+        return -1;
+    }
+
     int ret = 0;
 
     // 驱动状态机
@@ -232,19 +299,16 @@ int ConnectorClientProtocol::Update()
         case SESSION_STATE_INITED:
             {
                 ret = Connect(server_uri_);
-                if (ret != 0)
-                {
-                    return -1;
-                }
                 break;
             }
         case SESSION_STATE_TCP_SYNING:
             {
                 // 检查 TCP三次握手
                 ret = CheckConnect();
-                if (ret != 0)
+                if (NET_CONNECTED == ret)
                 {
-                    return -1;
+                    // connect success
+                    ret = HandShake_SYN();
                 }
                 break;
             }
@@ -252,9 +316,9 @@ int ConnectorClientProtocol::Update()
             {
                 // 尝试接收 协商出来掉密钥KEY
                 ret = HandShake_TRY_ACK();
-                if (ret != 0)
+                if (0 == ret)
                 {
-                    return -1;
+                    ret = HandShake_AUTH();
                 }
                 break;
             }
@@ -262,20 +326,13 @@ int ConnectorClientProtocol::Update()
             {
                 // 尝试获取 鉴权结果
                 ret = HandShake_TRY_READY();
-                if (ret != 0)
-                {
-                    return -1;
-                }
                 break;
             }
         case SESSION_STATE_READY:
             {
                 // 查看 是否可以开始数据通信，同时尝试刷新排队信息
                 ret = HandShake_TRY_DONE();
-                if (ret != 0)
-                {
-                    return -1;
-                }
+                // TODO OnQueuing();
                 break;
             }
         case SESSION_STATE_DONE:
@@ -291,7 +348,11 @@ int ConnectorClientProtocol::Update()
                     else
                     {
                         // TODO check DATA_IN event
-                        protocol_event_listener_->OnIncoming();
+                        ret = tcp_sock_.Recv();
+                        if (NORMAL == ret && tcp_sock_.HasNewPkg())
+                        {
+                            protocol_event_listener_->OnIncoming();
+                        }
                     }
                 }
                 break;
@@ -302,18 +363,86 @@ int ConnectorClientProtocol::Update()
             }
     }
 
+    if (ret != NORMAL)
+    {
+        if (session_state_ != SESSION_STATE_DONE)
+        {
+            protocol_event_listener_->OnHandShakeFailed();
+        }
+        else if (PEER_CLOSED == ret)
+        {
+            protocol_event_listener_->OnServerClose();
+        }
+    }
+
     return 0;
 }
 
 // 发送消息
-int ConnectorClientProtocol::PushMessage()
+int ConnectorClientProtocol::PushMessage(const char* data, size_t size)
 {
+    if (NULL == data || 0 == size)
+    {
+        return -1;
+    }
+
+    up_msg.mutable_head()->set_magic(connector_client::MAGIC_CS_V1);
+    up_msg.mutable_head()->set_sequence(0); // sequence NOT care
+    up_msg.mutable_head()->set_bodyid(connector_client::DATA_TRANSPARENT);
+    // calculate encrypt-key by openid&appid
+    up_msg.mutable_body()->set_data(std::string(data, size));
+
+    if (SerializeAndSendToPeer() != 0)
+    {
+        return -1;
+    }
+
     return 0;
 }
 
 // 接收消息
+int ConnectorClientProtocol::PeekMessage(const char** buf_ptr, int* buflen_ptr)
+{
+    if (NULL == buf_ptr || NULL == buflen_ptr)
+    {
+        return -1;
+    }
+
+    const char* buf = NULL;
+    int buflen = 0;
+    int ret = tcp_sock_.PeekFromRecvQ(&buf, &buflen);
+    if (ret != NORMAL && ASSERT_FAILED == ret)
+    {
+        return -1;
+    }
+
+    down_msg.ParseFromArray(buf + kMsgLenFieldSize, buflen - kMsgLenFieldSize);
+
+    if (down_msg.mutable_head()->bodyid() != connector_client::DATA_TRANSPARENT)
+    {
+        return -1;
+    }
+
+    *buf_ptr = down_msg.mutable_body()->data().c_str();
+    *buflen_ptr = down_msg.mutable_body()->data().size();
+
+    return 0;
+}
+
 int ConnectorClientProtocol::PopMessage()
 {
+    int ret = tcp_sock_.PopFromRecvQ();
+    if (ASSERT_FAILED == ret)
+    {
+        return -1;
+    }
+
+    if (down_msg.mutable_head()->bodyid() != connector_client::DATA_TRANSPARENT)
+    {
+        // assert failed
+        return -1;
+    }
+
     return 0;
 }
 
@@ -367,13 +496,44 @@ int ConnectorClientProtocolThread::MainLoop(IProtocolEventListener* protocol_evl
     return 0;
 }
 
-int ConnectorClientProtocolThread::PushMessageToSendQ()
+int ConnectorClientProtocolThread::PushMessageToSendQ(const char* data, size_t size)
 {
-    return 0;
+    assert(ccproto_ != NULL);
+    return ccproto_->PushMessage(data, size);
 }
 
-int ConnectorClientProtocolThread::PopMessageFromRecvQ()
+int ConnectorClientProtocolThread::PopMessageFromRecvQ(char* buf_ptr, size_t* buflen_ptr)
 {
+    if (NULL == buf_ptr || NULL == buflen_ptr || 0 == *buflen_ptr)
+    {
+        return -1;
+    }
+
+    assert(ccproto_ != NULL);
+    const char* data = NULL;
+    int len = 0;
+    int ret = ccproto_->PeekMessage(&data, &len);
+    if (ret != 0)
+    {
+        return -1;
+    }
+
+    if (data != NULL)
+    {
+        if (*buflen_ptr < len)
+        {
+        // buffer is not enough
+            return -1;
+        }
+
+        *buflen_ptr = len;
+        memcpy(buf_ptr, data, len);
+    }
+    else
+    {
+        *buflen_ptr = 0;
+    }
+
     return 0;
 }
 
