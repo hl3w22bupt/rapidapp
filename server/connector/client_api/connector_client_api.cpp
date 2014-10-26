@@ -119,6 +119,8 @@ int ConnectorClientProtocol::Resume()
     }
 
     // 准备至RESUME状态
+    tcp_sock_.Close();
+    tcp_sock_.Reset();
     // 发起连接
     int ret = Connect(server_uri_);
     if (ret != 0)
