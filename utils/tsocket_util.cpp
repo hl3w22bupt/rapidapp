@@ -131,6 +131,7 @@ void TcpSocketUtil::Close()
     }
 
     socket_state_ = NET_INITED;
+    Reset();
 }
 
 int TcpSocketUtil::Send()

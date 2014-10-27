@@ -45,7 +45,11 @@ enum {
 ////////////// Connector Protocol //////////////
 ////////////////////////////////////////////////
 ConnectorClientProtocol::ConnectorClientProtocol() :
-    protocol_event_listener_(NULL), tcp_sock_(), session_state_(SESSION_STATE_INITED)
+    protocol_event_listener_(NULL), appid_(), openid_(), token_(), server_uri_(),
+      encrypt_mode_(NOT_ENCRYPT), auth_type_(NONE_AUTHENTICATION),
+        encrypt_skey_(), passport_(0),
+          tcp_sock_(), session_state_(SESSION_STATE_INITED),
+            up_msg_(), down_msg_()
 {}
 
 ConnectorClientProtocol::~ConnectorClientProtocol()
@@ -134,7 +138,7 @@ int ConnectorClientProtocol::Resume()
 int ConnectorClientProtocol::SerializeAndSendToPeer()
 {
     std::string bin_to_send;
-    up_msg.SerializeToString(&bin_to_send);
+    up_msg_.SerializeToString(&bin_to_send);
 
     // send
     int ret = tcp_sock_.PushToSendQ(bin_to_send.c_str(), bin_to_send.size());
@@ -175,7 +179,7 @@ int ConnectorClientProtocol::TryToRecvFromPeerAndParse()
         return ret;
     }
 
-    down_msg.ParseFromArray(buf + kMsgLenFieldSize, buflen - kMsgLenFieldSize);
+    down_msg_.ParseFromArray(buf + kMsgLenFieldSize, buflen - kMsgLenFieldSize);
 
     ret = tcp_sock_.PopFromRecvQ();
     if (ASSERT_FAILED == ret)
@@ -184,7 +188,7 @@ int ConnectorClientProtocol::TryToRecvFromPeerAndParse()
     }
 
     // error -- get error code
-    if (connector_client::ERROR == down_msg.mutable_head()->bodyid())
+    if (connector_client::ERROR == down_msg_.mutable_head()->bodyid())
     {
         return -1;
     }
@@ -195,12 +199,12 @@ int ConnectorClientProtocol::TryToRecvFromPeerAndParse()
 // 发起SYN 密钥协商请求
 int ConnectorClientProtocol::HandShake_SYN()
 {
-    up_msg.mutable_head()->set_magic(connector_client::MAGIC_CS_V1);
-    up_msg.mutable_head()->set_sequence(0); // sequence NOT care
-    up_msg.mutable_head()->set_bodyid(connector_client::SYN);
+    up_msg_.mutable_head()->set_magic(connector_client::MAGIC_CS_V1);
+    up_msg_.mutable_head()->set_sequence(0); // sequence NOT care
+    up_msg_.mutable_head()->set_bodyid(connector_client::SYN);
     // calculate encrypt-key by openid&appid
-    up_msg.mutable_body()->mutable_syn()->set_openid(openid_);
-    up_msg.mutable_body()->mutable_syn()->set_appid(appid_);
+    up_msg_.mutable_body()->mutable_syn()->set_openid(openid_);
+    up_msg_.mutable_body()->mutable_syn()->set_appid(appid_);
 
     int ret = SerializeAndSendToPeer();
     if (ret != NORMAL)
@@ -222,23 +226,23 @@ int ConnectorClientProtocol::HandShake_TRY_ACK()
         return ret;
     }
 
-    if (down_msg.mutable_head()->bodyid() != connector_client::SYNACK)
+    if (down_msg_.mutable_head()->bodyid() != connector_client::SYNACK)
     {
         return -1;
     }
 
-    encrypt_skey_ = down_msg.mutable_body()->mutable_ack()->secretkey();
+    encrypt_skey_ = down_msg_.mutable_body()->mutable_ack()->secretkey();
     return 0;
 }
 
 // 发起AUTH鉴权请求
 int ConnectorClientProtocol::HandShake_AUTH()
 {
-    up_msg.mutable_head()->set_magic(connector_client::MAGIC_CS_V1);
-    up_msg.mutable_head()->set_sequence(0); // sequence NOT care
-    up_msg.mutable_head()->set_bodyid(connector_client::AUTHENTICATION);
+    up_msg_.mutable_head()->set_magic(connector_client::MAGIC_CS_V1);
+    up_msg_.mutable_head()->set_sequence(0); // sequence NOT care
+    up_msg_.mutable_head()->set_bodyid(connector_client::AUTHENTICATION);
     // calculate encrypt-key by openid&appid
-    up_msg.mutable_body()->mutable_auth()->set_token(token_);
+    up_msg_.mutable_body()->mutable_auth()->set_token(token_);
 
     int ret = SerializeAndSendToPeer();
     if (ret != NORMAL)
@@ -259,12 +263,12 @@ int ConnectorClientProtocol::HandShake_TRY_READY()
         return ret;
     }
 
-    if (down_msg.mutable_head()->bodyid() != connector_client::PASSPORT)
+    if (down_msg_.mutable_head()->bodyid() != connector_client::PASSPORT)
     {
         return -1;
     }
     
-    int64_t passport = down_msg.mutable_body()->mutable_passport()->passport();
+    passport_ = down_msg_.mutable_body()->mutable_passport()->passport();
     session_state_ = SESSION_STATE_READY;
     return 0;
 }
@@ -278,7 +282,7 @@ int ConnectorClientProtocol::HandShake_TRY_DONE()
         return ret;
     }
 
-    if (down_msg.mutable_head()->bodyid() != connector_client::START_APP)
+    if (down_msg_.mutable_head()->bodyid() != connector_client::START_APP)
     {
         return -1;
     }
@@ -390,11 +394,11 @@ int ConnectorClientProtocol::PushMessage(const char* data, size_t size)
         return -1;
     }
 
-    up_msg.mutable_head()->set_magic(connector_client::MAGIC_CS_V1);
-    up_msg.mutable_head()->set_sequence(0); // sequence NOT care
-    up_msg.mutable_head()->set_bodyid(connector_client::DATA_TRANSPARENT);
+    up_msg_.mutable_head()->set_magic(connector_client::MAGIC_CS_V1);
+    up_msg_.mutable_head()->set_sequence(0); // sequence NOT care
+    up_msg_.mutable_head()->set_bodyid(connector_client::DATA_TRANSPARENT);
     // calculate encrypt-key by openid&appid
-    up_msg.mutable_body()->set_data(std::string(data, size));
+    up_msg_.mutable_body()->set_data(std::string(data, size));
 
     if (SerializeAndSendToPeer() != 0)
     {
@@ -420,15 +424,15 @@ int ConnectorClientProtocol::PeekMessage(const char** buf_ptr, int* buflen_ptr)
         return -1;
     }
 
-    down_msg.ParseFromArray(buf + kMsgLenFieldSize, buflen - kMsgLenFieldSize);
+    down_msg_.ParseFromArray(buf + kMsgLenFieldSize, buflen - kMsgLenFieldSize);
 
-    if (down_msg.mutable_head()->bodyid() != connector_client::DATA_TRANSPARENT)
+    if (down_msg_.mutable_head()->bodyid() != connector_client::DATA_TRANSPARENT)
     {
         return -1;
     }
 
-    *buf_ptr = down_msg.mutable_body()->data().c_str();
-    *buflen_ptr = down_msg.mutable_body()->data().size();
+    *buf_ptr = down_msg_.mutable_body()->data().c_str();
+    *buflen_ptr = down_msg_.mutable_body()->data().size();
 
     return 0;
 }
@@ -441,7 +445,7 @@ int ConnectorClientProtocol::PopMessage()
         return -1;
     }
 
-    if (down_msg.mutable_head()->bodyid() != connector_client::DATA_TRANSPARENT)
+    if (down_msg_.mutable_head()->bodyid() != connector_client::DATA_TRANSPARENT)
     {
         // assert failed
         return -1;
@@ -538,7 +542,7 @@ int ConnectorClientProtocolThread::PopMessageFromRecvQ(char* buf_ptr, size_t* bu
         *buflen_ptr = 0;
     }
 
-    return 0;
+    return ccproto_->PopMessage();
 }
 
 }

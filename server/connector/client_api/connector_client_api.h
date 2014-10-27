@@ -130,20 +130,21 @@ class ConnectorClientProtocol {
         std::string appid_;
         std::string openid_;
         std::string token_;
+        std::string server_uri_;
         int encrypt_mode_;
         int auth_type_;
-        std::string server_uri_;
 
     private:
         std::string encrypt_skey_;
+        int64_t passport_;
 
     private:
         TcpSocketUtil tcp_sock_;
         int session_state_;
 
     private:
-        connector_client::CSMsg up_msg;
-        connector_client::CSMsg down_msg;
+        connector_client::CSMsg up_msg_;
+        connector_client::CSMsg down_msg_;
 };
 
 // 独占线程的异步Connector协议处理类
