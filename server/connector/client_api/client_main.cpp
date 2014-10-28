@@ -42,6 +42,10 @@ int ConnectorProtocolListener::Init()
 
 int ConnectorProtocolListener::MainLoop()
 {
+    while (!exit_)
+    {
+        
+    }
     return 0;
 }
 
