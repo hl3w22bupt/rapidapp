@@ -60,6 +60,12 @@ void ConnectorProtocolListener::OnGetSettings(std::string& appid,
                                               int& encrypt_mode, int& auth_type,
                                               std::string& server_uri)
 {
+    appid = "TEST123456";
+    openid = "GUEST0987654321";
+    token = "TOKEN3388";
+    encrypt_mode = NOT_ENCRYPT;
+    auth_type = NONE_AUTHENTICATION;
+    server_uri = "tcp:127.0.0.1:8888";
 }
 
 int ConnectorProtocolListener::OnHandShakeSucceed()
