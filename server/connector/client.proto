@@ -20,7 +20,7 @@ message CSHead {
   required int32 magic = 1[default=0x3344];
   required int64 sequence = 2;
   required int32 bodyid = 3;
-  required int32 checksum = 4;
+//required int32 checksum = 4;
 }
 
 // 不同时间、不同uin/openid协商出的秘钥不一样

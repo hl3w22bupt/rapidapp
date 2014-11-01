@@ -306,6 +306,57 @@ int TcpSocketUtil::PushToSendQ(const char* buf, size_t buf_len)
     return NORMAL;
 }
 
+int TcpSocketUtil::PushvToSendQ(const struct iovec* iov, size_t iov_len)
+{
+    if (NULL == iov || 0 == iov_len)
+    {
+        return INVLD_ARGUMENT;
+    }
+
+    size_t total_len = 0;
+    for (size_t i=0; i<iov_len; ++i)
+    {
+        if (NULL == iov[i].iov_base || 0 == iov[i].iov_len)
+        {
+            continue;
+        }
+        total_len += iov[i].iov_len;
+    }
+
+    if ((int)total_len > send_buf_.Avaiable())
+    {
+        return SEND_BUFF_FULL;
+    }
+
+#ifdef TSOCKET_UTIL_ATOMIC
+    if (send_buf_.Locked())
+    {
+        return SEND_BUFF_BUSY;
+    }
+
+    ++send_buf_.atomic_in;
+#endif
+
+    for (size_t i=0; i<iov_len; ++i)
+    {
+        if (NULL == iov[i].iov_base || 0 == iov[i].iov_len)
+        {
+            continue;
+        }
+
+        memcpy(send_buf_.Ptr() + send_buf_.end,
+               iov[i].iov_base, iov[i].iov_len);
+        send_buf_.end += iov[i].iov_len;
+    }
+
+#ifdef TSOCKET_UTIL_ATOMIC
+    ++send_buf_.atomic_out;
+#endif
+
+    last_request_timestamp_ = time(NULL);
+    return NORMAL;
+}
+
 bool TcpSocketUtil::HasNewPkg()
 {
     if (NULL == tcp_pkg_parser_imp_)

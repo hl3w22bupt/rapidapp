@@ -73,6 +73,9 @@ void tcpsocket_set_connect_block_timeout(int a_iTimeout);
 TSOCKET tcpsocket_open(IN const char* a_pszUri);
 int tcpsocket_close(IN TSOCKET a_iSock);
 
+int tcpsocket_str2sockin(const char* a_pszUri,
+                       struct sockaddr_in* a_stSockIn);
+
 TSOCKET tcpsocket_connect(IN const char* a_pszUri, IN int a_iTimeout);
 TSOCKET tcpsocket_connect_nonblock(const char* a_pszUri);
 int tcpsocket_check_connect(TSOCKET a_iSock, int a_iTimeout);

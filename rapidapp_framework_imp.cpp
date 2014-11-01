@@ -1,6 +1,7 @@
 #include "rapidapp_framework_imp.h"
 #include "rapidapp_easy_rpc.h"
 #include "utils/rap_net_uri.h"
+#include "utils/tcp_socket.h"
 #include <event2/buffer.h>
 #include <gflags/gflags.h>
 #include <cassert>
@@ -302,7 +303,7 @@ int AppFrameWork::Init(RapidApp* app, int argc, char** argv)
 
     // tcp listener
     struct sockaddr_in listen_sa;
-    ret = rap_uri_get_socket_addr(setting_.listen_uri, &listen_sa);
+    ret = tcpsocket_str2sockin(setting_.listen_uri, &listen_sa);
     if (ret != 0)
     {
         PLOG(ERROR)<<"bad uri: "<<setting_.listen_uri;

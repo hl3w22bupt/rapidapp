@@ -141,7 +141,10 @@ int ConnectorClientProtocol::SerializeAndSendToPeer()
     up_msg_.SerializeToString(&bin_to_send);
 
     // send
-    int ret = tcp_sock_.PushToSendQ(bin_to_send.c_str(), bin_to_send.size());
+    uint32_t msglen = htonl(bin_to_send.size() + sizeof(msglen));
+    struct iovec iov[2] = {{&msglen, sizeof(msglen)},
+        {const_cast<char*>(bin_to_send.c_str()), bin_to_send.size()}};
+    int ret = tcp_sock_.PushvToSendQ(&iov[0], sizeof(iov)/sizeof(iov[0]));
     if (ret != NORMAL)
     {
         // send buffer is full
@@ -267,7 +270,7 @@ int ConnectorClientProtocol::HandShake_TRY_READY()
     {
         return -1;
     }
-    
+
     passport_ = down_msg_.mutable_body()->mutable_passport()->passport();
     session_state_ = SESSION_STATE_READY;
     return 0;
@@ -286,7 +289,7 @@ int ConnectorClientProtocol::HandShake_TRY_DONE()
     {
         return -1;
     }
-    
+
     session_state_ = SESSION_STATE_DONE;
     return 0;
 }
@@ -313,7 +316,8 @@ int ConnectorClientProtocol::Update()
             {
                 // 检查 TCP三次握手
                 ret = CheckConnect();
-                if (NET_CONNECTED == ret)
+                if (NORMAL == ret &&
+                    NET_CONNECTED == tcp_sock_.socket_state())
                 {
                     // connect success
                     ret = HandShake_SYN();
@@ -376,10 +380,12 @@ int ConnectorClientProtocol::Update()
         if (session_state_ != SESSION_STATE_DONE)
         {
             protocol_event_listener_->OnHandShakeFailed();
+            return -1;
         }
         else if (PEER_CLOSED == ret)
         {
             protocol_event_listener_->OnServerClose();
+            return -1;
         }
     }
 
@@ -457,19 +463,24 @@ int ConnectorClientProtocol::PopMessage()
 ///////////////////////////////////////////////////////////////////
 ////////////// Connector Protocol With Single Thread //////////////
 ///////////////////////////////////////////////////////////////////
-ConnectorClientProtocolThread::ConnectorClientProtocolThread() : ccproto_(NULL), exit_(false)
+ConnectorClientProtocolThread::ConnectorClientProtocolThread() : ccproto_(NULL),
+                                                                  wt_listener_(NULL),
+                                                                   exit_(false)
 {}
 
 ConnectorClientProtocolThread::~ConnectorClientProtocolThread()
 {}
 
-int ConnectorClientProtocolThread::StartThread(IProtocolEventListener* protocol_evlistener)
+int ConnectorClientProtocolThread::StartThread(IProtocolEventListener* protocol_evlistener,
+                                               IWorkerThreadListener* thread_listener)
 {
-    if (NULL == protocol_evlistener)
+    if (NULL == protocol_evlistener ||
+        NULL == thread_listener)
     {
         return -1;
     }
 
+    wt_listener_ = thread_listener;
     ccproto_ = ConnectorClientProtocol::Create();
     boost::thread protocol_thread(boost::bind(&ConnectorClientProtocolThread::MainLoop,
                                               this, protocol_evlistener));
@@ -486,21 +497,28 @@ int ConnectorClientProtocolThread::TerminateThread()
 
 int ConnectorClientProtocolThread::MainLoop(IProtocolEventListener* protocol_evlistener)
 {
-    assert(ccproto_ != NULL);
+    assert(ccproto_ != NULL && wt_listener_ != NULL);
     assert(!exit_);
+
     // 1. Start Connection
     int ret = ccproto_->Start(protocol_evlistener);
     if (ret != 0)
     {
+        wt_listener_->OnWorkerThreadExit();
         return -1;
     }
 
     // 2. Update Connection
     while (!exit_)
     {
-        ccproto_->Update();
+        ret = ccproto_->Update();
+        if (ret != 0)
+        {
+            break;
+        }
     }
 
+    wt_listener_->OnWorkerThreadExit();
     return 0;
 }
 

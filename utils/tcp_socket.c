@@ -175,6 +175,32 @@ int tcpsocket_str2inet(const char* a_pszAddr, TSOCKETPAIR* a_pstSocketPair)
 	return 0;
 }
 
+int tcpsocket_str2sockin(const char* a_pszUri,
+                         struct sockaddr_in* a_stSockIn)
+{
+    TSOCKETPAIR stSockPair;
+    const char* pszAddr = NULL;
+
+    if (NULL == a_pszUri || NULL == a_stSockIn)
+        return -1;
+
+    // parse url
+    pszAddr = strstr(a_pszUri, TCP_SOCKET_ADDR_SEP);
+    if (NULL == pszAddr)
+        pszAddr = a_pszUri;
+    else
+        pszAddr += strlen(TCP_SOCKET_ADDR_SEP);
+
+    int iRet = tcpsocket_str2inet(pszAddr, &stSockPair);
+    if (0 == iRet)
+    {
+        *a_stSockIn = stSockPair.stSockAdd;
+        return 0;
+    }
+
+    return -1;
+}
+
 int tcpsocket_check_connect_nonblock(TSOCKET a_iSock, struct sockaddr_in* a_pstSin, int a_iTimeout)
 {
     int iRet = 0;

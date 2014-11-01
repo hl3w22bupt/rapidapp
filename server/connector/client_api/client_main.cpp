@@ -1,8 +1,10 @@
 #include "connector_client_api.h"
+#include <stdio.h>
 
 using namespace hmoon_connector_api;
 
-class ConnectorProtocolListener : public IProtocolEventListener {
+class ConnectorProtocolListener :
+public IProtocolEventListener, public IWorkerThreadListener {
     public:
         ConnectorProtocolListener();
         ~ConnectorProtocolListener();
@@ -18,6 +20,9 @@ class ConnectorProtocolListener : public IProtocolEventListener {
         virtual int OnQueuing();
 
         virtual int OnIncoming();
+
+    public:
+        virtual void OnWorkerThreadExit();
 
     public:
         int Init();
@@ -36,7 +41,9 @@ ConnectorProtocolListener::~ConnectorProtocolListener()
 
 int ConnectorProtocolListener::Init()
 {
-    ConnectorClientProtocolThread::Default().StartThread(this);
+    fprintf(stdout, "start connector api client\n");
+    ConnectorClientProtocolThread::Default().StartThread(this, this);
+
     return 0;
 }
 
@@ -44,8 +51,11 @@ int ConnectorProtocolListener::MainLoop()
 {
     while (!exit_)
     {
-        
+
     }
+
+    fprintf(stdout, "exit connector api client\n");
+
     return 0;
 }
 
@@ -65,7 +75,7 @@ void ConnectorProtocolListener::OnGetSettings(std::string& appid,
     token = "TOKEN3388";
     encrypt_mode = NOT_ENCRYPT;
     auth_type = NONE_AUTHENTICATION;
-    server_uri = "tcp:127.0.0.1:8888";
+    server_uri = "tcp://127.0.0.1:8888";
 }
 
 int ConnectorProtocolListener::OnHandShakeSucceed()
@@ -77,13 +87,17 @@ int ConnectorProtocolListener::OnHandShakeSucceed()
 
 int ConnectorProtocolListener::OnHandShakeFailed()
 {
+    fprintf(stdout, "HandShake Failed\n");
     exit_ = true;
+
     return 0;
 }
 
 int ConnectorProtocolListener::OnServerClose()
 {
+    fprintf(stdout, "ServerClose Actively\n");
     exit_ = true;
+
     return 0;
 }
 
@@ -99,6 +113,12 @@ int ConnectorProtocolListener::OnIncoming()
     ConnectorClientProtocolThread::Default().PopMessageFromRecvQ(data, &len);
 
     return 0;
+}
+
+void ConnectorProtocolListener::OnWorkerThreadExit()
+{
+    fprintf(stdout, "WorkerThreadExit\n");
+    exit_ = true;
 }
 
 int main(int argc, char** argv)

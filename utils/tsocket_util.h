@@ -139,6 +139,7 @@ class TcpSocketUtil {
 
     public:
         int PushToSendQ(const char* buf, size_t buf_len);
+        int PushvToSendQ(const struct iovec* iov, size_t iov_len);
         int PeekFromRecvQ(const char** buf, int* buf_len);
         int PopFromRecvQ();
 

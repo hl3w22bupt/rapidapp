@@ -35,6 +35,12 @@ int ConnectorSession::DriveStateMachine()
     {
         case STATE_INIT:
             {
+                state_ = STATE_KEY_SYN;
+                return DoKeyMaking();
+                break;
+            }
+        case STATE_KEY_SYN:
+            {
                 state_ = STATE_AUTH;
                 return DoAuthRequest();
                 break;
@@ -61,9 +67,40 @@ int ConnectorSession::DriveStateMachine()
     }
 }
 
+int ConnectorSession::SerializeAndSendToFrontEnd(const connector_client::CSMsg& msg)
+{
+    std::string bin_to_send;
+    msg.SerializeToString(&bin_to_send);
+
+    assert(net_stub_ != NULL);
+    if (net_stub_->Send(bin_to_send.c_str(), bin_to_send.size()) != EASY_NET_OK)
+    {
+        return -1;
+    }
+
+    return 0;
+}
+
+int ConnectorSession::DoKeyMaking()
+{
+    static connector_client::CSMsg msg;
+    msg.mutable_head()->set_magic(0x3344);
+    msg.mutable_head()->set_sequence(1);
+    msg.mutable_head()->set_bodyid(connector_client::SYNACK);
+    msg.mutable_body()->mutable_ack()->set_secretkey("test secret key");
+
+    return SerializeAndSendToFrontEnd(msg);
+}
+
 int ConnectorSession::DoAuthRequest()
 {
-    return 0;
+    static connector_client::CSMsg msg;
+    msg.mutable_head()->set_magic(0x3344);
+    msg.mutable_head()->set_sequence(1);
+    msg.mutable_head()->set_bodyid(connector_client::PASSPORT);
+    msg.mutable_body()->mutable_passport()->set_passport(102030);
+
+    return SerializeAndSendToFrontEnd(msg);
 }
 
 int ConnectorSession::HandShake_StartSession()
@@ -73,7 +110,12 @@ int ConnectorSession::HandShake_StartSession()
 
 int ConnectorSession::HandShake_OnStartAcked()
 {
-    return 0;
+    static connector_client::CSMsg msg;
+    msg.mutable_head()->set_magic(0x3344);
+    msg.mutable_head()->set_sequence(1);
+    msg.mutable_head()->set_bodyid(connector_client::START_APP);
+
+    return SerializeAndSendToFrontEnd(msg);
 }
 
 int ConnectorSession::HandShake_StopSession()

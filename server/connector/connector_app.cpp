@@ -156,11 +156,13 @@ int ConnectorApp::OnRecvCtrl(int argc, char** argv)
 // 新连接建立，发起与后端的握手
 int ConnectorApp::OnFrontEndConnect(EasyNet* net, int type)
 {
-    if (NULL == frame_stub_)
+    if (NULL == frame_stub_ || NULL == net)
     {
         LOG(ERROR)<<"assert failed, null frame stub | null conn session mgr";
         return -1;
     }
+
+    LOG(INFO)<<"frontend:"<<net->uri()<<" connect successfully";
 
     void* uctx = frame_stub_->GetUserContext(net);
     if (NULL == uctx)
@@ -300,11 +302,18 @@ int ConnectorApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t
 
     if (!session->BeenReady())
     {
-        LOG(ERROR)<<"handshake uncompletedly, can NOT push data now";
-        return -1;
+        if (session->DriveStateMachine() < 0)
+        {
+            // 删除net时，会同时清理session空间
+            LOG(ERROR)<<"state machine run failed, close frontend";
+            frame_stub_->DestroyFrontEnd(&net);
+            return -1;
+        }
     }
-
-    return ForwardUpSideMessage(net, session, msg, size);
+    else
+    {
+        return ForwardUpSideMessage(net, session, msg, size);
+    }
 }
 
 int ConnectorApp::OnRecvBackEnd(EasyNet* net, int type, const char* msg, size_t size)

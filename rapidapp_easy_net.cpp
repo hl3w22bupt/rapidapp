@@ -1,5 +1,5 @@
 #include "rapidapp_easy_net.h"
-#include "utils/rap_net_uri.h"
+#include "utils/tcp_socket.h"
 #include <glog/logging.h>
 #include <cassert>
 #include <cstdlib>
@@ -61,7 +61,7 @@ int EasyNet::Connect(const char* uri, int type, struct event_base* ev_base)
     }
 
     struct sockaddr_in sin;
-    int ret = rap_uri_get_socket_addr(uri, &sin);
+    int ret = tcpsocket_str2sockin(uri, &sin);
     if (ret != 0)
     {
         PLOG(ERROR)<<"get sockaddr_in failed by uri:"<<uri;

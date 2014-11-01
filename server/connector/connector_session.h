@@ -2,15 +2,17 @@
 #define CONNECTOR_SESSION_H_
 
 #include "rapidapp_easy_net.h"
+#include "./client.pb.h"
 #include <tr1/unordered_map>
 
 using namespace rapidapp;
 
 enum SessionState {
-    STATE_INIT   = 0,
-    STATE_AUTH   = 1,
-    STATE_SYNING = 2,
-    STATE_OK     = 3,
+    STATE_INIT    = 0,
+    STATE_KEY_SYN = 1,
+    STATE_AUTH    = 2,
+    STATE_SYNING  = 3,
+    STATE_OK      = 4,
 };
 
 enum OperationCode {
@@ -55,6 +57,9 @@ class ConnectorSession {
         }
 
     private:
+        int SerializeAndSendToFrontEnd(const connector_client::CSMsg& msg);
+
+        int DoKeyMaking();
         int DoAuthRequest();
 
         int HandShake_StartSession();

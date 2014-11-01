@@ -147,6 +147,15 @@ class ConnectorClientProtocol {
         connector_client::CSMsg down_msg_;
 };
 
+class IWorkerThreadListener {
+    public:
+        IWorkerThreadListener(){};
+        virtual ~IWorkerThreadListener(){};
+
+    public:
+        virtual void OnWorkerThreadExit(){};
+};
+
 // 独占线程的异步Connector协议处理类
 class ConnectorClientProtocolThread {
     // 所有 public 接口都由主线程调用
@@ -167,7 +176,8 @@ class ConnectorClientProtocolThread {
         ///
         /// @return 0: success
         ///        !0: failed
-        int StartThread(IProtocolEventListener* protocol_evlistener);
+        int StartThread(IProtocolEventListener* protocol_evlistener,
+                        IWorkerThreadListener* thread_listener);
 
         /// @brief  终止网络协议交互线程
         ///
@@ -199,6 +209,7 @@ class ConnectorClientProtocolThread {
 
     private:
         ConnectorClientProtocol* ccproto_;
+        IWorkerThreadListener* wt_listener_;
         bool exit_;
 };
 
