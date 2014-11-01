@@ -1,10 +1,15 @@
 import platform
 import os
 
-env = Environment(CCFLAGS='-Werror -g -pg',
-                 LIBPATH=['/usr/local/libevent/lib', '/usr/local/protoc/lib', './', '/usr/local/lib'],
-                 CPPPATH=['/usr/local/libevent/include/', '/usr/local/protoc/include/',
+env = Environment(CCFLAGS='-g -pg -stdlib=libstdc++ -Wno-error=c++11-narrowing',
+                 LIBPATH=['/usr/local/lib', '/usr/local/libevent/lib', '/usr/local/protoc/lib', './', '/usr/local/lib'],
+                 CPPPATH=['/usr/local/include', '/usr/local/libevent/include/', '/usr/local/protoc/include/',
                  './', 'thirdparty/rapidjson/include'])
-Export('env')
+sys = platform.system()
+if sys != "Darwin":
+    env.Append(CCFLAGS='-Werror')
+else:
+    env.Append(CPPDEFINES=["__IOS__", "_XOPEN_SOURCE", "GFLAGS_NS_GOOGLE"])
 
+Export('env')
 SConscript('SConscript')

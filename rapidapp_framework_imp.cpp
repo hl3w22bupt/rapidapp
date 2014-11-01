@@ -7,6 +7,12 @@
 #include <cstring>
 #include <sys/resource.h>
 
+#ifdef GFLAGS_NS_GOOGLE
+#define GFLAGS_NS google
+#else
+#define GFLAGS_NS gflags
+#endif
+
 DEFINE_string(uri, "tcp:0.0.0.0:80", "server listen uri, format: [proto:ip:port]");
 DEFINE_string(log_file, "", "logging file name");
 DEFINE_int32(fps, 1000, "frame-per-second, MUST >= 1, associated with reload and timer");
@@ -100,9 +106,9 @@ int AppFrameWork::ParseCmdLine(int argc, char** argv)
 {
     assert(argc > 0 && argv != NULL);
 
-    gflags::SetVersionString(app_->GetAppVersion());
-    gflags::SetUsageMessage("server application based on rapidapp");
-    gflags::ParseCommandLineFlags(&argc, &argv, true);
+    GFLAGS_NS::SetVersionString(app_->GetAppVersion());
+    GFLAGS_NS::SetUsageMessage("server application based on rapidapp");
+    GFLAGS_NS::ParseCommandLineFlags(&argc, &argv, true);
 
     // listen uri
     if (FLAGS_uri.length() >= sizeof(setting_.listen_uri))
@@ -387,7 +393,7 @@ int AppFrameWork::CleanUp()
     }
 
     google::ShutdownGoogleLogging();
-    gflags::ShutDownCommandLineFlags();
+    GFLAGS_NS::ShutDownCommandLineFlags();
 
     has_been_cleanup_ = true;
 
