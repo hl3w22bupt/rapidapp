@@ -1,8 +1,9 @@
 package connector_server;
 
 enum BodyCmdId {
-    SYN = 1;
-    DATA = 2;
+    SYN =  1;
+    FIN =  2;
+    DATA = 3;
 }
 
 enum ConnectorMagic {
@@ -30,7 +31,7 @@ message SSSyn {
   optional int32 result = 1;
 }
 
-message SSAck {
+message SSFin {
   optional int32 result = 1;
 }
 
@@ -38,7 +39,7 @@ message SSAck {
 message SSBody {
     optional SSData data = 1;
     optional SSSyn syn = 2;
-    optional SSAck ack = 3;
+    optional SSFin fin = 3;
 }
 
 message SSMsg {
