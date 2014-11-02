@@ -53,6 +53,8 @@ class ConnectorApp : public RapidApp {
         int ForwardDownSideMessage(EasyNet* net, ConnectorSession* session,
                                    const char* msg, size_t size);
 
+        int StartToBackEnd(EasyNet* net, ConnectorSession* session);
+
     private:
         IFrameWork* frame_stub_;
         connector_config::ConnectorConfig config_;

@@ -220,7 +220,7 @@ int ConnectorApp::ForwardUpSideMessage(EasyNet* net, ConnectorSession* session,
     uint32_t fd = 0;
     uint64_t nid = 0;
     frame_stub_->GetNetIds(net, fd, nid);
-    connector_server::SSMsg msg_to_backend;
+    static connector_server::SSMsg msg_to_backend;
     msg_to_backend.mutable_head()->set_magic(connector_server::MAGIC_SS_V1);
     msg_to_backend.mutable_head()->set_sequence(1);
     msg_to_backend.mutable_head()->set_bodyid(connector_server::DATA);
@@ -253,7 +253,7 @@ int ConnectorApp::ForwardUpSideMessage(EasyNet* net, ConnectorSession* session,
 int ConnectorApp::ForwardDownSideMessage(EasyNet* net, ConnectorSession* session,
                                          const char* msg, size_t size)
 {
-    connector_client::CSMsg down_msg_2client;
+    static connector_client::CSMsg down_msg_2client;
     down_msg_2client.mutable_head()->set_magic(0x3344);
     down_msg_2client.mutable_head()->set_sequence(1);
     down_msg_2client.mutable_head()->set_bodyid(connector_client::DATA_TRANSPARENT);
@@ -268,6 +268,53 @@ int ConnectorApp::ForwardDownSideMessage(EasyNet* net, ConnectorSession* session
     {
         LOG(ERROR)<<"transfer to frontend failed";
         return -1;
+    }
+
+    return 0;
+}
+
+int ConnectorApp::StartToBackEnd(EasyNet* net, ConnectorSession* session)
+{
+    if (NULL == frame_stub_)
+    {
+        LOG(ERROR)<<"assert failed, null frame stub | null conn session mgr";
+        return -1;
+    }
+
+    if (NULL == net || NULL == session)
+    {
+        LOG(ERROR)<<"null net | null session";
+        return -1;
+    }
+
+    static connector_server::SSMsg msg;
+    uint32_t fd = 0;
+    uint64_t nid = 0;
+    frame_stub_->GetNetIds(net, fd, nid);
+    msg.mutable_head()->set_magic(connector_server::MAGIC_SS_V1);
+    msg.mutable_head()->set_sequence(1);
+    msg.mutable_head()->set_bodyid(connector_server::SYN);
+    msg.mutable_head()->mutable_session()->set_fd(fd);
+    msg.mutable_head()->mutable_session()->set_nid(nid);
+    msg.mutable_head()->mutable_session()->set_sid(session->sid());
+    msg.mutable_body()->mutable_syn()->set_result(0);
+
+    LOG(INFO)<<"start handshake to backend: "<<std::endl<<msg.DebugString();
+
+    std::string up_buff;
+    msg.SerializeToString(&up_buff);
+    int ret = frame_stub_->SendToBackEnd(backends_[backend_pos_],
+                                         up_buff.c_str(), up_buff.size());
+    if (ret != 0)
+    {
+        LOG(INFO)<<"send to backend pos: "<<backend_pos_<<" failed";
+        return -1;
+    }
+
+    ++backend_pos_;
+    if (backend_pos_ >= config_.backends_size())
+    {
+        backend_pos_ = 0;
     }
 
     return 0;
@@ -299,6 +346,26 @@ int ConnectorApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t
             frame_stub_->DestroyFrontEnd(&net);
             return -1;
         }
+
+        // 目前无排队，鉴权通过直接发起START
+        if (STATE_SYNING == session->state())
+        {
+            if (StartToBackEnd(net, session) != 0)
+            {
+                LOG(ERROR)<<"start to backend failed";
+                frame_stub_->DestroyFrontEnd(&net);
+                return -1;
+            }
+
+            if (session->DriveStateMachine() < 0)
+            {
+                // 删除net时，会同时清理session空间
+                LOG(ERROR)<<"state machine run failed, close frontend";
+                frame_stub_->DestroyFrontEnd(&net);
+                return -1;
+            }
+        }
+
     }
     else
     {
@@ -337,6 +404,8 @@ int ConnectorApp::OnRecvBackEnd(EasyNet* net, int type, const char* msg, size_t 
     // 中转至前端网络连接，同时update状态机
     if (connector_server::DATA != down_msg.head().bodyid())
     {
+        //assert (session->state() != STATE_OK && STATE_SYNACK == session->state());
+
         if (session->DriveStateMachine() < 0)
         {
             // 删除net时，会同时清理session空间

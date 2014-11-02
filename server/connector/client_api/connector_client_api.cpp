@@ -171,7 +171,7 @@ int ConnectorClientProtocol::TryToRecvFromPeerAndParse()
 
     if (!tcp_sock_.HasNewPkg())
     {
-        return 0;
+        return CONNECTOR_ERR_NO_MORE_PKG;
     }
 
     const char* buf = NULL;
@@ -226,7 +226,14 @@ int ConnectorClientProtocol::HandShake_TRY_ACK()
     int ret = TryToRecvFromPeerAndParse();
     if (ret != 0)
     {
-        return ret;
+        if (ret != CONNECTOR_ERR_NO_MORE_PKG)
+        {
+            return ret;
+        }
+        else
+        {
+            return 0;
+        }
     }
 
     if (down_msg_.mutable_head()->bodyid() != connector_client::SYNACK)
@@ -263,7 +270,14 @@ int ConnectorClientProtocol::HandShake_TRY_READY()
     int ret = TryToRecvFromPeerAndParse();
     if (ret != 0)
     {
-        return ret;
+        if (ret != CONNECTOR_ERR_NO_MORE_PKG)
+        {
+            return ret;
+        }
+        else
+        {
+            return 0;
+        }
     }
 
     if (down_msg_.mutable_head()->bodyid() != connector_client::PASSPORT)
@@ -282,7 +296,14 @@ int ConnectorClientProtocol::HandShake_TRY_DONE()
     int ret = TryToRecvFromPeerAndParse();
     if (ret != 0)
     {
-        return ret;
+        if (ret != CONNECTOR_ERR_NO_MORE_PKG)
+        {
+            return ret;
+        }
+        else
+        {
+            return 0;
+        }
     }
 
     if (down_msg_.mutable_head()->bodyid() != connector_client::START_APP)
@@ -356,6 +377,7 @@ int ConnectorClientProtocol::Update()
                     if (!handshake_done)
                     {
                         protocol_event_listener_->OnHandShakeSucceed();
+                        handshake_done = true;
                     }
                     else
                     {
@@ -403,7 +425,8 @@ int ConnectorClientProtocol::PushMessage(const char* data, size_t size)
     up_msg_.mutable_head()->set_magic(connector_client::MAGIC_CS_V1);
     up_msg_.mutable_head()->set_sequence(0); // sequence NOT care
     up_msg_.mutable_head()->set_bodyid(connector_client::DATA_TRANSPARENT);
-    // calculate encrypt-key by openid&appid
+
+    up_msg_.mutable_body()->Clear();
     up_msg_.mutable_body()->set_data(std::string(data, size));
 
     if (SerializeAndSendToPeer() != 0)

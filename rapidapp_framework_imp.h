@@ -62,6 +62,9 @@ class AppFrameWork : public IFrameWork, public IWalkEach {
                             ON_RPC_REPLY_FUNCTION callback);
 
     public:
+        virtual void ScheduleUpdate();
+
+    public:
         int DoSomething(EasyNet* net);
 
     // 事件回调
@@ -180,6 +183,8 @@ class AppFrameWork : public IFrameWork, public IWalkEach {
 
     private:
         RapidApp* app_;
+        bool schedule_update_;
+
         AppSetting setting_;
         bool has_been_cleanup_;
 

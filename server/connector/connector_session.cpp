@@ -35,25 +35,21 @@ int ConnectorSession::DriveStateMachine()
     {
         case STATE_INIT:
             {
-                state_ = STATE_KEY_SYN;
                 return HandleKeyMaking();
-                break;
-            }
-        case STATE_KEY_SYN:
-            {
-                state_ = STATE_AUTH;
-                return HandleAuthRequest();
                 break;
             }
         case STATE_AUTH:
             {
-                state_ = STATE_SYNING;
-                return HandShake_StartSession();
+                return HandleAuthRequest();
                 break;
             }
         case STATE_SYNING:
             {
-                state_ = STATE_OK;
+                return HandShake_StartSession();
+                break;
+            }
+        case STATE_SYNACK:
+            {
                 return HandShake_OnStartAcked();
                 break;
             }
@@ -69,6 +65,8 @@ int ConnectorSession::DriveStateMachine()
 
 int ConnectorSession::SerializeAndSendToFrontEnd(const connector_client::CSMsg& msg)
 {
+    LOG(INFO)<<"msg handshake to client:"<<std::endl<<msg.DebugString();
+
     std::string bin_to_send;
     msg.SerializeToString(&bin_to_send);
 
@@ -92,7 +90,15 @@ int ConnectorSession::HandleKeyMaking()
     msg.mutable_head()->set_bodyid(connector_client::SYNACK);
     msg.mutable_body()->mutable_ack()->set_secretkey("test secret key");
 
-    return SerializeAndSendToFrontEnd(msg);
+    if (SerializeAndSendToFrontEnd(msg) != 0)
+    {
+        return -1;
+    }
+
+    state_ = STATE_AUTH;
+    LOG(INFO)<<"session state[STATE_INIT -> STATE_AUTH]";
+
+    return 0;
 }
 
 int ConnectorSession::HandleAuthRequest()
@@ -103,11 +109,22 @@ int ConnectorSession::HandleAuthRequest()
     msg.mutable_head()->set_bodyid(connector_client::PASSPORT);
     msg.mutable_body()->mutable_passport()->set_passport(102030);
 
-    return SerializeAndSendToFrontEnd(msg);
+    if (SerializeAndSendToFrontEnd(msg) != 0)
+    {
+        return -1;
+    }
+
+    state_ = STATE_SYNING;
+    LOG(INFO)<<"session state[STATE_AUTH -> STATE_SYNING]";
+
+    return 0;
 }
 
 int ConnectorSession::HandShake_StartSession()
 {
+    state_ = STATE_SYNACK;
+    LOG(INFO)<<"session state[STATE_SYNING -> STATE_SYNACK]";
+
     return 0;
 }
 
@@ -118,8 +135,17 @@ int ConnectorSession::HandShake_OnStartAcked()
     msg.mutable_head()->set_magic(0x3344);
     msg.mutable_head()->set_sequence(1);
     msg.mutable_head()->set_bodyid(connector_client::START_APP);
+    msg.mutable_body()->mutable_start()->set_code(0);
 
-    return SerializeAndSendToFrontEnd(msg);
+    if (SerializeAndSendToFrontEnd(msg) != 0)
+    {
+        return -1;
+    }
+
+    state_ = STATE_OK;
+    LOG(INFO)<<"session state[STATE_SYNACK -> STATE_OK]";
+
+    return 0;
 }
 
 int ConnectorSession::HandShake_StopSession()

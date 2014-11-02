@@ -45,6 +45,9 @@ class IFrameWork {
         virtual int RpcCall(EasyRpc* rpc,
                             const void* request, size_t request_size,
                             ON_RPC_REPLY_FUNCTION callback) = 0;
+
+    public:
+        virtual void ScheduleUpdate() = 0;
 };
 
 }

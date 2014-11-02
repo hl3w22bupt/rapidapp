@@ -20,6 +20,11 @@ enum {
     AUTHENTICATION_ATK  = 1,
 };
 
+enum {
+    CONNECTOR_ERR_NONE        = 0,
+    CONNECTOR_ERR_NO_MORE_PKG = -1,
+};
+
 class IProtocolEventListener {
     public:
         IProtocolEventListener(){}

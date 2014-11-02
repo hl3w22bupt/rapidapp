@@ -9,9 +9,9 @@ using namespace rapidapp;
 
 enum SessionState {
     STATE_INIT    = 0,
-    STATE_KEY_SYN = 1,
-    STATE_AUTH    = 2,
-    STATE_SYNING  = 3,
+    STATE_AUTH    = 1,
+    STATE_SYNING  = 2,
+    STATE_SYNACK  = 3,
     STATE_OK      = 4,
 };
 

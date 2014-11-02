@@ -68,7 +68,7 @@ inline int libevent_get_arguments(char* command, int& argc, char** argv) {
 
 AppFrameWork::AppFrameWork() : event_base_(NULL), internal_timer_(NULL), listener_(NULL),
                                  udp_ctrl_keeper_(NULL), ctrl_dispatcher_(),
-                                 app_(NULL), has_been_cleanup_(false),
+                                 app_(NULL), schedule_update_(false), has_been_cleanup_(false),
                                  frontend_handler_mgr_(), backend_handler_mgr_(),
                                  timer_mgr_(), rpc_scheduler_(NULL)
 {
@@ -420,16 +420,21 @@ int AppFrameWork::Tick()
 
     now_ = time(NULL);
 
+    if (!running_)
+    {
+        LOG(INFO)<<"exit loop";
+        event_base_loopbreak(event_base_);
+    }
+
     if (reloading_)
     {
         Reload();
         reloading_ = false;
     }
 
-    if (!running_)
+    if (schedule_update_)
     {
-        LOG(INFO)<<"exit loop";
-        event_base_loopbreak(event_base_);
+        app_->OnUpdate();
     }
 
     // TODO system max CPU overload, getloadavg
@@ -979,6 +984,10 @@ int AppFrameWork::RpcCall(EasyRpc* rpc, const void* request, size_t request_size
     return rpc->RpcCall(request, request_size, callback);
 }
 
+void AppFrameWork::ScheduleUpdate()
+{
+    schedule_update_ = true;
+}
 
 // 前端net遍历操作
 // 返回值!0 遍历后删除，0 遍历不删除
