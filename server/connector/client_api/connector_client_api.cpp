@@ -326,7 +326,7 @@ int ConnectorClientProtocol::Update()
             }
         case SESSION_STATE_KEY_SYNING:
             {
-                // 尝试接收 协商出来掉密钥KEY
+                // 尝试接收 协商出来的密钥KEY
                 ret = HandShake_TRY_ACK();
                 if (0 == ret)
                 {

@@ -36,13 +36,13 @@ int ConnectorSession::DriveStateMachine()
         case STATE_INIT:
             {
                 state_ = STATE_KEY_SYN;
-                return DoKeyMaking();
+                return HandleKeyMaking();
                 break;
             }
         case STATE_KEY_SYN:
             {
                 state_ = STATE_AUTH;
-                return DoAuthRequest();
+                return HandleAuthRequest();
                 break;
             }
         case STATE_AUTH:
@@ -81,7 +81,10 @@ int ConnectorSession::SerializeAndSendToFrontEnd(const connector_client::CSMsg& 
     return 0;
 }
 
-int ConnectorSession::DoKeyMaking()
+/* TODO 目前密钥生成固定硬编码，没有发往第三方账号系统的鉴权申请。
+ * 同时并没有针对当前状态机状态检查client侧发起的协议的合法性
+ * 后面随着功能完善再补充，早前先简单搭建起一个骨架*/
+int ConnectorSession::HandleKeyMaking()
 {
     static connector_client::CSMsg msg;
     msg.mutable_head()->set_magic(0x3344);
@@ -92,7 +95,7 @@ int ConnectorSession::DoKeyMaking()
     return SerializeAndSendToFrontEnd(msg);
 }
 
-int ConnectorSession::DoAuthRequest()
+int ConnectorSession::HandleAuthRequest()
 {
     static connector_client::CSMsg msg;
     msg.mutable_head()->set_magic(0x3344);
@@ -108,6 +111,7 @@ int ConnectorSession::HandShake_StartSession()
     return 0;
 }
 
+// TODO connector server api to recv start
 int ConnectorSession::HandShake_OnStartAcked()
 {
     static connector_client::CSMsg msg;

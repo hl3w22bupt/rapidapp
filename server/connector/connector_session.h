@@ -59,8 +59,8 @@ class ConnectorSession {
     private:
         int SerializeAndSendToFrontEnd(const connector_client::CSMsg& msg);
 
-        int DoKeyMaking();
-        int DoAuthRequest();
+        int HandleKeyMaking();
+        int HandleAuthRequest();
 
         int HandShake_StartSession();
         int HandShake_OnStartAcked();

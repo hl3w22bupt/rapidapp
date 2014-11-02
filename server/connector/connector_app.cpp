@@ -186,16 +186,6 @@ int ConnectorApp::OnFrontEndConnect(EasyNet* net, int type)
         return -1;
     }
 
-    // 驱动连接状态机
-    // DoAuth
-    ret = session->DriveStateMachine();
-    if (ret < 0)
-    {
-        LOG(ERROR)<<"Drive Statue error, close frontend connection";
-        frame_stub_->DestroyFrontEnd(&net);
-        return -1;
-    }
-
     return 0;
 }
 
