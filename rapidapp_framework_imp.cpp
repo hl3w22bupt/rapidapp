@@ -541,7 +541,8 @@ int AppFrameWork::OnFrontEndConnect(evutil_socket_t sock, struct sockaddr *addr)
         return -1;
     }
 
-    int len = snprintf(easy_net_handler->uri(), MAX_URL_LEN - 1, "%s:%d", ip, (int)port);
+    int len = snprintf(easy_net_handler->uri(), MAX_URL_LEN - 1,
+                       "%s:%d", ip, (int)port);
     if (len < 0 || len >= MAX_URL_LEN)
     {
         LOG(ERROR)<<"format frontend uri failed";
@@ -638,6 +639,7 @@ int AppFrameWork::OnFrontEndMsg(struct bufferevent* bev)
 int AppFrameWork::OnFrontEndSocketEvent(struct bufferevent* bev, short events)
 {
     assert(bev != NULL);
+    assert(app_ != NULL);
 
     PLOG(INFO)<<"recv socket event:"<<events;
 
@@ -645,6 +647,7 @@ int AppFrameWork::OnFrontEndSocketEvent(struct bufferevent* bev, short events)
     if (events & BEV_EVENT_ERROR)
     {
         PLOG(ERROR)<<"socket error";
+        //app_->OnFrontEndClose();
         frontend_handler_mgr_.RemoveHandlerByEvent(bev);
         return 0;
     }
@@ -658,6 +661,7 @@ int AppFrameWork::OnFrontEndSocketEvent(struct bufferevent* bev, short events)
     if (events & BEV_EVENT_EOF)
     {
         PLOG(INFO)<<"peer close connection actively";
+        //app_->OnFrontEndClose();
         frontend_handler_mgr_.RemoveHandlerByEvent(bev);
         return 0;
     }

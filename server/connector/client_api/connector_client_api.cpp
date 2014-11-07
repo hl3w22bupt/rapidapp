@@ -381,7 +381,7 @@ int ConnectorClientProtocol::Update()
                     }
                     else
                     {
-                        // TODO check DATA_IN event
+                        // update & check DATA_IN event
                         ret = tcp_sock_.Recv();
                         if (NORMAL == ret && tcp_sock_.HasNewPkg())
                         {
