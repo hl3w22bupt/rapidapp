@@ -226,14 +226,7 @@ int ConnectorClientProtocol::HandShake_TRY_ACK()
     int ret = TryToRecvFromPeerAndParse();
     if (ret != 0)
     {
-        if (ret != CONNECTOR_ERR_NO_MORE_PKG)
-        {
-            return ret;
-        }
-        else
-        {
-            return 0;
-        }
+        return ret;
     }
 
     if (down_msg_.mutable_head()->bodyid() != connector_client::SYNACK)
@@ -352,6 +345,10 @@ int ConnectorClientProtocol::Update()
                 if (0 == ret)
                 {
                     ret = HandShake_AUTH();
+                }
+                else if (CONNECTOR_ERR_NO_MORE_PKG == ret)
+                {
+                    ret = 0;
                 }
                 break;
             }
