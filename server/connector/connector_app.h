@@ -30,6 +30,8 @@ class ConnectorApp : public RapidApp {
         virtual int OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t size);
         virtual int OnRecvBackEnd(EasyNet* net, int type, const char* msg, size_t size);
 
+        virtual int OnFrontEndClose(EasyNet* net, int type);
+
         virtual int OnTimer(EasyTimer* timer, int timer_id);
 
     public:

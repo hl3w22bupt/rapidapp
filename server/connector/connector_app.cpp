@@ -189,6 +189,32 @@ int ConnectorApp::OnFrontEndConnect(EasyNet* net, int type)
     return 0;
 }
 
+// frontend关闭连接
+int ConnectorApp::OnFrontEndClose(EasyNet* net, int type)
+{
+    if (NULL == frame_stub_ || NULL == net)
+    {
+        LOG(ERROR)<<"assert failed, null frame stub | null conn session mgr";
+        return -1;
+    }
+
+    LOG(INFO)<<"frontend:"<<net->uri()<<" close actively or closed for socket error";
+
+    void* uctx = frame_stub_->GetUserContext(net);
+    if (NULL == uctx)
+    {
+        LOG(ERROR)<<"null user context";
+        return -1;
+    }
+
+    // context资源释放
+    // session进行CleanUp后，会随着net的回收而回收
+    ConnectorSession* session = static_cast<ConnectorSession*>(uctx);
+    session->CleanUp();
+
+    return 0;
+}
+
 // 转发上行消息
 int ConnectorApp::ForwardUpSideMessage(EasyNet* net, ConnectorSession* session,
                                        const char* msg, size_t size)

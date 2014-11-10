@@ -647,7 +647,12 @@ int AppFrameWork::OnFrontEndSocketEvent(struct bufferevent* bev, short events)
     if (events & BEV_EVENT_ERROR)
     {
         PLOG(ERROR)<<"socket error";
-        //app_->OnFrontEndClose();
+        EasyNet* net = frontend_handler_mgr_.GetHandlerByEvent(bev);
+        if (net != NULL)
+        {
+            app_->OnFrontEndClose(net, net->net_type());
+        }
+
         frontend_handler_mgr_.RemoveHandlerByEvent(bev);
         return 0;
     }
@@ -661,7 +666,12 @@ int AppFrameWork::OnFrontEndSocketEvent(struct bufferevent* bev, short events)
     if (events & BEV_EVENT_EOF)
     {
         PLOG(INFO)<<"peer close connection actively";
-        //app_->OnFrontEndClose();
+        EasyNet* net = frontend_handler_mgr_.GetHandlerByEvent(bev);
+        if (net != NULL)
+        {
+            app_->OnFrontEndClose(net, net->net_type());
+        }
+
         frontend_handler_mgr_.RemoveHandlerByEvent(bev);
         return 0;
     }
