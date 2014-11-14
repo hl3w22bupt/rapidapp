@@ -23,8 +23,7 @@ class ConnectorPkgParser : public ITcpPkgParser {
             }
 
             int32_t msglen = 0;
-            // mobile game, SIGBUS
-            msglen = *(int32_t*)buf;
+            memcpy(&msglen, buf, sizeof(msglen));
 
             return ntohl(msglen);
         }
@@ -41,15 +40,25 @@ enum {
     SESSION_STATE_FINI        = 6,
 };
 
+static void CONNECTOR_CLIENT_API_LOG(ILoggable* logger,
+                                     int level, const char* log)
+{
+    if (logger != NULL)
+    {
+        logger->Log(level, log);
+    }
+}
+
 ////////////////////////////////////////////////
 ////////////// Connector Protocol //////////////
 ////////////////////////////////////////////////
 ConnectorClientProtocol::ConnectorClientProtocol() :
-    protocol_event_listener_(NULL), appid_(), openid_(), token_(), server_uri_(),
-      encrypt_mode_(NOT_ENCRYPT), auth_type_(NONE_AUTHENTICATION),
-        encrypt_skey_(), passport_(0),
-          tcp_sock_(), session_state_(SESSION_STATE_INITED),
-            up_msg_(), down_msg_()
+    protocol_event_listener_(NULL), logger_(NULL),
+      appid_(), openid_(), token_(), server_uri_(),
+        encrypt_mode_(NOT_ENCRYPT), auth_type_(NONE_AUTHENTICATION),
+          encrypt_skey_(), passport_(0),
+            tcp_sock_(), session_state_(SESSION_STATE_INITED),
+              up_msg_(), down_msg_()
 {}
 
 ConnectorClientProtocol::~ConnectorClientProtocol()
@@ -62,6 +71,7 @@ int ConnectorClientProtocol::Connect(const std::string& server_uri)
     int ret = tcp_sock_.ConnectNonBlock(server_uri.c_str());
     if (ret != NORMAL)
     {
+        CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR, "ConnectNonBlock failed");
         return -1;
     }
 
@@ -80,13 +90,16 @@ void ConnectorClientProtocol::Close()
     session_state_ = SESSION_STATE_FINI;
 }
 
-int ConnectorClientProtocol::Start(IProtocolEventListener* protocol_evlistener)
+int ConnectorClientProtocol::Start(IProtocolEventListener* protocol_evlistener,
+                                   ILoggable* logger)
 {
     if (NULL == protocol_evlistener)
     {
+        CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR, "null protocol_evlistener");
         return -1;
     }
     protocol_event_listener_ = protocol_evlistener;
+    logger_ = logger;
 
     // 设置一些参数，比如登录帐号、token、密码等
     protocol_event_listener_->OnGetSettings(appid_, openid_, token_,
@@ -97,6 +110,7 @@ int ConnectorClientProtocol::Start(IProtocolEventListener* protocol_evlistener)
     int ret = Connect(server_uri_);
     if (ret != 0)
     {
+        CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR, "Connect failed");
         return -1;
     }
 
@@ -119,6 +133,7 @@ int ConnectorClientProtocol::Resume()
 {
     if (NULL == protocol_event_listener_)
     {
+        CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR, "null protocol_evlistener");
         return -1;
     }
 
@@ -129,6 +144,7 @@ int ConnectorClientProtocol::Resume()
     int ret = Connect(server_uri_);
     if (ret != 0)
     {
+        CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR, "Resume failed");
         return -1;
     }
 
@@ -148,6 +164,7 @@ int ConnectorClientProtocol::SerializeAndSendToPeer()
     if (ret != NORMAL)
     {
         // send buffer is full
+        CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR, "PushvToSendQ failed");
         return ret;
     }
 
@@ -155,6 +172,7 @@ int ConnectorClientProtocol::SerializeAndSendToPeer()
     if (ret != NORMAL && ret != SEND_UNCOMPLETED)
     {
         // send error
+        CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR, "Socket Send failed");
         return ret;
     }
 
@@ -166,11 +184,13 @@ int ConnectorClientProtocol::TryToRecvFromPeerAndParse()
     int ret = tcp_sock_.Recv();
     if (ret != NORMAL)
     {
+        CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR, "Socket Recv failed");
         return ret;
     }
 
     if (!tcp_sock_.HasNewPkg())
     {
+        CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR, "pkg not complete yet");
         return CONNECTOR_ERR_NO_MORE_PKG;
     }
 
@@ -179,6 +199,8 @@ int ConnectorClientProtocol::TryToRecvFromPeerAndParse()
     ret = tcp_sock_.PeekFromRecvQ(&buf, &buflen);
     if (ret != NORMAL && ASSERT_FAILED == ret)
     {
+        CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR,
+                                 "pkg is complete, but PeekFromRecvQ failed");
         return ret;
     }
 
@@ -187,12 +209,16 @@ int ConnectorClientProtocol::TryToRecvFromPeerAndParse()
     ret = tcp_sock_.PopFromRecvQ();
     if (ASSERT_FAILED == ret)
     {
+        CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR,
+                                 "PopFromRecvQ failed, unexpected");
         return ret;
     }
 
     // error -- get error code
     if (connector_client::ERROR == down_msg_.mutable_head()->bodyid())
     {
+        CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR,
+                                 down_msg_.mutable_body()->error().desc().c_str());
         return -1;
     }
 
@@ -212,6 +238,8 @@ int ConnectorClientProtocol::HandShake_SYN()
     int ret = SerializeAndSendToPeer();
     if (ret != NORMAL)
     {
+        CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR,
+                                 "send handshake syn[get secret key] failed");
         return ret;
     }
 
@@ -226,11 +254,15 @@ int ConnectorClientProtocol::HandShake_TRY_ACK()
     int ret = TryToRecvFromPeerAndParse();
     if (ret != 0)
     {
+        CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR,
+                                 "error when try to recv ack");
         return ret;
     }
 
     if (down_msg_.mutable_head()->bodyid() != connector_client::SYNACK)
     {
+        CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR,
+                                 "bodyid NOT equal to expected SYNACK");
         return -1;
     }
 
@@ -250,6 +282,8 @@ int ConnectorClientProtocol::HandShake_AUTH()
     int ret = SerializeAndSendToPeer();
     if (ret != NORMAL)
     {
+        CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR,
+                                 "send handshake auth failed");
         return ret;
     }
 
@@ -265,6 +299,8 @@ int ConnectorClientProtocol::HandShake_TRY_READY()
     {
         if (ret != CONNECTOR_ERR_NO_MORE_PKG)
         {
+            CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR,
+                                     "error when try to recv ready");
             return ret;
         }
         else
@@ -275,6 +311,8 @@ int ConnectorClientProtocol::HandShake_TRY_READY()
 
     if (down_msg_.mutable_head()->bodyid() != connector_client::PASSPORT)
     {
+        CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR,
+                                 "bodyid NOT equal to expected PASSPORT");
         return -1;
     }
 
@@ -291,6 +329,8 @@ int ConnectorClientProtocol::HandShake_TRY_DONE()
     {
         if (ret != CONNECTOR_ERR_NO_MORE_PKG)
         {
+            CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR,
+                                     "error when try to recv done");
             return ret;
         }
         else
@@ -301,6 +341,8 @@ int ConnectorClientProtocol::HandShake_TRY_DONE()
 
     if (down_msg_.mutable_head()->bodyid() != connector_client::START_APP)
     {
+        CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR,
+                                 "bodyid NOT equal to expected START_APP");
         return -1;
     }
 
@@ -313,10 +355,13 @@ int ConnectorClientProtocol::Update()
 {
     if (NULL == protocol_event_listener_)
     {
+        CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR,
+                                 "null evlistener, assert failed");
         return -1;
     }
 
     int ret = 0;
+    int busy = 0;
 
     // 驱动状态机
     switch (session_state_)
@@ -334,6 +379,7 @@ int ConnectorClientProtocol::Update()
                     NET_CONNECTED == tcp_sock_.socket_state())
                 {
                     // connect success
+                    ++busy;
                     ret = HandShake_SYN();
                 }
                 break;
@@ -344,6 +390,7 @@ int ConnectorClientProtocol::Update()
                 ret = HandShake_TRY_ACK();
                 if (0 == ret)
                 {
+                    ++busy;
                     ret = HandShake_AUTH();
                 }
                 else if (CONNECTOR_ERR_NO_MORE_PKG == ret)
@@ -375,6 +422,7 @@ int ConnectorClientProtocol::Update()
                     {
                         protocol_event_listener_->OnHandShakeSucceed();
                         handshake_done = true;
+                        ++busy;
                     }
                     else
                     {
@@ -382,6 +430,7 @@ int ConnectorClientProtocol::Update()
                         ret = tcp_sock_.Recv();
                         if (NORMAL == ret && tcp_sock_.HasNewPkg())
                         {
+                            ++busy;
                             protocol_event_listener_->OnIncoming();
                         }
                     }
@@ -390,6 +439,8 @@ int ConnectorClientProtocol::Update()
             }
         default:
             {
+                CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR,
+                                         "unexpected state, assert failed");
                 return -1;
             }
     }
@@ -399,16 +450,20 @@ int ConnectorClientProtocol::Update()
         if (session_state_ != SESSION_STATE_DONE)
         {
             protocol_event_listener_->OnHandShakeFailed();
+            CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR, "handshake failed");
+
             return -1;
         }
         else if (PEER_CLOSED == ret)
         {
             protocol_event_listener_->OnServerClose();
+            CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR, "peer close connection");
+
             return -1;
         }
     }
 
-    return 0;
+    return busy;
 }
 
 // 发送消息
@@ -416,6 +471,8 @@ int ConnectorClientProtocol::PushMessage(const char* data, size_t size)
 {
     if (NULL == data || 0 == size)
     {
+        CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR, "null data");
+
         return -1;
     }
 
@@ -428,6 +485,7 @@ int ConnectorClientProtocol::PushMessage(const char* data, size_t size)
 
     if (SerializeAndSendToPeer() != 0)
     {
+        CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR, "PushMessage failed");
         return -1;
     }
 
@@ -439,6 +497,7 @@ int ConnectorClientProtocol::PeekMessage(const char** buf_ptr, int* buflen_ptr)
 {
     if (NULL == buf_ptr || NULL == buflen_ptr)
     {
+        CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR, "invalid arguments");
         return -1;
     }
 
@@ -447,6 +506,7 @@ int ConnectorClientProtocol::PeekMessage(const char** buf_ptr, int* buflen_ptr)
     int ret = tcp_sock_.PeekFromRecvQ(&buf, &buflen);
     if (ret != NORMAL && ASSERT_FAILED == ret)
     {
+        CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR, "PeekFromRecvQ failed");
         return -1;
     }
 
@@ -454,6 +514,8 @@ int ConnectorClientProtocol::PeekMessage(const char** buf_ptr, int* buflen_ptr)
 
     if (down_msg_.mutable_head()->bodyid() != connector_client::DATA_TRANSPARENT)
     {
+        CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR,
+                                 "bodyid NOT expected(DATA_TRANSPARENT)");
         return -1;
     }
 
@@ -468,12 +530,15 @@ int ConnectorClientProtocol::PopMessage()
     int ret = tcp_sock_.PopFromRecvQ();
     if (ASSERT_FAILED == ret)
     {
+        CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR, "PopFromRecvQ failed");
         return -1;
     }
 
     if (down_msg_.mutable_head()->bodyid() != connector_client::DATA_TRANSPARENT)
     {
         // assert failed
+        CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR,
+                                 "bodyid NOT expected(DATA_TRANSPARENT)");
         return -1;
     }
 
@@ -485,25 +550,30 @@ int ConnectorClientProtocol::PopMessage()
 ///////////////////////////////////////////////////////////////////
 ConnectorClientProtocolThread::ConnectorClientProtocolThread() : ccproto_(NULL),
                                                                   wt_listener_(NULL),
-                                                                   exit_(false)
+                                                                   logger_(NULL),
+                                                                    exit_(false)
 {}
 
 ConnectorClientProtocolThread::~ConnectorClientProtocolThread()
 {}
 
 int ConnectorClientProtocolThread::StartThread(IProtocolEventListener* protocol_evlistener,
-                                               IWorkerThreadListener* thread_listener)
+                                               IWorkerThreadListener* thread_listener,
+                                               ILoggable* logger)
 {
     if (NULL == protocol_evlistener ||
         NULL == thread_listener)
     {
+        CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR,
+                                 "null protocol listener OR null thread_listener");
         return -1;
     }
 
     wt_listener_ = thread_listener;
+    logger_ = logger;
     ccproto_ = ConnectorClientProtocol::Create();
     boost::thread protocol_thread(boost::bind(&ConnectorClientProtocolThread::MainLoop,
-                                              this, protocol_evlistener));
+                                              this, protocol_evlistener, logger));
     protocol_thread.detach();
 
     return 0;
@@ -515,13 +585,14 @@ int ConnectorClientProtocolThread::TerminateThread()
     return 0;
 }
 
-int ConnectorClientProtocolThread::MainLoop(IProtocolEventListener* protocol_evlistener)
+int ConnectorClientProtocolThread::MainLoop(IProtocolEventListener* protocol_evlistener,
+                                            ILoggable* logger)
 {
     assert(ccproto_ != NULL && wt_listener_ != NULL);
     assert(!exit_);
 
     // 1. Start Connection
-    int ret = ccproto_->Start(protocol_evlistener);
+    int ret = ccproto_->Start(protocol_evlistener, logger);
     if (ret != 0)
     {
         wt_listener_->OnWorkerThreadExit();
@@ -532,9 +603,16 @@ int ConnectorClientProtocolThread::MainLoop(IProtocolEventListener* protocol_evl
     while (!exit_)
     {
         ret = ccproto_->Update();
-        if (ret != 0)
+        if (ret < 0)
         {
+            CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR, "Update exception");
             break;
+        }
+        else if (0 == ret)
+        {
+            // 当前空闲
+            // 客户端api，可以硬编码
+            usleep(10 * 1000);
         }
     }
 
@@ -542,16 +620,19 @@ int ConnectorClientProtocolThread::MainLoop(IProtocolEventListener* protocol_evl
     return 0;
 }
 
-int ConnectorClientProtocolThread::PushMessageToSendQ(const char* data, size_t size)
+int ConnectorClientProtocolThread::PushMessageToSendQ(const char* data,
+                                                      size_t size)
 {
     assert(ccproto_ != NULL);
     return ccproto_->PushMessage(data, size);
 }
 
-int ConnectorClientProtocolThread::PopMessageFromRecvQ(char* buf_ptr, size_t* buflen_ptr)
+int ConnectorClientProtocolThread::PopMessageFromRecvQ(char* buf_ptr,
+                                                       size_t* buflen_ptr)
 {
     if (NULL == buf_ptr || NULL == buflen_ptr || 0 == *buflen_ptr)
     {
+        CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR, "invalid arguments");
         return -1;
     }
 
@@ -561,6 +642,7 @@ int ConnectorClientProtocolThread::PopMessageFromRecvQ(char* buf_ptr, size_t* bu
     int ret = ccproto_->PeekMessage(&data, &len);
     if (ret != 0)
     {
+        CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR, "PeekMessage failed");
         return -1;
     }
 
@@ -568,7 +650,9 @@ int ConnectorClientProtocolThread::PopMessageFromRecvQ(char* buf_ptr, size_t* bu
     {
         if (*buflen_ptr < len)
         {
-        // buffer is not enough
+            // buffer is not enough
+            CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR,
+                                     "recv buffer is NOT enough");
             return -1;
         }
 

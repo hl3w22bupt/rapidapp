@@ -1,5 +1,6 @@
 #include "connector_client_api.h"
 #include <stdio.h>
+#include <glog/logging.h>
 
 using namespace hmoon_connector_api;
 
@@ -33,6 +34,36 @@ public IProtocolEventListener, public IWorkerThreadListener {
       bool exit_;
 };
 
+class Glogger : public ILoggable {
+    public:
+        Glogger(){};
+        ~Glogger(){};
+
+    public:
+        virtual void Log(int level, const char* log) {
+            switch(level)
+            {
+                case LOG_FATAL:
+                    {
+                        LOG(FATAL)<<log;
+                        break;
+                    }
+                case LOG_ERROR:
+                    {
+                        LOG(ERROR)<<log;
+                    }
+                case LOG_NOTICE:
+                case LOG_INFO:
+                case LOG_DEBUG:
+                    {
+                        LOG(INFO)<<log;
+                    }
+            }
+        }
+};
+
+Glogger g_logger;
+
 ConnectorProtocolListener::ConnectorProtocolListener() : exit_(false)
 {}
 
@@ -42,16 +73,20 @@ ConnectorProtocolListener::~ConnectorProtocolListener()
 int ConnectorProtocolListener::Init()
 {
     fprintf(stdout, "start connector api client\n");
-    ConnectorClientProtocolThread::Default().StartThread(this, this);
+    ConnectorClientProtocolThread::Default().StartThread(this, this, &g_logger);
 
     return 0;
 }
 
 int ConnectorProtocolListener::MainLoop()
 {
+    char hello[] = "hello";
+
     while (!exit_)
     {
-
+        ConnectorClientProtocolThread::Default().PushMessageToSendQ(hello, sizeof(hello));
+        fprintf(stdout, "send %s\n", hello);
+        usleep(1 * 1000);
     }
 
     fprintf(stdout, "exit connector api client\n");
@@ -109,8 +144,10 @@ int ConnectorProtocolListener::OnQueuing()
 int ConnectorProtocolListener::OnIncoming()
 {
     static char data[10240];
-    size_t len = sizeof(data);
+    size_t len = sizeof(data) - 1;
     ConnectorClientProtocolThread::Default().PopMessageFromRecvQ(data, &len);
+    data[len] = '\0';
+    fprintf(stdout, "recv message %s\n", data);
 
     return 0;
 }

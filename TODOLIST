@@ -1,3 +1,4 @@
+0. net abstract for tcp, udp and so on
 1. redis proxy encapsulating component
 2. rpc improvement
 3. ipc component, boost.interprocess? zmq?

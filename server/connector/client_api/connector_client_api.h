@@ -45,6 +45,26 @@ class IProtocolEventListener {
         virtual int OnIncoming() = 0;
 };
 
+enum {
+    LOG_FATAL  = 0,
+    LOG_ERROR  = 1,
+    LOG_NOTICE = 2,
+    LOG_INFO   = 3,
+    LOG_DEBUG  = 4,
+};
+
+class ILoggable {
+    public:
+        ILoggable(){};
+        virtual ~ILoggable(){};
+
+    public:
+        // 为了简单起见，目前只能记录固定内容
+        // 记录日志地址可以预分配一个全局日志buffer，
+        // 格式化到此buffer后，再调用Log记录
+        virtual void Log(int level, const char* log){};
+};
+
 // 异步Connector协议处理类
 class ConnectorClientProtocol {
     public:
@@ -64,7 +84,7 @@ class ConnectorClientProtocol {
         ///
         /// @return 0: success
         ///        !0: failed
-        int Start(IProtocolEventListener* pel);
+        int Start(IProtocolEventListener* pel, ILoggable* logger);
 
         /// @brief  终止通信会话
         ///
@@ -130,6 +150,7 @@ class ConnectorClientProtocol {
 
     private:
         IProtocolEventListener* protocol_event_listener_;
+        ILoggable* logger_;
 
     private:
         std::string appid_;
@@ -182,7 +203,8 @@ class ConnectorClientProtocolThread {
         /// @return 0: success
         ///        !0: failed
         int StartThread(IProtocolEventListener* protocol_evlistener,
-                        IWorkerThreadListener* thread_listener);
+                        IWorkerThreadListener* thread_listener,
+                        ILoggable* logger = NULL);
 
         /// @brief  终止网络协议交互线程
         ///
@@ -204,7 +226,8 @@ class ConnectorClientProtocolThread {
         int PopMessageFromRecvQ(char* buf_ptr, size_t* buflen_ptr);
 
     private:
-        int MainLoop(IProtocolEventListener* protocol_evlistener);
+        int MainLoop(IProtocolEventListener* protocol_evlistener,
+                     ILoggable* logger);
 
     private:
         ConnectorClientProtocolThread();
@@ -215,6 +238,7 @@ class ConnectorClientProtocolThread {
     private:
         ConnectorClientProtocol* ccproto_;
         IWorkerThreadListener* wt_listener_;
+        ILoggable* logger_;
         bool exit_;
 };
 
