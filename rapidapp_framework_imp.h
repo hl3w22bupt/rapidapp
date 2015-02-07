@@ -170,6 +170,7 @@ class AppFrameWork : public IFrameWork, public IWalkEach {
 
     private:
         void InitSignalHandle();
+        void MakeDaemon();
         int InitLogging(int argc, char** argv);
         int ParseCmdLine(int argc, char** argv);
         int SetResourceLimit(int fd_limit);

@@ -103,6 +103,29 @@ void AppFrameWork::InitSignalHandle()
     sigaction(SIGUSR2, &sig_act, NULL);
 }
 
+void AppFrameWork::MakeDaemon()
+{
+    pid_t pid = fork();
+    if (pid != 0)
+        exit(0);
+
+    // first children
+    if (setsid() != 0)
+    {
+        printf("pid:%d setsid failed\n, getpid()");
+        exit(-1);
+    }
+
+    // second children
+    pid = fork();
+    if (pid != 0)
+        exit(0);
+
+    int stdfd = open("/dev/null", O_RDWR);
+    dup2(stdfd, STDOUT_FILENO);
+    dup2(stdfd, STDERR_FILENO);
+}
+
 int AppFrameWork::ParseCmdLine(int argc, char** argv)
 {
     assert(argc > 0 && argv != NULL);
