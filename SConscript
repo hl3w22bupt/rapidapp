@@ -48,5 +48,10 @@ clientsrc += Glob('utils/rap_net_uri.c')
 clientsrc += Glob('./librapidapp.a')
 env.Program('server/connector/client_api/connector_client', clientsrc, OBJPREFIX='cclient_', LIBS=['event', 'glog', 'gflags', 'protobuf', 'pthread', 'boost_thread'])
 
+#connector svr api
+svrapi_src = Glob('server/connector/server_api/*.cpp')
+svrapi_src += Glob('server/connector/server.pb.cc')
+env.StaticLibrary('connapi', svrapi_src)
+
 #game server
 SConscript('server/ballgame/SConscript')

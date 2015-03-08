@@ -1,6 +1,8 @@
 #ifndef _CONNECTOR_SERVER_API_H_
 #define _CONNECTOR_SERVER_API_H_
 
+#include "../server.pb.h"
+
 namespace hmoon_connector_api {
 
 class IConnListener {
@@ -9,9 +11,11 @@ class IConnListener {
         virtual ~IConnListener() {}
 
     public:
-        virtual int OnConnStart();
-        virtual int OnConnStop();
-        virtual int OnConnResume();
+        virtual int OnConnStart() {return 0;}
+        virtual int OnConnStop() {return 0;}
+        virtual int OnConnResume() {return 0;}
+
+        virtual int SendToConn(const char* data, size_t len) = 0;
 };
 
 class ConnectorServerApi {
