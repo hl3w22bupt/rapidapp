@@ -313,6 +313,7 @@ int ConnectorApp::StartToBackEnd(EasyNet* net, ConnectorSession* session)
         return -1;
     }
 
+    // TODO 记录后端节点idx，保证发给同一个后端
     static connector_server::SSMsg msg;
     uint32_t fd = 0;
     uint64_t nid = 0;
@@ -447,7 +448,7 @@ int ConnectorApp::OnRecvBackEnd(EasyNet* net, int type, const char* msg, size_t 
     }
     else
     {
-// 由于目前后端测试工具不发送syn握手包，为了联调方便，暂时注释掉
+// 由于目前后端测试工具不发送ack握手包，为了联调方便，暂时注释掉
 #if 0
         if (session->state() != STATE_OK)
         {

@@ -2,8 +2,9 @@ package connector_server;
 
 enum BodyCmdId {
     SYN =  1;
-    FIN =  2;
-    DATA = 3;
+    ACK =  2;
+    FIN =  3;
+    DATA = 4;
 }
 
 enum ConnectorMagic {
@@ -13,7 +14,7 @@ enum ConnectorMagic {
 message Tuple {
     required uint32 fd  = 1;    // 连接fd
     required uint64 nid = 2;    // 连接id
-    required uint32 sid = 3;    // 有状态后端服务session id
+    required uint32 sid = 3;    // 有状态后端服务session id，无状态服务无意义，可以初始化为0
 }
 
 message SSHead {
@@ -31,6 +32,10 @@ message SSSyn {
   optional int32 result = 1;
 }
 
+message SSAck {
+  optional int32 result = 1;
+}
+
 message SSFin {
   optional int32 result = 1;
 }
@@ -39,7 +44,8 @@ message SSFin {
 message SSBody {
     optional SSData data = 1;
     optional SSSyn syn = 2;
-    optional SSFin fin = 3;
+    optional SSAck ack = 3;
+    optional SSFin fin = 4;
 }
 
 message SSMsg {

@@ -2,31 +2,26 @@
 
 namespace hmoon_connector_api {
 
-ConnectorServerApi::ConnectorServerApi()
+ConnectorServerApi::ConnectorServerApi() : conn_listener_(NULL)
 {}
 
 ConnectorServerApi::~ConnectorServerApi()
 {}
 
-int ConnectorServerApi::Init()
+int ConnectorServerApi::Init(IConnListener* conn_listener)
 {
+    if (NULL == conn_listener)
+    {
+        return -1;
+    }
+
     return 0;
 }
 
 void ConnectorServerApi::CleanUp()
 {}
 
-int ConnectorServerApi::Start()
-{
-    return 0;
-}
-
-int ConnectorServerApi::Stop()
-{
-    return 0;
-}
-
-int ConnectorServerApi::Resume()
+int ConnectorServerApi::StopConn(uint32_t fd, uint64_t nid, uint32_t sid)
 {
     return 0;
 }
