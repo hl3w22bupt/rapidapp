@@ -18,6 +18,47 @@ int ConnectorServerApi::Init(IConnListener* conn_listener)
     return 0;
 }
 
+int ConnectorServerApi::Dispatch(const char* data, size_t len)
+{
+    if (NULL == data || 0 == len)
+    {
+        return -1;
+    }
+
+    static connector_server::SSMsg msg_from_conn;
+    if (!msg_from_conn.ParseFromArray(data, len))
+    {
+        return -1;
+    }
+
+    assert(conn_listener_ != NULL);
+
+    switch (msg_from_conn.head().bodyid())
+    {
+        case connector_server::SYN:
+            {
+                conn_listener_->OnConnStart();
+                break;
+            }
+        case connector_server::FIN:
+            {
+                conn_listener_->OnConnStop();
+                break;
+            }
+        case connector_server::RSM:
+            {
+                conn_listener_->OnConnResume();
+                break;
+            }
+        case connector_server::DATA:
+            {
+                conn_listener_->OnData();
+                break;
+            }
+    }
+    return 0;
+}
+
 void ConnectorServerApi::CleanUp()
 {}
 
