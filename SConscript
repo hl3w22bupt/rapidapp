@@ -33,25 +33,7 @@ tools_echosvr_src += Glob('./librapidapp.a')
 env.Program('tools/echo_svr', tools_echosvr_src, LIBS=['event', 'glog', 'gflags', 'protobuf', 'pthread'])
 
 #connector
-os.system('echo \'genereate c++ code over protobuf [client.proto]...\' && cd server/connector && protoc --cpp_out=. client.proto')
-os.system('echo \'genereate c++ code over protobuf [server.proto]...\' && cd server/connector && protoc --cpp_out=. server.proto')
-os.system('echo \'genereate c++ code over protobuf [config.proto]...\' && cd server/connector && protoc --cpp_out=. config.proto')
-connector_src = Glob('server/connector/*.cpp')
-connector_src += Glob('server/connector/*.cc')
-connector_src += Glob('./librapidapp.a')
-env.Program('server/connector_svr', connector_src, LIBS=['event', 'glog', 'gflags', 'protobuf', 'pthread'])
-
-#connector client
-clientsrc = Glob('server/connector/client_api/*.cpp')
-clientsrc += Glob('server/connector/*.cc')
-clientsrc += Glob('utils/rap_net_uri.c')
-clientsrc += Glob('./librapidapp.a')
-env.Program('server/connector/client_api/connector_client', clientsrc, OBJPREFIX='cclient_', LIBS=['event', 'glog', 'gflags', 'protobuf', 'pthread', 'boost_thread'])
-
-#connector svr api
-svrapi_src = Glob('server/connector/server_api/*.cpp')
-svrapi_src += Glob('server/connector/server.pb.cc')
-env.StaticLibrary('connapi', svrapi_src)
+SConscript('server/connector/SConscript')
 
 #game server
 SConscript('server/ballgame/SConscript')

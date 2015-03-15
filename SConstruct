@@ -4,7 +4,7 @@ import os
 env = Environment(CCFLAGS='-g -pg',
                  LIBPATH=['/usr/local/lib', '/usr/local/libevent/lib', '/usr/local/protoc/lib', './', '/usr/local/lib'],
                  CPPPATH=['/usr/local/include', '/usr/local/libevent/include/', '/usr/local/protoc/include/',
-                 './', 'thirdparty/rapidjson/include'])
+                 os.path.abspath('./'), os.path.abspath('thirdparty/rapidjson/include')])
 sys = platform.system()
 if sys != "Darwin":
     env.Append(CCFLAGS=' -Werror')
