@@ -27,9 +27,11 @@ Install('../', 'client_api/connector_client_test')
 svrapi_src = Glob('server_api/connector_server_api.cpp')
 svrapi_src += Glob('server.pb.cc')
 env.StaticLibrary('server_api/sconnapi', svrapi_src)
+
 svr_src = Glob('server_api/connector_server_demo.cpp')
 svr_src += Glob('server_api/connector_server_main.cpp')
 svr_src += Glob('../../librapidapp.a')
+svr_src += Glob('server_api/libsconnapi.a')
 env.Program('server_api/connector_server_test', svr_src, OBJPREFIX='cserver_',
             LIBS=['event', 'glog', 'gflags', 'protobuf'])
 Install('../', 'server_api/connector_server_test')

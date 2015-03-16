@@ -6,7 +6,7 @@
 
 using namespace rapidapp;
 
-class ServerDemoApp : public RapidApp, public IConnListener {
+class ServerDemoApp : public RapidApp, public hmoon_connector_api::IConnListener {
     public:
         ServerDemoApp();
         ~ServerDemoApp();
@@ -35,7 +35,7 @@ class ServerDemoApp : public RapidApp, public IConnListener {
         virtual const char* GetAppVersion();
         virtual size_t GetFrontEndMaxMsgSize();
         virtual size_t GetBackEndMaxMsgSize();
-        
+
     public:
         // virtual functions of IConnListener
         virtual int OnConnStart();
@@ -43,7 +43,7 @@ class ServerDemoApp : public RapidApp, public IConnListener {
         virtual int OnConnResume();
 
         virtual int OnData();
-        virtual int SendToConn(const char* data, size_t len);    
+        virtual int SendToConn(const char* data, size_t len);
 
     private:
         IFrameWork* frame_stub_;
