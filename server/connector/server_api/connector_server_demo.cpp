@@ -18,11 +18,16 @@ int ServerDemoApp::OnInit(IFrameWork* app_framework)
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
     frame_stub_ = app_framework;
+    
+    sconn_api_.Init(this);
+    
     return 0;
 }
 
 int ServerDemoApp::OnFini()
 {
+    sconn_api_.CleanUp();
+    
     ::google::protobuf::ShutdownProtobufLibrary();
 
     return 0;
@@ -58,6 +63,9 @@ int ServerDemoApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_
         LOG(ERROR)<<"assert failed, null frame stub";
         return -1;
     }
+    
+    sconn_api_.Dispatch(msg, size);
+    
     frame_stub_->SendToFrontEnd(net, msg, size);
 
     return 0;
@@ -91,4 +99,30 @@ size_t ServerDemoApp::GetBackEndMaxMsgSize()
 const char* ServerDemoApp::GetAppVersion()
 {
     return "1.0.0";
+}
+
+
+int OnConnStart()
+{
+    return 0;
+}
+
+int OnConnStop()
+{
+    return 0;
+}
+
+int OnConnResume()
+{
+    return 0;
+}
+
+int OnData()
+{
+    return 0;
+}
+
+int SendToConn(const char* data, size_t len)
+{
+    return 0;
 }

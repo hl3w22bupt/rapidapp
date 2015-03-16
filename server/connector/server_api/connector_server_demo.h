@@ -1,11 +1,12 @@
-#ifndef CONNECTOR_SERVER_DEMOH_
-#define CONNECTOR_SERVER_DEMOH_
+#ifndef CONNECTOR_SERVER_DEMO_H_
+#define CONNECTOR_SERVER_DEMO_H_
 
 #include "rapidapp.h"
+#include "connector_server_api.h"
 
 using namespace rapidapp;
 
-class ServerDemoApp : public RapidApp {
+class ServerDemoApp : public RapidApp, public IConnListener {
     public:
         ServerDemoApp();
         ~ServerDemoApp();
@@ -34,9 +35,19 @@ class ServerDemoApp : public RapidApp {
         virtual const char* GetAppVersion();
         virtual size_t GetFrontEndMaxMsgSize();
         virtual size_t GetBackEndMaxMsgSize();
+        
+    public:
+        // virtual functions of IConnListener
+        virtual int OnConnStart();
+        virtual int OnConnStop();
+        virtual int OnConnResume();
+
+        virtual int OnData();
+        virtual int SendToConn(const char* data, size_t len);    
 
     private:
         IFrameWork* frame_stub_;
+        hmoon_connector_api::ConnectorServerApi sconn_api_;
 };
 
 #endif
