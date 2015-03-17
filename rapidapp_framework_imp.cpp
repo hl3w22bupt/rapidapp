@@ -112,7 +112,7 @@ void AppFrameWork::MakeDaemon()
     // first children
     if (setsid() != 0)
     {
-        printf("pid:%d setsid failed\n, getpid()");
+        printf("pid:%d setsid failed\n", getpid());
         exit(-1);
     }
 

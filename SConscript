@@ -2,13 +2,17 @@ import os
 Import('env')
 
 debug = ARGUMENTS.get('debug', 1)
-Help('this is a platform-cross builder\n  debug=[0|1]')
+gflags_version = ARGUMENTS.get('gflags_ver', 1)
+Help('this is a platform-cross builder\n  debug=[0|1] gflags_ver=[1|2]')
 
 #LINKFLAGS
 if int(debug) != 0:
     env.Append(CPPDEFINES='_DEBUG')
 else:
     env.Append(CPPDEFINES='NDEBUG')
+
+if int(gflags_version) != 1:
+    env.Append(CPPDEFINES='GFLAGS_NS_GOOGLE')
 
 #rapidapp lib
 frame_src = Glob('*.cpp')
