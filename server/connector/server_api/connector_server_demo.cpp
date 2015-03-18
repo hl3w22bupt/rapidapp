@@ -109,11 +109,10 @@ const char* ServerDemoApp::GetAppVersion()
 
 int ServerDemoApp::OnConnStart(void* net, uint32_t fd, uint64_t nid)
 {
-    // TODO 如果是有状态服务，需要为每个连接分配一个seesion id
+    // 如果是有状态服务，需要为每个连接分配一个seesion id
     // 如果是无状态服务，直接把session id设置为-1
     assert(net != NULL);
-    sconn_api_.HandshakeToConn(net, fd, nid, -1);
-    return 0;
+    return sconn_api_.HandshakeToConn(net, fd, nid, -1);
 }
 
 int ServerDemoApp::OnConnStop(void* net, uint32_t fd, uint64_t nid, uint32_t sid)
@@ -129,7 +128,8 @@ int ServerDemoApp::OnConnResume(void* net, uint32_t fd, uint64_t nid, uint32_t s
 int ServerDemoApp::OnData(void* net, uint32_t fd, uint64_t nid, uint32_t sid,
                           const char* data, size_t len)
 {
-    return 0;
+    assert(net != NULL);
+    return sconn_api_.SendDataToConn(net, fd, nid, sid, data, len);
 }
 
 int ServerDemoApp::SendToConn(void* net, const char* data, size_t len)

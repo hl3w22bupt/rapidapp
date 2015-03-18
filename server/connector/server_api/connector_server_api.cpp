@@ -68,6 +68,7 @@ void ConnectorServerApi::CleanUp()
 int ConnectorServerApi::StopConn(void* net, uint32_t fd, uint64_t nid, uint32_t sid)
 {
     assert(net != NULL);
+    assert(conn_listener_ != NULL);
     
     static connector_server::SSMsg stop_to_conn;
 
@@ -81,23 +82,44 @@ int ConnectorServerApi::StopConn(void* net, uint32_t fd, uint64_t nid, uint32_t 
     std::string buf;
     stop_to_conn.SerializeToString(&buf);
 
-    assert(conn_listener_ != NULL);
     return conn_listener_->SendToConn(net, buf.c_str(), buf.size());
 }
 
 int ConnectorServerApi::HandshakeToConn(void* net, uint32_t fd, uint64_t nid, uint32_t sid)
 {
     assert(net != NULL);
+    assert(conn_listener_ != NULL);
     static connector_server::SSMsg ack_to_conn;
     ack_to_conn.mutable_head()->set_magic(connector_server::MAGIC_SS_V1);
     ack_to_conn.mutable_head()->set_sequence(0);
     ack_to_conn.mutable_head()->set_bodyid(connector_server::ACK);
+    ack_to_conn.mutable_head()->mutable_session()->set_fd(fd);
+    ack_to_conn.mutable_head()->mutable_session()->set_nid(nid);
     ack_to_conn.mutable_head()->mutable_session()->set_sid(sid);
    
     std::string buf;
     ack_to_conn.SerializeToString(&buf);
     
+    return conn_listener_->SendToConn(net, buf.c_str(), buf.size());
+}
+
+int ConnectorServerApi::SendDataToConn(void* net, uint32_t fd, uint64_t nid, uint32_t sid,
+                                       const char* data, size_t len)
+{
+    assert(net != NULL);
     assert(conn_listener_ != NULL);
+    static connector_server::SSMsg data_to_conn;
+    data_to_conn.mutable_head()->set_magic(connector_server::MAGIC_SS_V1);
+    data_to_conn.mutable_head()->set_sequence(0);
+    data_to_conn.mutable_head()->set_bodyid(connector_server::DATA);
+    data_to_conn.mutable_head()->mutable_session()->set_fd(fd);
+    data_to_conn.mutable_head()->mutable_session()->set_nid(nid);
+    data_to_conn.mutable_head()->mutable_session()->set_sid(sid);
+    data_to_conn.mutable_body()->mutable_data()->set_data(data, len);
+    
+    std::string buf;
+    data_to_conn.SerializeToString(&buf);
+    
     return conn_listener_->SendToConn(net, buf.c_str(), buf.size());
 }
 

@@ -43,7 +43,7 @@ class ServerDemoApp : public RapidApp, public hmoon_connector_api::IConnListener
         virtual int OnConnResume(void* net, uint32_t fd, uint64_t nid, uint32_t sid);
 
         virtual int OnData(void* net, uint32_t fd, uint64_t nid, uint32_t sid,
-                          const char* data, size_t len);
+                           const char* data, size_t len);
         virtual int SendToConn(void* net, const char* data, size_t len);
 
     private:

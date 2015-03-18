@@ -31,6 +31,8 @@ class ConnectorServerApi {
 
         int Dispatch(void* from_net, const char* data, size_t len);
 
+        int SendDataToConn(void* net, uint32_t fd, uint64_t nid, uint32_t sid,
+                           const char* data, size_t len);
         int HandshakeToConn(void* net, uint32_t fd, uint64_t nid, uint32_t sid);
         int StopConn(void* net, uint32_t fd, uint64_t nid, uint32_t sid);
 
