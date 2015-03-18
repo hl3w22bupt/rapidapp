@@ -53,7 +53,9 @@ int ConnectorServerApi::Dispatch(void* from_net, const char* data, size_t len)
             }
         case connector_server::DATA:
             {
-                conn_listener_->OnData(from_net, session.fd(), session.nid(), session.sid());
+                conn_listener_->OnData(from_net, session.fd(), session.nid(), session.sid(),
+                                       msg_from_conn.body().data().data().c_str(),
+                                       msg_from_conn.body().data().data().size());
                 break;
             }
     }

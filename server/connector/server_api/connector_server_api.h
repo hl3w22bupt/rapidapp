@@ -15,7 +15,8 @@ class IConnListener {
         virtual int OnConnStop(void* net, uint32_t fd, uint64_t nid, uint32_t sid) {return 0;}
         virtual int OnConnResume(void* net, uint32_t fd, uint64_t nid, uint32_t sid) {return 0;}
 
-        virtual int OnData(void* net, uint32_t fd, uint64_t nid, uint32_t sid) = 0;
+        virtual int OnData(void* net, uint32_t fd, uint64_t nid, uint32_t sid,
+                          const char* data, size_t len) = 0;
         virtual int SendToConn(void* net, const char* data, size_t len) = 0;
 };
 

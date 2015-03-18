@@ -126,7 +126,8 @@ int ServerDemoApp::OnConnResume(void* net, uint32_t fd, uint64_t nid, uint32_t s
     return 0;
 }
 
-int ServerDemoApp::OnData(void* net, uint32_t fd, uint64_t nid, uint32_t sid)
+int ServerDemoApp::OnData(void* net, uint32_t fd, uint64_t nid, uint32_t sid,
+                          const char* data, size_t len)
 {
     return 0;
 }
