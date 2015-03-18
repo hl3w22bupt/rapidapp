@@ -18,7 +18,7 @@ int ConnectorServerApi::Init(IConnListener* conn_listener)
     return 0;
 }
 
-int ConnectorServerApi::Dispatch(const char* data, size_t len)
+int ConnectorServerApi::Dispatch(void* from_net, const char* data, size_t len)
 {
     if (NULL == data || 0 == len)
     {
@@ -37,22 +37,22 @@ int ConnectorServerApi::Dispatch(const char* data, size_t len)
     {
         case connector_server::SYN:
             {
-                conn_listener_->OnConnStart();
+                conn_listener_->OnConnStart(from_net);
                 break;
             }
         case connector_server::FIN:
             {
-                conn_listener_->OnConnStop();
+                conn_listener_->OnConnStop(from_net);
                 break;
             }
         case connector_server::RSM:
             {
-                conn_listener_->OnConnResume();
+                conn_listener_->OnConnResume(from_net);
                 break;
             }
         case connector_server::DATA:
             {
-                conn_listener_->OnData();
+                conn_listener_->OnData(from_net);
                 break;
             }
     }
@@ -62,8 +62,10 @@ int ConnectorServerApi::Dispatch(const char* data, size_t len)
 void ConnectorServerApi::CleanUp()
 {}
 
-int ConnectorServerApi::StopConn(uint32_t fd, uint64_t nid, uint32_t sid)
+int ConnectorServerApi::StopConn(void* net, uint32_t fd, uint64_t nid, uint32_t sid)
 {
+    assert(net != NULL);
+    
     static connector_server::SSMsg stop_to_conn;
 
     stop_to_conn.mutable_head()->set_magic(connector_server::MAGIC_SS_V1);
@@ -77,7 +79,23 @@ int ConnectorServerApi::StopConn(uint32_t fd, uint64_t nid, uint32_t sid)
     stop_to_conn.SerializeToString(&buf);
 
     assert(conn_listener_ != NULL);
-    return conn_listener_->SendToConn(buf.c_str(), buf.size());
+    return conn_listener_->SendToConn(net, buf.c_str(), buf.size());
+}
+
+int ConnectorServerApi::HandshakeToConn(void* net, uint32_t fd, uint64_t nid, uint32_t sid)
+{
+    assert(net != NULL);
+    static connector_server::SSMsg ack_to_conn;
+    ack_to_conn.mutable_head()->set_magic(connector_server::MAGIC_SS_V1);
+    ack_to_conn.mutable_head()->set_sequence(0);
+    ack_to_conn.mutable_head()->set_bodyid(connector_server::ACK);
+    ack_to_conn.mutable_head()->mutable_session()->set_sid(sid);
+   
+    std::string buf;
+    ack_to_conn.SerializeToString(&buf);
+    
+    assert(conn_listener_ != NULL);
+    return conn_listener_->SendToConn(net, buf.c_str(), buf.size());
 }
 
 }

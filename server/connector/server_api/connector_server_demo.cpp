@@ -64,7 +64,7 @@ int ServerDemoApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_
         return -1;
     }
 
-    int ret = sconn_api_.Dispatch(msg, size);
+    int ret = sconn_api_.Dispatch(net, msg, size);
     if (ret != 0)
     {
         LOG(ERROR)<<"dispatch from sconnapi failed, return "<<ret;
@@ -109,29 +109,28 @@ const char* ServerDemoApp::GetAppVersion()
 
 // TODO IConnListener实现类应该是一个connsvr 对应 一个示例，
 // 而不是全剧ServerDemoApp去继承
-int ServerDemoApp::OnConnStart()
+int ServerDemoApp::OnConnStart(void* net)
 {
     return 0;
 }
 
-int ServerDemoApp::OnConnStop()
+int ServerDemoApp::OnConnStop(void* net)
 {
     return 0;
 }
 
-int ServerDemoApp::OnConnResume()
+int ServerDemoApp::OnConnResume(void* net)
 {
     return 0;
 }
 
-int ServerDemoApp::OnData()
+int ServerDemoApp::OnData(void* net)
 {
     return 0;
 }
 
-int ServerDemoApp::SendToConn(const char* data, size_t len)
+int ServerDemoApp::SendToConn(void* net, const char* data, size_t len)
 {
     assert(frame_stub_ != NULL);
-//    return frame_stub_->SendToFrontEnd(net, msg, size);
-    return 0;
+    return frame_stub_->SendToFrontEnd(static_cast<EasyNet*>(net), data, len);
 }

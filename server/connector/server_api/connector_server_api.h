@@ -11,12 +11,12 @@ class IConnListener {
         virtual ~IConnListener() {}
 
     public:
-        virtual int OnConnStart() {return 0;}
-        virtual int OnConnStop() {return 0;}
-        virtual int OnConnResume() {return 0;}
+        virtual int OnConnStart(void* net) {return 0;}
+        virtual int OnConnStop(void* net) {return 0;}
+        virtual int OnConnResume(void* net) {return 0;}
 
-        virtual int OnData() = 0;
-        virtual int SendToConn(const char* data, size_t len) = 0;
+        virtual int OnData(void* net) = 0;
+        virtual int SendToConn(void* net, const char* data, size_t len) = 0;
 };
 
 class ConnectorServerApi {
@@ -28,9 +28,10 @@ class ConnectorServerApi {
         int Init(IConnListener* conn_listener);
         void CleanUp();
 
-        int Dispatch(const char* data, size_t len);
+        int Dispatch(void* net, const char* data, size_t len);
 
-        int StopConn(uint32_t fd, uint64_t nid, uint32_t sid);
+        int HandshakeToConn(void* net, uint32_t fd, uint64_t nid, uint32_t sid);
+        int StopConn(void* net, uint32_t fd, uint64_t nid, uint32_t sid);
 
     private:
         IConnListener* conn_listener_;

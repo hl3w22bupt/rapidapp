@@ -37,6 +37,7 @@ message SSAck {
   optional int32 result = 1;
 }
 
+// resume
 message SSRsm {
   optional int32 result = 1;
 }
