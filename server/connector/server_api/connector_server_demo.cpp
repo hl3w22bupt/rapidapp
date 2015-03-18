@@ -107,24 +107,26 @@ const char* ServerDemoApp::GetAppVersion()
 }
 
 
-// TODO IConnListener实现类应该是一个connsvr 对应 一个示例，
-// 而不是全剧ServerDemoApp去继承
-int ServerDemoApp::OnConnStart(void* net)
+int ServerDemoApp::OnConnStart(void* net, uint32_t fd, uint64_t nid)
+{
+    // TODO 如果是有状态服务，需要为每个连接分配一个seesion id
+    // 如果是无状态服务，直接把session id设置为-1
+    assert(net != NULL);
+    sconn_api_.HandshakeToConn(net, fd, nid, -1);
+    return 0;
+}
+
+int ServerDemoApp::OnConnStop(void* net, uint32_t fd, uint64_t nid, uint32_t sid)
 {
     return 0;
 }
 
-int ServerDemoApp::OnConnStop(void* net)
+int ServerDemoApp::OnConnResume(void* net, uint32_t fd, uint64_t nid, uint32_t sid)
 {
     return 0;
 }
 
-int ServerDemoApp::OnConnResume(void* net)
-{
-    return 0;
-}
-
-int ServerDemoApp::OnData(void* net)
+int ServerDemoApp::OnData(void* net, uint32_t fd, uint64_t nid, uint32_t sid)
 {
     return 0;
 }

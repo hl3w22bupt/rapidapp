@@ -38,11 +38,11 @@ class ServerDemoApp : public RapidApp, public hmoon_connector_api::IConnListener
 
     public:
         // virtual functions of IConnListener
-        virtual int OnConnStart(void* net);
-        virtual int OnConnStop(void* net);
-        virtual int OnConnResume(void* net);
+        virtual int OnConnStart(void* net, uint32_t fd, uint64_t nid);
+        virtual int OnConnStop(void* net, uint32_t fd, uint64_t nid, uint32_t sid);
+        virtual int OnConnResume(void* net, uint32_t fd, uint64_t nid, uint32_t sid);
 
-        virtual int OnData(void* net);
+        virtual int OnData(void* net, uint32_t fd, uint64_t nid, uint32_t sid);
         virtual int SendToConn(void* net, const char* data, size_t len);
 
     private:

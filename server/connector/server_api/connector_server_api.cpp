@@ -32,27 +32,28 @@ int ConnectorServerApi::Dispatch(void* from_net, const char* data, size_t len)
     }
 
     assert(conn_listener_ != NULL);
-
-    switch (msg_from_conn.head().bodyid())
+    const connector_server::SSHead& head = msg_from_conn.head();
+    const connector_server::Tuple& session = head.session();
+    switch (head.bodyid())
     {
         case connector_server::SYN:
             {
-                conn_listener_->OnConnStart(from_net);
+                conn_listener_->OnConnStart(from_net, session.fd(), session.nid());
                 break;
             }
         case connector_server::FIN:
             {
-                conn_listener_->OnConnStop(from_net);
+                conn_listener_->OnConnStop(from_net, session.fd(), session.nid(), session.sid());
                 break;
             }
         case connector_server::RSM:
             {
-                conn_listener_->OnConnResume(from_net);
+                conn_listener_->OnConnResume(from_net, session.fd(), session.nid(), session.sid());
                 break;
             }
         case connector_server::DATA:
             {
-                conn_listener_->OnData(from_net);
+                conn_listener_->OnData(from_net, session.fd(), session.nid(), session.sid());
                 break;
             }
     }
