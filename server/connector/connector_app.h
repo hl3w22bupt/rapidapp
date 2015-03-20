@@ -7,7 +7,6 @@
 
 using namespace rapidapp;
 
-const int kMaxBackEndNum = 32;
 class ConnectorApp : public RapidApp {
     public:
         ConnectorApp();
@@ -54,15 +53,9 @@ class ConnectorApp : public RapidApp {
                                  const char* msg, size_t size);
         int ForwardDownSideMessage(EasyNet* net, ConnectorSession* session,
                                    const char* msg, size_t size);
-
-        int StartToBackEnd(EasyNet* net, ConnectorSession* session);
-
     private:
         IFrameWork* frame_stub_;
         connector_config::ConnectorConfig config_;
-        int backend_pos_;
-        int backend_used_;
-        EasyNet* backends_[kMaxBackEndNum];
 };
 
 #endif

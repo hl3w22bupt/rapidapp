@@ -2,6 +2,7 @@
 #define CONNECTOR_SESSION_H_
 
 #include "rapidapp_easy_net.h"
+#include "rapidapp_framework.h"
 #include "./client.pb.h"
 #include <tr1/unordered_map>
 
@@ -21,17 +22,32 @@ enum OperationCode {
     OPERATION_SSTOP = 2,
 };
 
+// 全局后端节点
+const int kMaxBackEndNum = 32;
+        
+class BackEndSet {
+    public:
+        static int AddBackEnd(EasyNet* net);
+        
+    public:
+        static uint32_t backend_pos_;
+        static uint32_t backend_used_;
+        static EasyNet* backends_[kMaxBackEndNum];
+};
+
 class ConnectorSession {
     public:
         ConnectorSession();
         ~ConnectorSession();
 
     public:
-        int Init(EasyNet* net);
+        int Init(EasyNet* net, IFrameWork* app_framework);
         void CleanUp();
 
     public:
         int DriveStateMachine();
+
+        int SendDataToBackEnd(const char* data, size_t len);
 
         int HandShake_StopSession();
 
@@ -58,6 +74,9 @@ class ConnectorSession {
 
     private:
         int SerializeAndSendToFrontEnd(const connector_client::CSMsg& msg);
+        
+        int StartToBackEnd(EasyNet* back_net);
+        int StopToBackEnd(EasyNet* back_net);
 
         int HandleKeyMaking();
         int HandleAuthRequest();
@@ -75,6 +94,8 @@ class ConnectorSession {
         int channel_id_;    // 后端服务器channel id
         uint32_t sid_;
 
+        IFrameWork* frame_stub_;   // 框架实例引用
+        
         /*friend class ConnectorSessionMgr;*/
 };
 
