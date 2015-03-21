@@ -1,9 +1,12 @@
 #ifndef RAPIDAPP_CORE_H_
 #define RAPIDAPP_CORE_H_
 
-#include "rapidapp_framework_imp.h"
+#include <glog/logging.h>
 
 namespace rapidapp {
+
+class AppFrameWork;
+class RapidApp;
 
 class AppLauncher {
     public:
@@ -13,7 +16,7 @@ class AppLauncher {
     public:
         int Run(RapidApp* app, int argc, char** argv);
 
-        class AppFrameWork easy_framework_;
+        AppFrameWork* easy_framework_;
 };
 
 }

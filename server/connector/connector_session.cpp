@@ -48,7 +48,7 @@ void ConnectorSession::CleanUp()
 
 int ConnectorSession::DriveStateMachine()
 {
-    switch(state_)
+    switch (state_)
     {
         case STATE_INIT:
             {
