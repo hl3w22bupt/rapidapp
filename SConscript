@@ -20,9 +20,6 @@ SConscript('framework/SConscript')
 #connector
 SConscript('server/connector/SConscript')
 
-#game server
-SConscript('server/ballgame/SConscript')
-
 #sample
 os.system('echo \'genereate c++ code over protobuf [sample.proto]...\' && cd sample && protoc --cpp_out=. sample.proto')
 sample_src = Glob('sample/*.cpp')
