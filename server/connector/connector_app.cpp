@@ -347,7 +347,7 @@ int ConnectorApp::OnRecvBackEnd(EasyNet* net, int type, const char* msg, size_t 
         if (session->sid() != down_msg.head().session().sid())
         {
             LOG(ERROR)<<"session id NOT unexpected. local sid:"<<session->sid()
-                <<", down sid:"i<<down_msg.head().session().sid();
+                <<", down sid:"<<down_msg.head().session().sid();
             frame_stub_->DestroyFrontEnd(&front_net);
             return -1;
         }
