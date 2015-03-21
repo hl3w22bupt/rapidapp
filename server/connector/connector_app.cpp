@@ -370,6 +370,7 @@ int ConnectorApp::OnReportRundata()
     return 0;
 }
 
+// 这里必须大小和实际ConnectorSession完全一致
 size_t ConnectorApp::GetFrontEndContextSize()
 {
     return sizeof(ConnectorSession);

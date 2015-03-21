@@ -276,9 +276,9 @@ int ConnectorSession::SendDataToBackEnd(const char* data, size_t len)
     return 0;
 }
 
-/* TODO 目前密钥生成固定硬编码，没有发往第三方账号系统的鉴权申请。
- * 同时并没有针对当前状态机状态检查client侧发起的协议的合法性
- * 后面随着功能完善再补充，早前先简单搭建起一个骨架*/
+/* TODO 目前密钥生成固定硬编码，没有发往第三方账号系统的鉴权申请
+ * 也可以通过uid + MD5(MD5(passwd))方式，无需密钥协商，密钥本身就是一种约定
+*/
 int ConnectorSession::HandleKeyMaking()
 {
     static connector_client::CSMsg msg;
