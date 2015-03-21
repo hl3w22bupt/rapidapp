@@ -7,7 +7,7 @@ os.system('echo \'genereate c++ code over protobuf [server.proto]...\' && protoc
 os.system('echo \'genereate c++ code over protobuf [config.proto]...\' && protoc --cpp_out=. config.proto')
 connector_src = Glob('*.cpp')
 connector_src += Glob('*.cc')
-connector_src += Glob('../../librapidapp.a')
+connector_src += Glob('../../lib/librapidapp.a')
 env.Program('connector_svr', connector_src, LIBS=['event', 'glog', 'gflags', 'protobuf', 'pthread'])
 Install('../', 'connector_svr')
 
@@ -18,7 +18,7 @@ env.StaticLibrary('client_api/cconnapi', connapi_src)
 
 clientsrc = Glob('client_api/client_main.cpp')
 clientsrc += Glob('client_api/libcconnapi.a')
-clientsrc += Glob('../../librapidapp.a')
+clientsrc += Glob('../../lib/librapidapp.a')
 env.Program('client_api/connector_client_test', clientsrc, OBJPREFIX='cclient_',
             LIBS=['event', 'glog', 'gflags', 'protobuf', 'pthread', 'boost_thread'])
 Install('../', 'client_api/connector_client_test')
@@ -30,7 +30,7 @@ env.StaticLibrary('server_api/sconnapi', svrapi_src)
 
 svr_src = Glob('server_api/connector_server_demo.cpp')
 svr_src += Glob('server_api/connector_server_main.cpp')
-svr_src += Glob('../../librapidapp.a')
+svr_src += Glob('../../lib/librapidapp.a')
 svr_src += Glob('server_api/libsconnapi.a')
 env.Program('server_api/connector_server_test', svr_src, OBJPREFIX='cserver_',
             LIBS=['event', 'glog', 'gflags', 'protobuf'])

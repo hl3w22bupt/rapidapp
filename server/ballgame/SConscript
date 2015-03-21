@@ -8,7 +8,7 @@ game_env.Append(LIBPATH=['../../'])
 os.system('echo \'genereate c++ code over protobuf [ball_game_cs.proto]...\' && protoc --cpp_out=. ball_game_cs.proto')
 game_src = Glob('*.cpp')
 game_src += Glob('*.cc')
-game_src += Glob('../../librapidapp.a')
+game_src += Glob('../../lib/librapidapp.a')
 game_env.Program('logicsvr', game_src, LIBS=['event', 'glog', 'gflags', 'protobuf', 'pthread'])
 
 
