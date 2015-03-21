@@ -13,7 +13,8 @@ env.Program('connector_svr', connector_src, LIBS=['event', 'glog', 'gflags', 'pr
 #connector client
 connapi_src = Glob('client_api/connector_client_api.cpp')
 connapi_src += Glob('*.cc')
-env.StaticLibrary('client_api/cconnapi', connapi_src)
+client_lib = env.StaticLibrary('client_api/cconnapi', connapi_src)
+Install('../../lib', client_lib)
 
 clientsrc = Glob('client_api/client_main.cpp')
 clientsrc += Glob('client_api/libcconnapi.a')
@@ -24,7 +25,8 @@ env.Program('connector_client_test', clientsrc, OBJPREFIX='cclient_',
 #connector svr api
 svrapi_src = Glob('server_api/connector_server_api.cpp')
 svrapi_src += Glob('server.pb.cc')
-env.StaticLibrary('server_api/sconnapi', svrapi_src)
+server_lib = env.StaticLibrary('server_api/sconnapi', svrapi_src)
+Install('../../lib', server_lib)
 
 svr_src = Glob('server_api/connector_server_demo.cpp')
 svr_src += Glob('server_api/connector_server_main.cpp')
