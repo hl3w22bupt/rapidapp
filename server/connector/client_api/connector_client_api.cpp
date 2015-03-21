@@ -190,7 +190,15 @@ int ConnectorClientProtocol::TryToRecvFromPeerAndParse()
 
     if (!tcp_sock_.HasNewPkg())
     {
-        CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR, "pkg not complete yet");
+        if (tcp_sock_.GetRecvBufLen() != 0)
+        {
+            CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR, "pkg not complete yet");
+        }
+        else
+        {
+            CONNECTOR_CLIENT_API_LOG(logger_, LOG_DEBUG, "no more pkg avaiable");
+        }
+
         return CONNECTOR_ERR_NO_MORE_PKG;
     }
 

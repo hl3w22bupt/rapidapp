@@ -8,19 +8,19 @@ EasyNet* BackEndSet::backends_[kMaxBackEndNum] = {};
 uint32_t BackEndSet::backend_pos_ = 0;
 uint32_t BackEndSet::backend_used_ = 0;
 
-int BackEndSet::AddBackEnd(EasyNet* net) 
+int BackEndSet::AddBackEnd(EasyNet* net)
 {
     if (backend_used_ >= kMaxBackEndNum)
     {
         return -1;
     }
-    
+
     backends_[backend_used_] = net;
     ++backend_used_;
 }
 
 ConnectorSession::ConnectorSession() :
-    state_(STATE_INIT), net_stub_(NULL), channel_id_(-1), sid_(-1), frame_stub_(NULL)
+    state_(STATE_INIT), net_stub_(NULL), channel_id_(-1), sid_(-1), frame_stub_(NULL), last_seq_(0)
 {}
 
 ConnectorSession::~ConnectorSession()
@@ -78,6 +78,80 @@ int ConnectorSession::DriveStateMachine()
         default:
             return -1;
     }
+}
+
+// 转发上行消息
+int ConnectorSession::ForwardUpSideMessage(uint64_t sequence, const std::string& data)
+{
+    assert(frame_stub_ != NULL);
+
+    uint32_t fd = 0;
+    uint64_t nid = 0;
+    frame_stub_->GetNetIds(net_stub_, fd, nid);
+    static connector_server::SSMsg msg_to_backend;
+    msg_to_backend.mutable_head()->set_magic(connector_server::MAGIC_SS_V1);
+    msg_to_backend.mutable_head()->set_sequence(sequence);
+    msg_to_backend.mutable_head()->set_bodyid(connector_server::DATA);
+    msg_to_backend.mutable_head()->mutable_session()->set_fd(fd);
+    msg_to_backend.mutable_head()->mutable_session()->set_nid(nid);
+    msg_to_backend.mutable_head()->mutable_session()->set_sid(sid_);
+    msg_to_backend.mutable_body()->mutable_data()->set_data(data);
+    LOG(INFO)<<"forward upside msg to server: "<<std::endl<<msg_to_backend.DebugString();
+
+    std::string up_buff;
+    msg_to_backend.SerializeToString(&up_buff);
+    return SendDataToBackEnd(up_buff.c_str(), up_buff.size());
+}
+
+// 转发下行消息
+int ConnectorSession::ForwardDownSideMessage(uint64_t sequence,
+                                             const char* msg, size_t size)
+{
+    if (NULL == msg || 0 == size)
+    {
+        LOG(INFO)<<"null msg or size == 0";
+        return -1;
+    }
+
+    static connector_client::CSMsg down_msg_2client;
+    down_msg_2client.mutable_head()->set_magic(connector_client::MAGIC_CS_V1);
+    down_msg_2client.mutable_head()->set_sequence(sequence);
+    down_msg_2client.mutable_head()->set_bodyid(connector_client::DATA_TRANSPARENT);
+    down_msg_2client.mutable_body()->set_data(std::string(msg, size));
+    LOG(INFO)<<"downside resp to client: "<<std::endl<<down_msg_2client.DebugString();
+
+    std::string down_buff;
+    down_msg_2client.SerializeToString(&down_buff);
+
+    int ret = frame_stub_->SendToFrontEnd(net_stub_,
+                                          down_buff.c_str(),
+                                          down_buff.size());
+    if (ret != 0)
+    {
+        LOG(ERROR)<<"transfer to frontend failed";
+        return -1;
+    }
+
+    return 0;
+}
+
+int ConnectorSession::CheckUpSideMessage(const connector_client::CSMsg& up_msg)
+{
+    if (up_msg.head().magic() != connector_client::MAGIC_CS_V1)
+    {
+        LOG(ERROR)<<"magic:"<<up_msg.head().magic()<<" NOT expected";
+        return -1;
+    }
+
+    if (last_seq_ != 0 &&
+        up_msg.head().sequence() != last_seq_ + 1)
+    {
+        LOG(ERROR)<<"sequence:"<<up_msg.head().sequence()<<" NOT expected";
+        return -1;
+    }
+
+    last_seq_ = up_msg.head().sequence();
+    return 0;
 }
 
 int ConnectorSession::SerializeAndSendToFrontEnd(const connector_client::CSMsg& msg)
@@ -155,7 +229,7 @@ int ConnectorSession::StopToBackEnd(EasyNet* back_net)
         LOG(ERROR)<<"null back_net";
         return -1;
     }
-    
+
     static connector_server::SSMsg msg;
     uint32_t fd = 0;
     uint64_t nid = 0;
@@ -189,8 +263,8 @@ int ConnectorSession::SendDataToBackEnd(const char* data, size_t len)
     {
         BackEndSet::backend_pos_ = 0;
     }
-    EasyNet* back_net = BackEndSet::backends_[BackEndSet::backend_pos_++]; 
-    
+    EasyNet* back_net = BackEndSet::backends_[BackEndSet::backend_pos_++];
+
     assert(frame_stub_ != NULL);
     int ret = frame_stub_->SendToBackEnd(back_net, data, len);
     if (ret != 0)
@@ -208,7 +282,7 @@ int ConnectorSession::SendDataToBackEnd(const char* data, size_t len)
 int ConnectorSession::HandleKeyMaking()
 {
     static connector_client::CSMsg msg;
-    msg.mutable_head()->set_magic(0x3344);
+    msg.mutable_head()->set_magic(connector_client::MAGIC_CS_V1);
     msg.mutable_head()->set_sequence(1);
     msg.mutable_head()->set_bodyid(connector_client::SYNACK);
     msg.mutable_body()->mutable_ack()->set_secretkey("test secret key");
@@ -227,7 +301,7 @@ int ConnectorSession::HandleKeyMaking()
 int ConnectorSession::HandleAuthRequest()
 {
     static connector_client::CSMsg msg;
-    msg.mutable_head()->set_magic(0x3344);
+    msg.mutable_head()->set_magic(connector_client::MAGIC_CS_V1);
     msg.mutable_head()->set_sequence(1);
     msg.mutable_head()->set_bodyid(connector_client::PASSPORT);
     msg.mutable_body()->mutable_passport()->set_passport(102030);
@@ -249,8 +323,8 @@ int ConnectorSession::HandShake_StartSession()
     {
         BackEndSet::backend_pos_ = 0;
     }
-    EasyNet* back_net = BackEndSet::backends_[BackEndSet::backend_pos_++]; 
-    
+    EasyNet* back_net = BackEndSet::backends_[BackEndSet::backend_pos_++];
+
     if (StartToBackEnd(back_net) != 0)
     {
         LOG(ERROR)<<"start to backend failed";
@@ -268,7 +342,7 @@ int ConnectorSession::HandShake_StartSession()
 int ConnectorSession::HandShake_OnStartAcked()
 {
     static connector_client::CSMsg msg;
-    msg.mutable_head()->set_magic(0x3344);
+    msg.mutable_head()->set_magic(connector_client::MAGIC_CS_V1);
     msg.mutable_head()->set_sequence(1);
     msg.mutable_head()->set_bodyid(connector_client::START_APP);
     msg.mutable_body()->mutable_start()->set_code(0);
@@ -284,11 +358,11 @@ int ConnectorSession::HandShake_OnStartAcked()
     return 0;
 }
 
-int ConnectorSession::HandShake_StopSession()
+int ConnectorSession::StopBackEndSession()
 {
     // TODO 如果是有状态服务，获取到backend，并且stop
     EasyNet* last_backend = NULL;
-    
+
     if (last_backend != NULL)
     {
         return StopToBackEnd(last_backend);
@@ -304,7 +378,7 @@ int ConnectorSession::HandShake_OnStopNotify()
     assert(frame_stub_ != NULL && net_stub_ != NULL);
     LOG(ERROR)<<"backend stopped client uri"<<net_stub_->uri();
     frame_stub_->DestroyFrontEnd(&net_stub_);
-    
+
     return 0;
 }
 

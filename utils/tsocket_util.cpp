@@ -366,7 +366,7 @@ bool TcpSocketUtil::HasNewPkg()
     }
 
     int len = tcp_pkg_parser_imp_->GetPkgLen(recv_buf_.Ptr() + recv_buf_.begin,
-                                        recv_buf_.Datalen());
+                                             recv_buf_.Datalen());
     if (len > 0 && len <= recv_buf_.Datalen())
     {
         return true;

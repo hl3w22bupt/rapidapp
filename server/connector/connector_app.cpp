@@ -209,83 +209,8 @@ int ConnectorApp::OnFrontEndClose(EasyNet* net, int type)
     // context资源释放
     // session进行CleanUp后，会随着net的回收而回收
     ConnectorSession* session = static_cast<ConnectorSession*>(uctx);
-    session->HandShake_StopSession();
+    session->StopBackEndSession();
     session->CleanUp();
-
-    return 0;
-}
-
-// 转发上行消息
-int ConnectorApp::ForwardUpSideMessage(EasyNet* net, ConnectorSession* session,
-                                       const char* msg, size_t size)
-{
-    if (NULL == frame_stub_)
-    {
-        LOG(ERROR)<<"assert failed, null frame stub | null conn session mgr";
-        return -1;
-    }
-
-    if (NULL == net || NULL == session)
-    {
-        LOG(ERROR)<<"null net | null session";
-        return -1;
-    }
-
-    if (NULL == msg || 0 == size)
-    {
-        LOG(ERROR)<<"invalid msg size:"<<size;
-        return -1;
-    }
-
-    connector_client::CSMsg up_msg;
-    up_msg.ParseFromArray(msg, size);
-    LOG(INFO)<<"upside req from client: "<<std::endl<<up_msg.DebugString();
-
-    if (up_msg.head().bodyid() != connector_client::DATA_TRANSPARENT)
-    {
-        LOG(ERROR)<<"cmd id:"<<up_msg.head().bodyid()<<", NOT DATA_TRANSPARENT, unexpected";
-        return -1;
-    }
-
-    // TODO sequence id
-    uint32_t fd = 0;
-    uint64_t nid = 0;
-    frame_stub_->GetNetIds(net, fd, nid);
-    static connector_server::SSMsg msg_to_backend;
-    msg_to_backend.mutable_head()->set_magic(connector_server::MAGIC_SS_V1);
-    msg_to_backend.mutable_head()->set_sequence(1);
-    msg_to_backend.mutable_head()->set_bodyid(connector_server::DATA);
-    msg_to_backend.mutable_head()->mutable_session()->set_fd(fd);
-    msg_to_backend.mutable_head()->mutable_session()->set_nid(nid);
-    msg_to_backend.mutable_head()->mutable_session()->set_sid(session->sid());
-    msg_to_backend.mutable_body()->mutable_data()->set_data(up_msg.body().data());
-    LOG(INFO)<<"upside req to server: "<<std::endl<<msg_to_backend.DebugString();
-
-    std::string up_buff;
-    msg_to_backend.SerializeToString(&up_buff);
-    return session->SendDataToBackEnd(up_buff.c_str(), up_buff.size());
-}
-
-// 转发下行消息
-int ConnectorApp::ForwardDownSideMessage(EasyNet* net, ConnectorSession* session,
-                                         const char* msg, size_t size)
-{
-    static connector_client::CSMsg down_msg_2client;
-    down_msg_2client.mutable_head()->set_magic(0x3344);
-    down_msg_2client.mutable_head()->set_sequence(1);
-    down_msg_2client.mutable_head()->set_bodyid(connector_client::DATA_TRANSPARENT);
-    down_msg_2client.mutable_body()->set_data(std::string(msg, size));
-    LOG(INFO)<<"downside resp to client: "<<std::endl<<down_msg_2client.DebugString();
-
-    std::string down_buff;
-    down_msg_2client.SerializeToString(&down_buff);
-
-    int ret = frame_stub_->SendToFrontEnd(net, down_buff.c_str(), down_buff.size());
-    if (ret != 0)
-    {
-        LOG(ERROR)<<"transfer to frontend failed";
-        return -1;
-    }
 
     return 0;
 }
@@ -306,12 +231,20 @@ int ConnectorApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t
         return -1;
     }
     ConnectorSession* session = static_cast<ConnectorSession*>(uctx);
+    assert(session != NULL);
+
+    static connector_client::CSMsg up_msg;
+    up_msg.ParseFromArray(msg, size);
+
+    // 检查上行包消息是否合法
+    if (session->CheckUpSideMessage(up_msg) != 0)
+    {
+        return -1;
+    }
 
     if (!session->BeenReady())
     {
-        connector_client::CSMsg handshake_msg;
-        handshake_msg.ParseFromArray(msg, size);
-        LOG(INFO)<<"handshake msg from client"<<std::endl<<handshake_msg.DebugString();
+        LOG(INFO)<<"handshake msg from client"<<std::endl<<up_msg.DebugString();
 
         if (session->DriveStateMachine() < 0)
         {
@@ -335,7 +268,17 @@ int ConnectorApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t
     }
     else
     {
-        return ForwardUpSideMessage(net, session, msg, size);
+        LOG(INFO)<<"upside msg from client: "<<std::endl<<up_msg.DebugString();
+
+        if (up_msg.head().bodyid() != connector_client::DATA_TRANSPARENT)
+        {
+            LOG(ERROR)<<"cmd id:"<<up_msg.head().bodyid()<<
+                ", NOT cmd DATA_TRANSPARENT, unexpected";
+            return -1;
+        }
+
+        return session->ForwardUpSideMessage(up_msg.head().sequence(),
+                                             up_msg.body().data());
     }
 }
 
@@ -410,9 +353,9 @@ int ConnectorApp::OnRecvBackEnd(EasyNet* net, int type, const char* msg, size_t 
         }
 #endif
 
-        return ForwardDownSideMessage(front_net, session,
-                                      down_msg.body().data().data().c_str(),
-                                      down_msg.body().data().data().size());
+        return session->ForwardDownSideMessage(down_msg.head().sequence(),
+                                               down_msg.body().data().data().c_str(),
+                                               down_msg.body().data().data().size());
     }
 }
 

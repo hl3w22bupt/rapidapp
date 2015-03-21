@@ -24,11 +24,11 @@ enum OperationCode {
 
 // 全局后端节点
 const int kMaxBackEndNum = 32;
-        
+
 class BackEndSet {
     public:
         static int AddBackEnd(EasyNet* net);
-        
+
     public:
         static uint32_t backend_pos_;
         static uint32_t backend_used_;
@@ -47,9 +47,11 @@ class ConnectorSession {
     public:
         int DriveStateMachine();
 
-        int SendDataToBackEnd(const char* data, size_t len);
+        int ForwardUpSideMessage(uint64_t sequence, const std::string& data);
+        int ForwardDownSideMessage(uint64_t sequence, const char* msg, size_t size);
 
-        int HandShake_StopSession();
+        int StopBackEndSession();
+        int CheckUpSideMessage(const connector_client::CSMsg& up_msg);
 
     public:
         inline int state() const {
@@ -74,7 +76,7 @@ class ConnectorSession {
 
     private:
         int SerializeAndSendToFrontEnd(const connector_client::CSMsg& msg);
-        
+
         int StartToBackEnd(EasyNet* back_net);
         int StopToBackEnd(EasyNet* back_net);
 
@@ -84,6 +86,8 @@ class ConnectorSession {
         int HandShake_StartSession();
         int HandShake_OnStartAcked();
         int HandShake_OnStopNotify();
+
+        int SendDataToBackEnd(const char* data, size_t len);
 
     private:
         void SetChannelID(int channel_id);
@@ -95,7 +99,8 @@ class ConnectorSession {
         uint32_t sid_;
 
         IFrameWork* frame_stub_;   // 框架实例引用
-        
+        uint64_t last_seq_;
+
         /*friend class ConnectorSessionMgr;*/
 };
 
