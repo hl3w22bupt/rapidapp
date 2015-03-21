@@ -15,6 +15,7 @@ int ConnectorServerApi::Init(IConnListener* conn_listener)
         return -1;
     }
 
+    conn_listener_ = conn_listener;
     return 0;
 }
 
@@ -69,7 +70,7 @@ int ConnectorServerApi::StopConn(void* net, uint32_t fd, uint64_t nid, uint32_t 
 {
     assert(net != NULL);
     assert(conn_listener_ != NULL);
-    
+
     static connector_server::SSMsg stop_to_conn;
 
     stop_to_conn.mutable_head()->set_magic(connector_server::MAGIC_SS_V1);
@@ -78,6 +79,7 @@ int ConnectorServerApi::StopConn(void* net, uint32_t fd, uint64_t nid, uint32_t 
     stop_to_conn.mutable_head()->mutable_session()->set_fd(fd);
     stop_to_conn.mutable_head()->mutable_session()->set_nid(nid);
     stop_to_conn.mutable_head()->mutable_session()->set_sid(sid);
+    stop_to_conn.mutable_body()->mutable_fin()->set_result(0);
 
     std::string buf;
     stop_to_conn.SerializeToString(&buf);
@@ -96,10 +98,11 @@ int ConnectorServerApi::HandshakeToConn(void* net, uint32_t fd, uint64_t nid, ui
     ack_to_conn.mutable_head()->mutable_session()->set_fd(fd);
     ack_to_conn.mutable_head()->mutable_session()->set_nid(nid);
     ack_to_conn.mutable_head()->mutable_session()->set_sid(sid);
-   
+    ack_to_conn.mutable_body()->mutable_ack()->set_result(0);
+
     std::string buf;
     ack_to_conn.SerializeToString(&buf);
-    
+
     return conn_listener_->SendToConn(net, buf.c_str(), buf.size());
 }
 
@@ -116,10 +119,10 @@ int ConnectorServerApi::SendDataToConn(void* net, uint32_t fd, uint64_t nid, uin
     data_to_conn.mutable_head()->mutable_session()->set_nid(nid);
     data_to_conn.mutable_head()->mutable_session()->set_sid(sid);
     data_to_conn.mutable_body()->mutable_data()->set_data(data, len);
-    
+
     std::string buf;
     data_to_conn.SerializeToString(&buf);
-    
+
     return conn_listener_->SendToConn(net, buf.c_str(), buf.size());
 }
 

@@ -58,7 +58,7 @@ ConnectorClientProtocol::ConnectorClientProtocol() :
         encrypt_mode_(NOT_ENCRYPT), auth_type_(NONE_AUTHENTICATION),
           encrypt_skey_(), passport_(0),
             tcp_sock_(), session_state_(SESSION_STATE_INITED),
-              up_msg_(), down_msg_()
+              seqno_(1), up_msg_(), down_msg_()
 {}
 
 ConnectorClientProtocol::~ConnectorClientProtocol()
@@ -229,9 +229,10 @@ int ConnectorClientProtocol::TryToRecvFromPeerAndParse()
 int ConnectorClientProtocol::HandShake_SYN()
 {
     up_msg_.mutable_head()->set_magic(connector_client::MAGIC_CS_V1);
-    up_msg_.mutable_head()->set_sequence(0); // sequence NOT care
+    up_msg_.mutable_head()->set_sequence(seqno_++); //
     up_msg_.mutable_head()->set_bodyid(connector_client::SYN);
     // calculate encrypt-key by openid&appid
+    up_msg_.mutable_body()->Clear();
     up_msg_.mutable_body()->mutable_syn()->set_openid(openid_);
     up_msg_.mutable_body()->mutable_syn()->set_appid(appid_);
 
@@ -274,9 +275,10 @@ int ConnectorClientProtocol::HandShake_TRY_ACK()
 int ConnectorClientProtocol::HandShake_AUTH()
 {
     up_msg_.mutable_head()->set_magic(connector_client::MAGIC_CS_V1);
-    up_msg_.mutable_head()->set_sequence(0); // sequence NOT care
+    up_msg_.mutable_head()->set_sequence(seqno_++); //
     up_msg_.mutable_head()->set_bodyid(connector_client::AUTHENTICATION);
     // calculate encrypt-key by openid&appid
+    up_msg_.mutable_body()->Clear();
     up_msg_.mutable_body()->mutable_auth()->set_token(token_);
 
     int ret = SerializeAndSendToPeer();
@@ -477,7 +479,7 @@ int ConnectorClientProtocol::PushMessage(const char* data, size_t size)
     }
 
     up_msg_.mutable_head()->set_magic(connector_client::MAGIC_CS_V1);
-    up_msg_.mutable_head()->set_sequence(0); // sequence NOT care
+    up_msg_.mutable_head()->set_sequence(seqno_++); //
     up_msg_.mutable_head()->set_bodyid(connector_client::DATA_TRANSPARENT);
 
     up_msg_.mutable_body()->Clear();

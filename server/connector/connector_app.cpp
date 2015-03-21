@@ -243,10 +243,10 @@ int ConnectorApp::ForwardUpSideMessage(EasyNet* net, ConnectorSession* session,
 
     if (up_msg.head().bodyid() != connector_client::DATA_TRANSPARENT)
     {
-        LOG(ERROR)<<"NOT DATA_TRANSPARENT, unexpected";
+        LOG(ERROR)<<"cmd id:"<<up_msg.head().bodyid()<<", NOT DATA_TRANSPARENT, unexpected";
         return -1;
     }
-    
+
     // TODO sequence id
     uint32_t fd = 0;
     uint64_t nid = 0;
@@ -309,6 +309,10 @@ int ConnectorApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t
 
     if (!session->BeenReady())
     {
+        connector_client::CSMsg handshake_msg;
+        handshake_msg.ParseFromArray(msg, size);
+        LOG(INFO)<<"handshake msg from client"<<std::endl<<handshake_msg.DebugString();
+
         if (session->DriveStateMachine() < 0)
         {
             // 删除net时，会同时清理session空间

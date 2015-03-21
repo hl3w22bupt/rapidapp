@@ -169,6 +169,9 @@ class ConnectorClientProtocol {
         int session_state_;
 
     private:
+        uint64_t seqno_;
+
+    private:
         connector_client::CSMsg up_msg_;
         connector_client::CSMsg down_msg_;
 };

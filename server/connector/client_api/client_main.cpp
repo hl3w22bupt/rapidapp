@@ -26,12 +26,13 @@ public IProtocolEventListener, public IWorkerThreadListener {
         virtual void OnWorkerThreadExit();
 
     public:
-        int Init();
+        int Start();
         void Fini();
         int MainLoop();
 
     private:
       bool exit_;
+      bool state_ok_;
 };
 
 class Glogger : public ILoggable {
@@ -64,13 +65,13 @@ class Glogger : public ILoggable {
 
 Glogger g_logger;
 
-ConnectorProtocolListener::ConnectorProtocolListener() : exit_(false)
+ConnectorProtocolListener::ConnectorProtocolListener() : exit_(false), state_ok_(false)
 {}
 
 ConnectorProtocolListener::~ConnectorProtocolListener()
 {}
 
-int ConnectorProtocolListener::Init()
+int ConnectorProtocolListener::Start()
 {
     fprintf(stdout, "start connector api client\n");
     ConnectorClientProtocolThread::Default().StartThread(this, this, &g_logger);
@@ -84,8 +85,11 @@ int ConnectorProtocolListener::MainLoop()
 
     while (!exit_)
     {
-        ConnectorClientProtocolThread::Default().PushMessageToSendQ(hello, sizeof(hello));
-        fprintf(stdout, "send %s\n", hello);
+        if (state_ok_)
+        {
+            ConnectorClientProtocolThread::Default().PushMessageToSendQ(hello, sizeof(hello));
+            fprintf(stdout, "send %s\n", hello);
+        }
         usleep(1 * 1000);
     }
 
@@ -115,6 +119,7 @@ void ConnectorProtocolListener::OnGetSettings(std::string& appid,
 
 int ConnectorProtocolListener::OnHandShakeSucceed()
 {
+    state_ok_ = true;
     char hello[] = "hello world";
     ConnectorClientProtocolThread::Default().PushMessageToSendQ(hello, sizeof(hello));
     return 0;
@@ -160,13 +165,15 @@ void ConnectorProtocolListener::OnWorkerThreadExit()
 
 int main(int argc, char** argv)
 {
-    class ConnectorProtocolListener client_protocol_handler;
-    int ret = client_protocol_handler.Init();
+    ConnectorProtocolListener client_protocol_handler;
+    // Start 开启一个子线程协议数据收发
+    int ret = client_protocol_handler.Start();
     if (ret != 0)
     {
         exit(-1);
     }
 
+    // 主线程，根据UI操作触发消息至子线程队列
     ret = client_protocol_handler.MainLoop();
 
     client_protocol_handler.Fini();
