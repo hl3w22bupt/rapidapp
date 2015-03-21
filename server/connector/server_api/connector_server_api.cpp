@@ -1,4 +1,6 @@
 #include "connector_server_api.h"
+#include "../server.pb.h"
+
 
 namespace hmoon_connector_api {
 

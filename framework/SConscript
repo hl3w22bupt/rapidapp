@@ -7,8 +7,5 @@ frame_src += Glob('../utils/*.c')
 frame_src += Glob('../utils/*.cpp')
 frame_src += Glob('../coroutine/*.cpp')
 
-dynamic_lib = env.SharedLibrary('rapidapp', frame_src)
 static_lib = env.StaticLibrary('rapidapp', frame_src)
-
-Install('../lib', dynamic_lib)
 Install('../lib', static_lib)

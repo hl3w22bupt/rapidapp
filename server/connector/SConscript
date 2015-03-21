@@ -17,10 +17,8 @@ client_lib = env.StaticLibrary('client_api/cconnapi', connapi_src)
 Install('../../lib', client_lib)
 
 clientsrc = Glob('client_api/client_main.cpp')
-clientsrc += Glob('client_api/libcconnapi.a')
-clientsrc += Glob('../../lib/librapidapp.a')
 env.Program('connector_client_test', clientsrc, OBJPREFIX='cclient_',
-            LIBS=['event', 'glog', 'gflags', 'protobuf', 'pthread', 'boost_thread'])
+            LIBS=['cconnapi', 'rapidapp', 'event', 'glog', 'gflags', 'protobuf', 'pthread', 'boost_thread'])
 
 #connector svr api
 svrapi_src = Glob('server_api/connector_server_api.cpp')
@@ -30,9 +28,7 @@ Install('../../lib', server_lib)
 
 svr_src = Glob('server_api/connector_server_demo.cpp')
 svr_src += Glob('server_api/connector_server_main.cpp')
-svr_src += Glob('../../lib/librapidapp.a')
-svr_src += Glob('server_api/libsconnapi.a')
 env.Program('connector_server_test', svr_src, OBJPREFIX='cserver_',
-            LIBS=['event', 'glog', 'gflags', 'protobuf'])
+            LIBS=['sconnapi', 'rapidapp', 'event', 'glog', 'gflags', 'protobuf'])
 
 

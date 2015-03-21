@@ -1,7 +1,8 @@
 #ifndef _CONNECTOR_SERVER_API_H_
 #define _CONNECTOR_SERVER_API_H_
 
-#include "../server.pb.h"
+#include <cstdlib>
+#include <inttypes.h>
 
 namespace hmoon_connector_api {
 
