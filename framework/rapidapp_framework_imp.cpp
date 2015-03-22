@@ -24,6 +24,8 @@ DEFINE_int32(max_traffic_speed, -1, "max traffic per frame on frontend, default 
 DEFINE_int32(max_cocurrent_rpc, 10240, "max cocurrent rpc number");
 DEFINE_int32(rpc_stack_size, 1024, "rpc stack size to save user context");
 
+DEFINE_bool(dameonize, false, "run as deamon");
+
 namespace rapidapp {
 // global variable & function
 const int MAX_TCP_BACKLOG = 102400;
@@ -229,6 +231,12 @@ int AppFrameWork::Init(RapidApp* app, int argc, char** argv)
     {
         fprintf(stderr, "ParseCmdLine failed, argc:%d", argc);
         return -1;
+    }
+
+    // run as daemon
+    if (FLAGS_dameonize)
+    {
+        MakeDaemon();
     }
 
     // glog
@@ -464,7 +472,7 @@ int AppFrameWork::Tick()
     // TODO system max memcory useage, /proc/$pid/meminfo
 
     // 检查定时器事件是否触发
-    while(true)
+    while (true)
     {
         EasyTimer* timer = timer_mgr_.GetNextActiveTimer();
 

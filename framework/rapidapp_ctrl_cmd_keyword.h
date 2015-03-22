@@ -13,7 +13,8 @@ class ICommandEventListener {
         virtual ~ICommandEventListener(){};
 
     public:
-        virtual void OnCommand(int argc, char** argv) = 0;
+        virtual const char* GetCmdName() = 0;
+        virtual const char** OnCommand(int argc, char** argv) = 0;
 };
 
 inline int BKDRHash(const char* str)
@@ -56,7 +57,12 @@ class AppControlDispatcher {
         ~AppControlDispatcher(){};
 
     public:
-        inline void AddSupportedCommand(std::string cmd, ICommandEventListener* listener) {
+        inline void AddSupportedCommand(ICommandEventListener* listener) {
+            if (NULL == listener) {
+                return;
+            }
+
+            std::string cmd = listener->GetCmdName();
             commad_dictionary_[cmd] = listener;
         }
 

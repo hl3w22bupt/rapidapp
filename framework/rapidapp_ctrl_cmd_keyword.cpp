@@ -8,12 +8,23 @@ class HelpCommand : public ICommandEventListener {
         virtual ~HelpCommand(){};
 
     public:
-        void OnCommand(int argc, char** argv) {
-            // TODO
+        const char** OnCommand(int argc, char** argv) {
+            static const char* out[] = {
+                "{getrundata: \"get runtime statistic data\"}",
+            };
+
+            return out;
+        }
+
+        const char* GetCmdName() {
+            return "help";
         }
 };
 
 void AppControlDispatcher::AddDefaultSupportedCommand()
-{}
+{
+    static HelpCommand help;
+    AddSupportedCommand(&help);
+}
 
 }
