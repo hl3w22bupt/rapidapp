@@ -120,8 +120,6 @@ void ConnectorProtocolListener::OnGetSettings(std::string& appid,
 int ConnectorProtocolListener::OnHandShakeSucceed()
 {
     state_ok_ = true;
-    char hello[] = "hello world";
-    ConnectorClientProtocolThread::Default().PushMessageToSendQ(hello, sizeof(hello));
     return 0;
 }
 

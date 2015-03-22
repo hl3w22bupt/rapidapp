@@ -44,8 +44,8 @@ time_t AppFrameWork::now_ = 0;
 
 const char CTRL_CMD_DELIMETER = ' ';
 
+#define PID_SUFFIX ".pid"
 const int PID_SUFFIX_LEN = 4;
-const char pid_suffix[] = ".pid";
 const int MAX_PID_FILE_NAME_LEN = 1024;
 
 void libevent_log_cb_func(int severity, const char *msg) {
@@ -175,7 +175,7 @@ int AppFrameWork::ParseCmdLine(int argc, char** argv)
             return -1;
         }
         snprintf(setting_.pid_file_name, sizeof(setting_.pid_file_name),
-                 "%s.pid", argv[0]);
+                 "%s"PID_SUFFIX, argv[0]);
     }
 
     // fps
