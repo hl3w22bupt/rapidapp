@@ -30,7 +30,12 @@ DEFINE_bool(dameonize, false, "run as deamon");
 namespace rapidapp {
 // global variable & function
 const int MAX_TCP_BACKLOG = 102400;
-const char* udp_uri = "udp:127.0.0.1:9090";
+
+#ifdef _DEBUG
+const char* udp_uri = "udp:127.0.0.1:19090";
+#else
+const char* udp_uri = "udp:0.0.0.0:19090";
+#endif
 
 const int MAX_CTRL_MSG_LEN = 2048;
 
