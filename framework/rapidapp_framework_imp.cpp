@@ -27,6 +27,8 @@ DEFINE_int32(rpc_stack_size, 1024, "rpc stack size to save user context");
 DEFINE_string(pid_file, "", "pid file name, default {appname}.pid");
 DEFINE_bool(daemon, false, "run as deamon");
 DEFINE_bool(stop, false, "stop the daemon according to pid file");
+DEFINE_bool(restart, false, "restart the daemon according to pid file");
+DEFINE_bool(reload, false, "trigger reload event according to pid file");
 
 namespace rapidapp {
 // global variable & function
@@ -146,7 +148,36 @@ int AppFrameWork::ParseCmdLine(int argc, char** argv)
     GFLAGS_NS::SetVersionString(app_->GetAppVersion());
     GFLAGS_NS::SetUsageMessage("server application based on rapidapp");
     GFLAGS_NS::ParseCommandLineFlags(&argc, &argv, true);
-
+    
+    // mode
+    if (FLAGS_stop)
+    {
+        if (FLAGS_restart || FLAGS_reload)
+        {
+            fprintf(stderr, "only 1 mode supported simulately in [stop|restart|reload]");
+            return -1;
+        }
+        
+        setting_.mode = APP_STOP;
+    }
+    else if (FLAGS_restart && FLAGS_reload)
+    {
+        fprintf(stderr, "only 1 mode supported simulately in [stop|restart|reload]");
+        return -1;
+    }
+    else if (FLAGS_restart)
+    {
+        setting_.mode = APP_RESTART;
+    }
+    else if (FLAGS_reload)
+    {
+        setting_.mode = APP_RELOAD;
+    }
+    else
+    {
+        setting_.mode = APP_START;
+    }
+    
     // listen uri
     if (FLAGS_uri.length() >= sizeof(setting_.listen_uri))
     {
@@ -311,7 +342,7 @@ int AppFrameWork::GetRunningPid()
     ret = fcntl(fileno(pid_fp_), F_SETLK, &lock);
     if (-1 != ret)
     {
-        return -1;
+        return 0;
     }
 
     // pid file has been held by another process
@@ -325,37 +356,10 @@ int AppFrameWork::GetRunningPid()
     return strtol(pid, NULL, 0);
 }
 
-int AppFrameWork::Init(RapidApp* app, int argc, char** argv)
+int AppFrameWork::InitNormalMode(RapidApp* app, int argc, char** argv)
 {
-    if (NULL == app)
-    {
-        return -1;
-    }
-
-    app_ = app;
-
-    // command line
-    int ret = ParseCmdLine(argc, argv);
-    if (ret != 0)
-    {
-        fprintf(stderr, "ParseCmdLine failed, argc:%d", argc);
-        return -1;
-    }
-
-    if (FLAGS_stop)
-    {
-        pid_t running_pid = GetRunningPid();
-        if (-1 == running_pid)
-        {
-            exit(-1);
-        }
-        else
-        {
-            kill(running_pid, SIGUSR1);
-            exit(0);
-        }
-    }
-
+    int ret = 0;
+    
     // run as daemon
     if (FLAGS_daemon)
     {
@@ -517,6 +521,87 @@ int AppFrameWork::Init(RapidApp* app, int argc, char** argv)
 
     now_ = time(NULL);
     return 0;
+}
+
+int AppFrameWork::Init(RapidApp* app, int argc, char** argv)
+{
+    if (NULL == app)
+    {
+        return -1;
+    }
+
+    app_ = app;
+
+    // command line
+    int ret = ParseCmdLine(argc, argv);
+    if (ret != 0)
+    {
+        fprintf(stderr, "ParseCmdLine failed, argc:%d", argc);
+        return -1;
+    }
+
+    // 如果stop命令，通过发SIGUSR1信号停掉运行中进程
+    switch (setting_.mode)
+    {
+        case APP_STOP:
+            {
+                pid_t running_pid = GetRunningPid();
+                if (-1 == running_pid)
+                {
+                    exit(-1);
+                }
+                else
+                {
+                    if (running_pid != 0)
+                    {
+                        kill(running_pid, SIGUSR1);
+                    }
+                    
+                    exit(0);
+                }
+                
+                break;
+            }
+        case APP_RESTART:
+            {
+                pid_t running_pid = GetRunningPid();
+                if (-1 == running_pid)
+                {
+                    exit(-1);
+                }
+                else if (running_pid != 0)
+                {
+                    kill(running_pid, SIGUSR1);
+                }
+                
+                break;    
+            }
+        case APP_RELOAD:
+            {
+                pid_t running_pid = GetRunningPid();
+                if (-1 == running_pid)
+                {
+                    exit(-1);
+                }
+                else
+                {
+                    if (running_pid != 0)
+                    {
+                        kill(running_pid, SIGUSR2);
+                    }
+                    
+                    exit(0);
+                }
+                
+                break;
+            }
+        default:
+            {
+                break;        
+            }
+    }
+
+    return InitNormalMode(app, argc, argv);    
 }
 
 int AppFrameWork::CleanUp()

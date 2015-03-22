@@ -19,6 +19,13 @@ namespace rapidapp {
 
 const int MAX_FILE_NAME_LEN = 128;
 
+enum {
+    APP_START   = 0,
+    APP_STOP    = 1,
+    APP_RESTART = 2,
+    APP_RELOAD  = 3,
+};
+
 struct AppSetting {
     int  fps;               // 每秒帧率
     int  max_idle;          // 前端最大空闲时间，-1为无空闲限制
@@ -28,6 +35,7 @@ struct AppSetting {
     char log_file_name[MAX_FILE_NAME_LEN];
 
     char pid_file_name[MAX_FILE_NAME_LEN];
+    int mode;
 };
 
 class AppFrameWork : public IFrameWork, public IWalkEach {
@@ -171,6 +179,8 @@ class AppFrameWork : public IFrameWork, public IWalkEach {
         int OnBackEndSocketEvent(struct bufferevent* bev, short events);
 
     private:
+        int InitNormalMode(RapidApp* app, int argc, char** argv);
+        
         void InitSignalHandle();
         void MakeDaemon();
         int InitLogging(int argc, char** argv);
