@@ -26,6 +26,8 @@ struct AppSetting {
     int  max_traffic_speed; // 前端最大流量速度
     char listen_uri[MAX_URL_LEN];
     char log_file_name[MAX_FILE_NAME_LEN];
+
+    char pid_file_name[MAX_FILE_NAME_LEN];
 };
 
 class AppFrameWork : public IFrameWork, public IWalkEach {
@@ -175,6 +177,9 @@ class AppFrameWork : public IFrameWork, public IWalkEach {
         int ParseCmdLine(int argc, char** argv);
         int SetResourceLimit(int fd_limit);
 
+        int SetPidFile();
+        int GetRunningPid();
+
     private:
         struct event_base* event_base_;
         struct event* internal_timer_;          // 内部定时器，帧驱动
@@ -203,6 +208,9 @@ class AppFrameWork : public IFrameWork, public IWalkEach {
 
     private:
         magic_cube::CoroutineScheduler* rpc_scheduler_;
+
+    private:
+        FILE* pid_fp_;
 };
 
 }

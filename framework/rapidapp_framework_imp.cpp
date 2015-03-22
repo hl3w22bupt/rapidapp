@@ -24,6 +24,7 @@ DEFINE_int32(max_traffic_speed, -1, "max traffic per frame on frontend, default 
 DEFINE_int32(max_cocurrent_rpc, 10240, "max cocurrent rpc number");
 DEFINE_int32(rpc_stack_size, 1024, "rpc stack size to save user context");
 
+DEFINE_string(pid_file, "", "pid file name, default {appname}.pid");
 DEFINE_bool(dameonize, false, "run as deamon");
 
 namespace rapidapp {
@@ -42,6 +43,10 @@ bool AppFrameWork::reloading_ = false;
 time_t AppFrameWork::now_ = 0;
 
 const char CTRL_CMD_DELIMETER = ' ';
+
+const int PID_SUFFIX_LEN = 4;
+const char pid_suffix[] = ".pid";
+const int MAX_PID_FILE_NAME_LEN = 1024;
 
 void libevent_log_cb_func(int severity, const char *msg) {
     if (msg != NULL) {
@@ -72,7 +77,7 @@ AppFrameWork::AppFrameWork() : event_base_(NULL), internal_timer_(NULL), listene
                                  udp_ctrl_keeper_(NULL), ctrl_dispatcher_(),
                                  app_(NULL), schedule_update_(false), has_been_cleanup_(false),
                                  frontend_handler_mgr_(), backend_handler_mgr_(),
-                                 timer_mgr_(), rpc_scheduler_(NULL)
+                                 timer_mgr_(), rpc_scheduler_(NULL), pid_fp_(NULL)
 {
     memset(&setting_, 0, sizeof(setting_));
 }
@@ -152,6 +157,27 @@ int AppFrameWork::ParseCmdLine(int argc, char** argv)
     }
     strcpy(setting_.log_file_name, FLAGS_log_file.c_str());
 
+    // pid file
+    if (0 != FLAGS_pid_file.length())
+    {
+        if (FLAGS_pid_file.length() >= sizeof(setting_.pid_file_name))
+        {
+            fprintf(stderr, "pid_file(length:%u) is too long\n", (unsigned)FLAGS_pid_file.length());
+            return -1;
+        }
+        strcpy(setting_.pid_file_name, FLAGS_pid_file.c_str());
+    }
+    else
+    {
+        if (strlen(argv[0]) + PID_SUFFIX_LEN >= sizeof(setting_.pid_file_name))
+        {
+            fprintf(stderr, "appname:%s too long\n", argv[0]);
+            return -1;
+        }
+        snprintf(setting_.pid_file_name, sizeof(setting_.pid_file_name),
+                 "%s.pid", argv[0]);
+    }
+
     // fps
     if (FLAGS_fps < 1)
     {
@@ -216,6 +242,82 @@ int AppFrameWork::InitLogging(int argc, char** argv)
     return 0;
 }
 
+// 进程退出时会自动unlock pidfile，所以不会主动去调用unlock
+int AppFrameWork::SetPidFile()
+{
+    pid_fp_ = fopen(setting_.pid_file_name, "w+");
+    if (NULL == pid_fp_)
+    {
+        fprintf(stderr, "fopen file:%s failed\n", setting_.pid_file_name);
+        return -1;
+    }
+
+    int ret = fcntl(fileno(pid_fp_), F_SETFD, FD_CLOEXEC);
+    if (-1 == ret)
+    {
+        fprintf(stderr, "set file:%s CLOEXEC failed\n", setting_.pid_file_name);
+        return -1;
+    }
+
+    static struct flock lock;
+    lock.l_type = F_WRLCK;
+    lock.l_start = 0;
+    lock.l_whence = SEEK_SET;
+    lock.l_len = 0;
+    lock.l_pid = getpid();
+    ret = fcntl(fileno(pid_fp_), F_SETLK, &lock);
+    if (-1 == ret)
+    {
+        fprintf(stderr, "try lock file:%s failed\n", setting_.pid_file_name);
+        return -1;
+    }
+
+    char pid[MAX_PID_FILE_NAME_LEN];
+    snprintf(pid, sizeof(pid), "%d\n", getpid());
+    fputs(pid, pid_fp_);
+
+    return 0;
+}
+
+int AppFrameWork::GetRunningPid()
+{
+    pid_fp_ = fopen(setting_.pid_file_name, "r+");
+    if (NULL == pid_fp_)
+    {
+        fprintf(stderr, "fopen file:%s failed\n", setting_.pid_file_name);
+        return -1;
+    }
+
+    int ret = fcntl(fileno(pid_fp_), F_SETFD, FD_CLOEXEC);
+    if (-1 == ret)
+    {
+        fprintf(stderr, "set file:%s CLOEXEC failed\n", setting_.pid_file_name);
+        return -1;
+    }
+
+    static struct flock lock;
+    lock.l_type = F_RDLCK;
+    lock.l_start = 0;
+    lock.l_whence = SEEK_SET;
+    lock.l_len = 0;
+    lock.l_pid = getpid();
+    ret = fcntl(fileno(pid_fp_), F_SETLK, &lock);
+    if (-1 == ret)
+    {
+        fprintf(stdout, "try lock file:%s succeed\n", setting_.pid_file_name);
+        return -1;
+    }
+
+    char pid[MAX_PID_FILE_NAME_LEN];
+    if (NULL == fgets(pid, sizeof(pid), pid_fp_))
+    {
+        fprintf(stderr, "fgets file:%s failed\n", setting_.pid_file_name);
+        return -1;
+    }
+
+    return strtol(pid, NULL, 0);
+}
+
 int AppFrameWork::Init(RapidApp* app, int argc, char** argv)
 {
     if (NULL == app)
@@ -244,6 +346,14 @@ int AppFrameWork::Init(RapidApp* app, int argc, char** argv)
     if (ret != 0)
     {
         fprintf(stderr, "Init logger failed");
+        return -1;
+    }
+
+    // set pid file
+    ret = SetPidFile();
+    if (ret != 0)
+    {
+        fprintf(stderr, "SetPidFile failed\n");
         return -1;
     }
 
