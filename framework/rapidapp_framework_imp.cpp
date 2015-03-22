@@ -25,7 +25,8 @@ DEFINE_int32(max_cocurrent_rpc, 10240, "max cocurrent rpc number");
 DEFINE_int32(rpc_stack_size, 1024, "rpc stack size to save user context");
 
 DEFINE_string(pid_file, "", "pid file name, default {appname}.pid");
-DEFINE_bool(dameonize, false, "run as deamon");
+DEFINE_bool(daemon, false, "run as deamon");
+DEFINE_bool(stop, false, "stop the daemon according to pid file");
 
 namespace rapidapp {
 // global variable & function
@@ -122,7 +123,7 @@ void AppFrameWork::MakeDaemon()
         exit(0);
 
     // first children
-    if (setsid() != 0)
+    if (-1 == setsid())
     {
         printf("pid:%d setsid failed\n", getpid());
         exit(-1);
@@ -280,6 +281,7 @@ int AppFrameWork::SetPidFile()
     char pid[MAX_PID_FILE_NAME_LEN];
     snprintf(pid, sizeof(pid), "%d\n", getpid());
     fputs(pid, pid_fp_);
+    fflush(pid_fp_);
 
     return 0;
 }
@@ -307,12 +309,12 @@ int AppFrameWork::GetRunningPid()
     lock.l_len = 0;
     lock.l_pid = getpid();
     ret = fcntl(fileno(pid_fp_), F_SETLK, &lock);
-    if (-1 == ret)
+    if (-1 != ret)
     {
-        fprintf(stdout, "try lock file:%s succeed\n", setting_.pid_file_name);
         return -1;
     }
 
+    // pid file has been held by another process
     char pid[MAX_PID_FILE_NAME_LEN];
     if (NULL == fgets(pid, sizeof(pid), pid_fp_))
     {
@@ -340,8 +342,22 @@ int AppFrameWork::Init(RapidApp* app, int argc, char** argv)
         return -1;
     }
 
+    if (FLAGS_stop)
+    {
+        pid_t running_pid = GetRunningPid();
+        if (-1 == running_pid)
+        {
+            exit(-1);
+        }
+        else
+        {
+            kill(running_pid, SIGUSR1);
+            exit(0);
+        }
+    }
+
     // run as daemon
-    if (FLAGS_dameonize)
+    if (FLAGS_daemon)
     {
         MakeDaemon();
     }
