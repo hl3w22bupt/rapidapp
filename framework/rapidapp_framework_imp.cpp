@@ -154,7 +154,7 @@ int AppFrameWork::ParseCmdLine(int argc, char** argv)
     GFLAGS_NS::SetVersionString(app_->GetAppVersion());
     GFLAGS_NS::SetUsageMessage("server application based on rapidapp");
     GFLAGS_NS::ParseCommandLineFlags(&argc, &argv, true);
-    
+
     // mode
     if (FLAGS_stop)
     {
@@ -163,7 +163,6 @@ int AppFrameWork::ParseCmdLine(int argc, char** argv)
             fprintf(stderr, "only 1 mode supported simulately in [stop|restart|reload]");
             return -1;
         }
-        
         setting_.mode = APP_STOP;
     }
     else if (FLAGS_restart && FLAGS_reload)
@@ -183,7 +182,7 @@ int AppFrameWork::ParseCmdLine(int argc, char** argv)
     {
         setting_.mode = APP_START;
     }
-    
+
     // listen uri
     if (FLAGS_uri.length() >= sizeof(setting_.listen_uri))
     {
@@ -390,7 +389,7 @@ int AppFrameWork::SetCtrlSockFile()
 int AppFrameWork::InitNormalMode(RapidApp* app, int argc, char** argv)
 {
     int ret = 0;
-    
+
     // run as daemon
     if (FLAGS_daemon)
     {
@@ -589,10 +588,10 @@ int AppFrameWork::Init(RapidApp* app, int argc, char** argv)
                     {
                         kill(running_pid, SIGUSR1);
                     }
-                    
+
                     exit(0);
                 }
-                
+
                 break;
             }
         case APP_RESTART:
@@ -606,8 +605,8 @@ int AppFrameWork::Init(RapidApp* app, int argc, char** argv)
                 {
                     kill(running_pid, SIGUSR1);
                 }
-                
-                break;    
+
+                break;
             }
         case APP_RELOAD:
             {
@@ -622,19 +621,19 @@ int AppFrameWork::Init(RapidApp* app, int argc, char** argv)
                     {
                         kill(running_pid, SIGUSR2);
                     }
-                    
+
                     exit(0);
                 }
-                
+
                 break;
             }
         default:
             {
-                break;        
+                break;
             }
     }
 
-    return InitNormalMode(app, argc, argv);    
+    return InitNormalMode(app, argc, argv);
 }
 
 int AppFrameWork::CleanUp()
