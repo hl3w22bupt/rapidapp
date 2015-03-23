@@ -181,7 +181,7 @@ class AppFrameWork : public IFrameWork, public IWalkEach {
 
     private:
         int InitNormalMode(RapidApp* app, int argc, char** argv);
-        
+
         void InitSignalHandle();
         void MakeDaemon();
         int InitLogging(int argc, char** argv);
@@ -190,7 +190,7 @@ class AppFrameWork : public IFrameWork, public IWalkEach {
 
         int SetPidFile();
         int GetRunningPid();
-        
+
         int SetCtrlSockFile();
 
     private:
