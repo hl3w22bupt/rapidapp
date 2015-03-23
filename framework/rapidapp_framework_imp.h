@@ -35,6 +35,7 @@ struct AppSetting {
     char log_file_name[MAX_FILE_NAME_LEN];
 
     char pid_file_name[MAX_FILE_NAME_LEN];
+    char ctrl_sock_file_name[MAX_FILE_NAME_LEN];
     int mode;
 };
 
@@ -189,6 +190,8 @@ class AppFrameWork : public IFrameWork, public IWalkEach {
 
         int SetPidFile();
         int GetRunningPid();
+        
+        int SetCtrlSockFile();
 
     private:
         struct event_base* event_base_;

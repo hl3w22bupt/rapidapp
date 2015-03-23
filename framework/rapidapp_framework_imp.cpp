@@ -25,6 +25,8 @@ DEFINE_int32(max_cocurrent_rpc, 10240, "max cocurrent rpc number");
 DEFINE_int32(rpc_stack_size, 1024, "rpc stack size to save user context");
 
 DEFINE_string(pid_file, "", "pid file name, default {appname}.pid");
+DEFINE_string(ctrl_file, "", "ctrl sock file name, default {appname}.sock");
+
 DEFINE_bool(daemon, false, "run as deamon");
 DEFINE_bool(stop, false, "stop the daemon according to pid file");
 DEFINE_bool(restart, false, "restart the daemon according to pid file");
@@ -53,8 +55,12 @@ time_t AppFrameWork::now_ = 0;
 const char CTRL_CMD_DELIMETER = ' ';
 
 #define PID_SUFFIX ".pid"
-const int PID_SUFFIX_LEN = 4;
+const int PID_SUFFIX_LEN = sizeof(PID_SUFFIX);
 const int MAX_PID_FILE_NAME_LEN = 1024;
+
+#define SOCK_SUFFIX ".sock"
+const int SOCK_SUFFIX_LEN = sizeof(SOCK_SUFFIX);
+const int MAX_SOCK_FILE_NAME_LEN = 1024;
 
 void libevent_log_cb_func(int severity, const char *msg) {
     if (msg != NULL) {
@@ -214,6 +220,26 @@ int AppFrameWork::ParseCmdLine(int argc, char** argv)
         snprintf(setting_.pid_file_name, sizeof(setting_.pid_file_name),
                  "%s"PID_SUFFIX, argv[0]);
     }
+    
+    if (0 != FLAGS_ctrl_file.length())
+    {
+        if (FLAGS_ctrl_file.length() >= sizeof(setting_.ctrl_sock_file_name))
+        {
+            fprintf(stderr, "ctrl_file(length:%u) is too long\n", (unsigned)FLAGS_ctrl_file.length());
+            return -1;
+        }
+        strcpy(setting_.ctrl_sock_file_name, FLAGS_ctrl_file.c_str());
+    }
+    else
+    {
+        if (strlen(argv[0]) + SOCK_SUFFIX_LEN >= sizeof(setting_.ctrl_sock_file_name))
+        {
+            fprintf(stderr, "appname:%s too long\n", argv[0]);
+            return -1;
+        }
+        snprintf(setting_.ctrl_sock_file_name, sizeof(setting_.ctrl_sock_file_name),
+                 "%s"SOCK_SUFFIX, argv[0]);
+    }
 
     // fps
     if (FLAGS_fps < 1)
@@ -356,6 +382,11 @@ int AppFrameWork::GetRunningPid()
     return strtol(pid, NULL, 0);
 }
 
+int AppFrameWork::SetCtrlSockFile()
+{
+    return 0;
+}
+
 int AppFrameWork::InitNormalMode(RapidApp* app, int argc, char** argv)
 {
     int ret = 0;
@@ -457,6 +488,8 @@ int AppFrameWork::InitNormalMode(RapidApp* app, int argc, char** argv)
 
     evutil_make_socket_nonblocking(udp_ctrl_sockfd);
     evutil_make_socket_closeonexec(udp_ctrl_sockfd);
+    int opt = 0;
+    setsockopt(udp_ctrl_sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
     udp_ctrl_keeper_ = bufferevent_socket_new(event_base_, udp_ctrl_sockfd,
                                               BEV_OPT_CLOSE_ON_FREE);
     if (NULL == udp_ctrl_keeper_)
