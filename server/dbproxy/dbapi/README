@@ -1,0 +1,2 @@
+定义一个通用的db api抽象类，完成基本的操作。
+不同的db实现这些api，比如redis api封装实现，postgresql封装实现
