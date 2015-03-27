@@ -62,39 +62,28 @@ MessageGenerator::SpawnMessage(const char* msg_bin, size_t msg_bin_size)
         return NULL;
     }
 
-    if (msg_bin_size < MIN_MESSAGE_STAMP_LEN)
+    if (msg_bin_size <= 0)
     {
-        LOG(ERROR)<<"binary msg size:"<<msg_bin_size<<" less than min_stamp_len:"<<MIN_MESSAGE_STAMP_LEN;
+        LOG(ERROR)<<"binary msg size:"<<msg_bin_size<<" less than 0.";
+        return NULL;
+    }
+    
+    if (!rpc_msg_.ParseFromArray(msg_bin, msg_bin_size))
+    {
+        LOG(ERROR)<<"ParseFromArray failed, msg size:"<<msg_bin_size;
         return NULL;
     }
 
-    unsigned char type = msg_bin[0];
-    unsigned short message_name_len = ntohs(*(unsigned short*)&msg_bin[1]);
-    if (msg_bin_size < message_name_len + MIN_MESSAGE_STAMP_LEN)
-    {
-        LOG(ERROR)<<"got msg size:"<<msg_bin_size<<" less than message stamp:"<<
-            MIN_MESSAGE_STAMP_LEN + message_name_len;
-        return NULL;
-    }
-    if (msg_bin[MIN_MESSAGE_STAMP_LEN + message_name_len - 1] != '\0')
-    {
-        LOG(ERROR)<<"message name unexpected, name length NOT null terminated";
-        return NULL;
-    }
-    std::string message_name = std::string(msg_bin + MIN_MESSAGE_STAMP_LEN,
-                                           message_name_len - 1);
-
-    Message* message = NewInstance(message_name);
+    Message* message = NewInstance(rpc_msg_.msg_name());
     if (NULL == message)
     {
-        LOG(ERROR)<<"NewInstance by name:"<<message_name<<" failed";
+        LOG(ERROR)<<"NewInstance by name:"<<rpc_msg_.msg_name()<<" failed";
         return NULL;
     }
 
-    if (!message->ParseFromArray(msg_bin + MIN_MESSAGE_STAMP_LEN + message_name_len,
-                                 msg_bin_size - (MIN_MESSAGE_STAMP_LEN + message_name_len)))
+    if (!message->ParseFromString(rpc_msg_.msg_bin()));
     {
-        LOG(ERROR)<<"ParseFromArray failed, msg size:"<<msg_bin_size - (MIN_MESSAGE_STAMP_LEN + message_name_len);
+        LOG(ERROR)<<"ParseFromString failed, msg bin size:"<<rpc_msg_.msg_bin().size();
         delete message;
         return NULL;
     }
@@ -111,77 +100,52 @@ MessageGenerator::SharedMessage(const char* msg_bin, size_t msg_bin_size)
         return NULL;
     }
 
-    if (msg_bin_size < MIN_MESSAGE_STAMP_LEN)
+    if (msg_bin_size <= 0)
     {
-        LOG(ERROR)<<"binary msg size:"<<msg_bin_size<<" less than min_stamp_len:"<<MIN_MESSAGE_STAMP_LEN;
+        LOG(ERROR)<<"binary msg size:"<<msg_bin_size<<" less than 0.";
+        return NULL;
+    }
+    
+    if (!rpc_msg_.ParseFromArray(msg_bin, msg_bin_size))
+    {
+        LOG(ERROR)<<"ParseFromArray failed, msg size:"<<msg_bin_size;
         return NULL;
     }
 
-    unsigned char type = msg_bin[0];
-    unsigned short message_name_len = ntohs(*(unsigned short*)&msg_bin[1]);
-    if (msg_bin_size < message_name_len + MIN_MESSAGE_STAMP_LEN)
-    {
-        LOG(ERROR)<<"got msg size:"<<msg_bin_size<<" less than message stamp:"<<
-            MIN_MESSAGE_STAMP_LEN + message_name_len;
-        return NULL;
-    }
-    if (msg_bin[MIN_MESSAGE_STAMP_LEN + message_name_len - 1] != '\0')
-    {
-        LOG(ERROR)<<"message name unexpected, name length NOT null terminated";
-        return NULL;
-    }
-    std::string message_name = std::string(msg_bin + MIN_MESSAGE_STAMP_LEN,
-                                           message_name_len - 1);
-
-    Message* message = const_cast<Message*>(DefaultInstance(message_name));
+    Message* message = const_cast<Message*>(DefaultInstance(rpc_msg_.msg_name()));
     if (NULL == message)
     {
-        LOG(ERROR)<<"DefaultInstance by name:"<<message_name<<" failed";
+        LOG(ERROR)<<"DefaultInstance by name:"<<rpc_msg_.msg_name()<<" failed";
         return NULL;
     }
 
-    if (!message->ParseFromArray(msg_bin + MIN_MESSAGE_STAMP_LEN + message_name_len,
-                                 msg_bin_size - (MIN_MESSAGE_STAMP_LEN + message_name_len)))
+    if (!message->ParseFromString(rpc_msg_.msg_bin()));
     {
-        LOG(ERROR)<<"ParseFromArray failed, msg size:"<<msg_bin_size - (MIN_MESSAGE_STAMP_LEN + message_name_len);
+        LOG(ERROR)<<"ParseFromString failed, msg bin size:"<<rpc_msg_.msg_bin().size();
         return NULL;
     }
 
     return message;
 }
 
-const char* GetMessageName(const char* msg_bin, size_t msg_bin_size)
+inline const char* MessageGenerator::GetMessageName()
 {
-    if (NULL == msg_bin)
-    {
-        LOG(ERROR)<<"null msg";
-        return NULL;
-    }
-
-    if (msg_bin_size < MIN_MESSAGE_STAMP_LEN)
-    {
-        LOG(ERROR)<<"binary msg size:"<<msg_bin_size<<" less than min_stamp_len:"<<MIN_MESSAGE_STAMP_LEN;
-        return NULL;
-    }
-
-    unsigned short message_name_len = ntohs(*(unsigned short*)&msg_bin[1]);
-    if (msg_bin_size < message_name_len + MIN_MESSAGE_STAMP_LEN)
-    {
-        LOG(ERROR)<<"got msg size:"<<msg_bin_size<<" less than message stamp:"<<
-            MIN_MESSAGE_STAMP_LEN + message_name_len;
-        return NULL;
-    }
-
-    if (msg_bin[MIN_MESSAGE_STAMP_LEN + message_name_len - 1] != '\0')
-    {
-        LOG(ERROR)<<"message name unexpected, name length NOT null terminated";
-        return NULL;
-    }
-
-    return msg_bin + MIN_MESSAGE_STAMP_LEN;
+    return rpc_msg_.msg_name().c_str();
 }
 
-int MessageGenerator::MessageToBinary(Message* message, char* data, size_t size)
+inline int32_t MessageGenerator::GetMessageType()
+{
+    return rpc_msg_.msg_type();
+}
+
+inline uint64_t MessageGenerator::GetAsyncId()
+{
+    return rpc_msg_.asyncid();    
+}
+
+int MessageGenerator::MessageToBinary(int32_t type, uint64_t asyncid,
+                                      const ::google::protobuf::Message* message,
+                                      std::string* out)
 {
     if (NULL == message)
     {
@@ -196,20 +160,24 @@ int MessageGenerator::MessageToBinary(Message* message, char* data, size_t size)
         return -1;
     }
 
-    if (NULL == data || size <= MIN_MESSAGE_STAMP_LEN + message_name.size())
+    if (NULL == out)
     {
-        LOG(ERROR)<<"invalid data:"<<data<<", size:"<<size;
+        LOG(ERROR)<<"null buffer";
         return -1;
     }
 
-    data[0] = 0; // type 0
-    *(unsigned short*)&data[1] = htons(message_name.size() + 1);
-    strcpy(data + MIN_MESSAGE_STAMP_LEN, message_name.c_str());
-    data[MIN_MESSAGE_STAMP_LEN + message_name.size()] = '\0';
-
     LOG(INFO)<<"message to serialize:"<<message->DebugString();
-    message->SerializeToArray(data + (MIN_MESSAGE_STAMP_LEN + message_name.size()),
-                              size - (MIN_MESSAGE_STAMP_LEN + message_name.size()));
+    std::string buf;
+    message->SerializeToString(&buf);
+    
+    static rpc_protocol::RpcMessage rpc_message;
+    rpc_message.set_magic(rpc_protocol::MAGIC_RPCSTAMP_V1);
+    rpc_message.set_msg_type(type);
+    rpc_message.set_msg_name(message_name);
+    rpc_message.set_asyncid(asyncid);
+    rpc_message.set_msg_bin(buf);
+    
+    rpc_message.SerializeToString(out);
 
     return 0;
 }

@@ -3,6 +3,7 @@
 
 #include <cstdio>
 #include <inttypes.h>
+#include <google/protobuf/message.h>
 
 // net state
 enum {
@@ -12,6 +13,6 @@ enum {
 };
 
 // rpc callback
-typedef int (*ON_RPC_REPLY_FUNCTION)(const void* reply, size_t reply_size);
+typedef int (*ON_RPC_REPLY_FUNCTION)(const ::google::protobuf::Message* reply);
 
 #endif

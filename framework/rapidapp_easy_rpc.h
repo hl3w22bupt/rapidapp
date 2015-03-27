@@ -3,7 +3,8 @@
 
 #include "coroutine/mc_coroutine.h"
 #include "rapidapp_defines.h"
-#include <queue>
+#include <google/protobuf/message.h>
+#include <vector>
 
 namespace rapidapp {
 
@@ -18,7 +19,7 @@ class EasyRpc {
         // 基于协程封装出异步rpc调用
     public:
         int Init(magic_cube::CoroutineScheduler* scheduler, EasyNet* net);
-        int RpcCall(const void* request, size_t request_size,
+        int RpcCall(const ::google::protobuf::Message* request,
                     ON_RPC_REPLY_FUNCTION callback);
 
         inline bool IsActive() {
@@ -27,6 +28,10 @@ class EasyRpc {
 
     private:
         int Resume(const char* buffer, size_t size);
+        
+    private:
+        void RemoveByCoroutineId(int crid);
+        int GetCoroutineIdxByAsyncId(uint64_t asyncid);
 
     private:
         static int RpcFunction(void* arg);
@@ -36,13 +41,19 @@ class EasyRpc {
 
     private:
         EasyNet* net_;
-        const void* request_;
-        size_t request_size_;
-        const void* response_;
-        size_t response_size_;
+        const ::google::protobuf::Message* request_;
+        const ::google::protobuf::Message* response_;
 
-        std::queue<int> crid_list_;
+    private:
+        typedef struct {
+            int crid;
+            uint64_t asyncid;
+        } CoroutinePair;
+        
+        typedef  std::vector<CoroutinePair> CoroutineList;
+        CoroutineList crid_list_;
 
+        static uint64_t asyncid_seed;
         friend class AppFrameWork;
 };
 

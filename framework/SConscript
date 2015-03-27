@@ -2,6 +2,8 @@ import os
 Import('env')
 
 #rapidapp lib
+os.system('echo \'genereate c++ code over protobuf [rpc.proto]...\' && protoc --cpp_out=. rpc.proto')
+
 frame_src = Glob('*.cpp')
 frame_src += Glob('../utils/*.c')
 frame_src += Glob('../utils/*.cpp')

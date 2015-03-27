@@ -1,5 +1,6 @@
 #include "rapidapp_easy_rpc.h"
 #include "rapidapp_easy_net.h"
+#include "rapidapp_message_reflection.h"
 #include <cassert>
 #include <glog/logging.h>
 
@@ -10,19 +11,21 @@ typedef struct RpcCallContext {
     EasyRpc* rpc_stub;
 } RPC_CONTEXT;
 
+uint64_t EasyRpc::asyncid_seed = 0;
+
 EasyRpc::EasyRpc() : scheduler_(NULL), net_(NULL),
-                    request_(NULL), request_size_(0),
-                    response_(NULL), response_size_(0), crid_list_()
+                    request_(NULL), response_(NULL), crid_list_()
 {}
 
 EasyRpc::~EasyRpc()
 {
-    while (crid_list_.size() > 0)
+    for (CoroutineList::iterator it = crid_list_.begin();
+         it != crid_list_.end(); ++it)
     {
-        int crid = crid_list_.front();
-        scheduler_->DestroyCoroutine(crid);
-        crid_list_.pop();
+        scheduler_->DestroyCoroutine(it->crid);
     }
+
+    crid_list_.clear();
 }
 
 int EasyRpc::Init(magic_cube::CoroutineScheduler* scheduler, EasyNet* net)
@@ -39,11 +42,10 @@ int EasyRpc::Init(magic_cube::CoroutineScheduler* scheduler, EasyNet* net)
     return 0;
 }
 
-int EasyRpc::RpcCall(const void* request, size_t request_size,
+int EasyRpc::RpcCall(const ::google::protobuf::Message* request,
                      ON_RPC_REPLY_FUNCTION callback)
 {
-    if (NULL == request || 0 == request_size ||
-        NULL == callback)
+    if (NULL == request || NULL == callback)
     {
         return -1;
     }
@@ -54,7 +56,6 @@ int EasyRpc::RpcCall(const void* request, size_t request_size,
     }
 
     request_ = request;
-    request_size_ = request_size;
 
     // 创建一个协程上下文
     RPC_CONTEXT context;
@@ -67,7 +68,10 @@ int EasyRpc::RpcCall(const void* request, size_t request_size,
         return -1;
     }
 
-    crid_list_.push(cid);
+    CoroutinePair cp;
+    cp.crid = cid;
+    cp.asyncid = asyncid_seed;
+    crid_list_.push_back(cp);
     // 协程启动
     scheduler_->ResumeCoroutine(cid);
 
@@ -91,19 +95,48 @@ int EasyRpc::RpcFunction(void* arg)
         return -1;
     }
 
-    the_handler->net_->Send(static_cast<const char*>(the_handler->request_),
-                            the_handler->request_size_);
+    std::string buf;
+    MessageGenerator::MessageToBinary(0, asyncid_seed++,
+            the_handler->request_, &buf);
+    
+    the_handler->net_->Send(buf.c_str(), buf.size());
 
-    LOG(INFO)<<"rpc>>> send buf size:"<<
-        the_handler->request_size_<<" to backend success";
+    LOG(INFO)<<"rpc>>> send buf size:"<<buf.size()<<" to backend success";
 
     // Yield
     the_handler->scheduler_->YieldCoroutine();
 
     // has been Resumed, async callback
-    rpc_ctx->callback(the_handler->response_, the_handler->response_size_);
+    rpc_ctx->callback(the_handler->response_);
 
     return 0;
+}
+
+void EasyRpc::RemoveByCoroutineId(int crid)
+{
+    CoroutineList::iterator it = crid_list_.begin();
+    for (; it != crid_list_.end(); ++it)
+    {
+        if (it->crid == crid)
+        {
+            crid_list_.erase(it);
+            return;
+        }
+    }
+}
+
+int EasyRpc::GetCoroutineIdxByAsyncId(uint64_t asyncid)
+{
+    CoroutineList::iterator it = crid_list_.begin();
+    for (; it != crid_list_.end(); ++it)
+    {
+        if (it->asyncid == asyncid)
+        {
+            return it->crid;
+        }
+    }
+    
+    return -1;    
 }
 
 // 目前暂时认为每1个rpc request的reply是严格按顺序的，因此取队列最前面的。
@@ -116,12 +149,21 @@ int EasyRpc::Resume(const char* buffer, size_t size)
         return -1;
     }
 
-    response_ = buffer;
-    response_size_ = size;
+    const ::google::protobuf::Message* reply =
+        MessageGenerator::SharedMessage(buffer, size);
+    if (NULL == reply)
+    {
+        return -1;
+    }
+    
     // Resume
-    int crid = crid_list_.front();
-    crid_list_.pop();
+    uint64_t asyncid = MessageGenerator::GetAsyncId();
+    int crid = GetCoroutineIdxByAsyncId(asyncid);
     scheduler_->ResumeCoroutine(crid);
+    if (!scheduler_->CoroutineBeenAlive(crid))
+    
+    response_ = reply;
+    
     return 0;
 }
 
