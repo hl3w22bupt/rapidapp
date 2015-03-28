@@ -37,10 +37,13 @@ namespace rapidapp {
 const int MAX_TCP_BACKLOG = 102400;
 
 #ifdef _DEBUG
-const char* udp_uri = "udp:127.0.0.1:19090";
+#define UDP_HOST "127.0.0.1"
 #else
-const char* udp_uri = "udp:0.0.0.0:19090";
+#define UDP_HOST "0.0.0.0"
 #endif
+#define UDP_PORT_MIN 19090
+#define UDP_PORT_MAX (UDP_PORT_MIN + 1024)
+#define UDP_PORT_COUNT (UDP_PORT_MAX - UDP_PORT_MIN)
 
 const int MAX_CTRL_MSG_LEN = 2048;
 
@@ -219,7 +222,7 @@ int AppFrameWork::ParseCmdLine(int argc, char** argv)
         snprintf(setting_.pid_file_name, sizeof(setting_.pid_file_name),
                  "%s"PID_SUFFIX, argv[0]);
     }
-    
+
     if (0 != FLAGS_ctrl_file.length())
     {
         if (FLAGS_ctrl_file.length() >= sizeof(setting_.ctrl_sock_file_name))
@@ -307,7 +310,8 @@ int AppFrameWork::InitLogging(int argc, char** argv)
 // 进程退出时会自动unlock pidfile，所以不会主动去调用unlock
 int AppFrameWork::SetPidFile()
 {
-    pid_fp_ = fopen(setting_.pid_file_name, "w+");
+    // mode 'w+' will definitely truncate pid file, must set mode 'a'
+    pid_fp_ = fopen(setting_.pid_file_name, "a");
     if (NULL == pid_fp_)
     {
         fprintf(stderr, "fopen file:%s failed\n", setting_.pid_file_name);
@@ -334,6 +338,7 @@ int AppFrameWork::SetPidFile()
         return -1;
     }
 
+    ftruncate(fileno(pid_fp_), 0);
     char pid[MAX_PID_FILE_NAME_LEN];
     snprintf(pid, sizeof(pid), "%d\n", getpid());
     fputs(pid, pid_fp_);
@@ -383,6 +388,59 @@ int AppFrameWork::GetRunningPid()
 
 int AppFrameWork::SetCtrlSockFile()
 {
+    // 1. open udp sock
+    int hash = BKDRHash(setting_.ctrl_sock_file_name);
+    int port = UDP_PORT_MIN + (hash % UDP_PORT_COUNT);
+    evutil_socket_t udp_ctrl_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (udp_ctrl_sockfd < 0)
+    {
+        PLOG(ERROR)<<"open udp socket failed";
+        return -1;
+    }
+
+    struct sockaddr_in udp_sock_addr;
+    udp_sock_addr.sin_family = AF_INET;
+    udp_sock_addr.sin_port = htons(port);
+    udp_sock_addr.sin_addr.s_addr = inet_addr(UDP_HOST);
+    if (-1 == bind(udp_ctrl_sockfd,
+                   (struct sockaddr *)&udp_sock_addr, sizeof(udp_sock_addr)))
+    {
+        PLOG(ERROR)<<"bind udp host:"<<UDP_HOST<<", port:"<<port<<" failed";
+        return -1;
+    }
+
+    evutil_make_socket_nonblocking(udp_ctrl_sockfd);
+    evutil_make_socket_closeonexec(udp_ctrl_sockfd);
+    int opt = 0;
+    setsockopt(udp_ctrl_sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+    udp_ctrl_keeper_ = bufferevent_socket_new(event_base_, udp_ctrl_sockfd,
+                                              BEV_OPT_CLOSE_ON_FREE);
+    if (NULL == udp_ctrl_keeper_)
+    {
+        PLOG(ERROR)<<"create bufferevent for ctrl keeper failed";
+        return -1;
+    }
+    bufferevent_enable(udp_ctrl_keeper_, EV_READ|EV_WRITE);
+    bufferevent_setcb(udp_ctrl_keeper_, on_ctrl_cb_func, NULL, NULL, this);
+
+    // 2. write .sock file
+    FILE* fp = fopen(setting_.ctrl_sock_file_name, "w+");
+    if (NULL == fp)
+    {
+        fprintf(stderr, "fopen file:%s failed\n", setting_.pid_file_name);
+        return -1;
+    }
+
+    int ret = fcntl(fileno(fp), F_SETFD, FD_CLOEXEC);
+    if (-1 == ret)
+    {
+        fprintf(stderr, "set file:%s CLOEXEC failed\n", setting_.pid_file_name);
+        return -1;
+    }
+
+    fprintf(fp, "%s %d\n", UDP_HOST, port);
+    fflush(fp);
+
     return 0;
 }
 
@@ -477,27 +535,12 @@ int AppFrameWork::InitNormalMode(RapidApp* app, int argc, char** argv)
     // ctrl udp socket
     // 添加内部支持命令字
     ctrl_dispatcher_.AddDefaultSupportedCommand();
-
-    evutil_socket_t udp_ctrl_sockfd = rap_uri_open_socket(udp_uri);
-    if (udp_ctrl_sockfd < 0)
+    ret = SetCtrlSockFile();
+    if (ret != 0)
     {
-        PLOG(ERROR)<<"open socket failed by uri:"<<udp_uri;
+        LOG(ERROR)<<"set ctrl sock file:"<<setting_.ctrl_sock_file_name<<" failed";
         return -1;
     }
-
-    evutil_make_socket_nonblocking(udp_ctrl_sockfd);
-    evutil_make_socket_closeonexec(udp_ctrl_sockfd);
-    int opt = 0;
-    setsockopt(udp_ctrl_sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-    udp_ctrl_keeper_ = bufferevent_socket_new(event_base_, udp_ctrl_sockfd,
-                                              BEV_OPT_CLOSE_ON_FREE);
-    if (NULL == udp_ctrl_keeper_)
-    {
-        PLOG(ERROR)<<"create bufferevent for ctrl keeper failed";
-        return -1;
-    }
-    bufferevent_enable(udp_ctrl_keeper_, EV_READ|EV_WRITE);
-    bufferevent_setcb(udp_ctrl_keeper_, on_ctrl_cb_func, NULL, NULL, this);
 
     // tcp listener
     struct sockaddr_in listen_sa;

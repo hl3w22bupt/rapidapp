@@ -18,12 +18,22 @@ class MessageGenerator {
     public:
         static ::google::protobuf::Message* SpawnMessage(const char* msg_bin, size_t msg_bin_size);
         static const ::google::protobuf::Message* SharedMessage(const char* msg_bin, size_t msg_bin_size);
-        // 以下三个接口获取最新rpc反射包消息名、消息类型、以及消息async id
-        static const char* GetMessageName();
-        static int32_t GetMessageType();
-        static uint64_t GetAsyncId();
 
-        static int MessageToBinary(int32_t type, uint64_t asyncid, 
+        // 以下三个接口获取最新rpc反射包消息名、消息类型、以及消息async id
+        static inline const char* GetMessageName() {
+            return rpc_msg_.msg_name().c_str();
+        }
+
+        static inline int32_t GetMessageType() {
+            return rpc_msg_.msg_type();
+        }
+
+        static inline uint64_t GetAsyncId() {
+            return rpc_msg_.asyncid();
+        }
+
+
+        static int MessageToBinary(int32_t type, uint64_t asyncid,
                                    const ::google::protobuf::Message* message,
                                    std::string* out);
     private:

@@ -47,6 +47,8 @@ inline const Message* DefaultInstance(const std::string& mesg_name)
     return NULL;
 }
 
+rpc_protocol::RpcMessage MessageGenerator::rpc_msg_;
+
 MessageGenerator::MessageGenerator()
 {}
 
@@ -67,7 +69,7 @@ MessageGenerator::SpawnMessage(const char* msg_bin, size_t msg_bin_size)
         LOG(ERROR)<<"binary msg size:"<<msg_bin_size<<" less than 0.";
         return NULL;
     }
-    
+
     if (!rpc_msg_.ParseFromArray(msg_bin, msg_bin_size))
     {
         LOG(ERROR)<<"ParseFromArray failed, msg size:"<<msg_bin_size;
@@ -105,7 +107,7 @@ MessageGenerator::SharedMessage(const char* msg_bin, size_t msg_bin_size)
         LOG(ERROR)<<"binary msg size:"<<msg_bin_size<<" less than 0.";
         return NULL;
     }
-    
+
     if (!rpc_msg_.ParseFromArray(msg_bin, msg_bin_size))
     {
         LOG(ERROR)<<"ParseFromArray failed, msg size:"<<msg_bin_size;
@@ -126,21 +128,6 @@ MessageGenerator::SharedMessage(const char* msg_bin, size_t msg_bin_size)
     }
 
     return message;
-}
-
-inline const char* MessageGenerator::GetMessageName()
-{
-    return rpc_msg_.msg_name().c_str();
-}
-
-inline int32_t MessageGenerator::GetMessageType()
-{
-    return rpc_msg_.msg_type();
-}
-
-inline uint64_t MessageGenerator::GetAsyncId()
-{
-    return rpc_msg_.asyncid();    
 }
 
 int MessageGenerator::MessageToBinary(int32_t type, uint64_t asyncid,
@@ -169,14 +156,14 @@ int MessageGenerator::MessageToBinary(int32_t type, uint64_t asyncid,
     LOG(INFO)<<"message to serialize:"<<message->DebugString();
     std::string buf;
     message->SerializeToString(&buf);
-    
+
     static rpc_protocol::RpcMessage rpc_message;
     rpc_message.set_magic(rpc_protocol::MAGIC_RPCSTAMP_V1);
     rpc_message.set_msg_type(type);
     rpc_message.set_msg_name(message_name);
     rpc_message.set_asyncid(asyncid);
     rpc_message.set_msg_bin(buf);
-    
+
     rpc_message.SerializeToString(out);
 
     return 0;
