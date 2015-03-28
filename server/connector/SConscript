@@ -21,6 +21,8 @@ env.Program('connector_client_test', clientsrc, OBJPREFIX='cclient_',
             LIBS=['cconnapi', 'rapidapp', 'event', 'glog', 'gflags', 'protobuf', 'pthread', 'boost_thread'])
 
 #connector svr api
+os.system('cd server_api/ && echo \'genereate c++ code over protobuf [game_data.proto]...\' && protoc --cpp_out=. game_data.proto')
+
 svrapi_src = Glob('server_api/connector_server_api.cpp')
 svrapi_src += Glob('server.pb.cc')
 server_lib = env.StaticLibrary('server_api/sconnapi', svrapi_src)

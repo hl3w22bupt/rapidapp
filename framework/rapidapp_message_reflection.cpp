@@ -169,4 +169,47 @@ int MessageGenerator::MessageToBinary(int32_t type, uint64_t asyncid,
     return 0;
 }
 
+int MessageGenerator::BinaryToMessage(const char* msg_bin, size_t msg_bin_size,
+                                      ::google::protobuf::Message* message)
+{
+    if (NULL == msg_bin)
+    {
+        LOG(ERROR)<<"null msg";
+        return -1;
+    }
+
+    if (msg_bin_size <= 0)
+    {
+        LOG(ERROR)<<"binary msg size:"<<msg_bin_size<<" less than 0.";
+        return -1;
+    }
+
+    if (NULL == message)
+    {
+        LOG(ERROR)<<"null message";
+        return -1;
+    }
+
+    if (!rpc_msg_.ParseFromArray(msg_bin, msg_bin_size))
+    {
+        LOG(ERROR)<<"ParseFromArray failed, msg size:"<<msg_bin_size;
+        return -1;
+    }
+
+    const std::string& type_name = message->GetTypeName();
+    if (type_name != rpc_msg_.msg_name())
+    {
+        LOG(ERROR)<<"recved msg name:"<<rpc_msg_.msg_name()<<" not same as expected:"<<type_name;
+        return -1;
+    }
+
+    if (!message->ParseFromString(rpc_msg_.msg_bin()));
+    {
+        LOG(ERROR)<<"ParseFromString failed, msg bin size:"<<rpc_msg_.msg_bin().size();
+        return -1;
+    }
+
+    return 0;
+}
+
 }

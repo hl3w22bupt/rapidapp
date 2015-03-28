@@ -1,0 +1,156 @@
+#include "server_demo_app.h"
+#include "../sample.pb.h"
+#include <google/protobuf/message.h>
+#include <google/protobuf/text_format.h>
+#include <google/protobuf/io/coded_stream.h>
+
+int PingPongCallBack(const ::google::protobuf::Message* req,
+                     ::google::protobuf::Message* res)
+{
+    if (NULL == req || NULL == res)
+    {
+        return -1;
+    }
+
+    LOG(INFO)<<"req:"<<req->DebugString();
+    LOG(INFO)<<"res:"<<res->DebugString();
+
+    const test_rpc::Ping* ping = dynamic_cast<const test_rpc::Ping*>(req);
+    test_rpc::Pong* pong = dynamic_cast<test_rpc::Pong*>(res);
+
+    return 0;
+}
+
+ServerDemoApp::ServerDemoApp()
+{}
+
+ServerDemoApp::~ServerDemoApp()
+{}
+
+int ServerDemoApp::OnInit(IFrameWork* app_framework)
+{
+    if (NULL == app_framework)
+    {
+        LOG(ERROR)<<"null app framework";
+        return -1;
+    }
+
+    GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+    frame_stub_ = app_framework;
+
+    const char* uri = "tcp://127.0.0.1:8081";
+    EasyNet* net = frame_stub_->CreateBackEnd(uri, 0);
+    if (NULL == net)
+    {
+        LOG(ERROR)<<"CreateBackEnd "<<uri<<" failed";
+        return -1;
+    }
+    backend_ = net;
+
+    // 一个transport 对应 一个protocol
+    // 因而这里一个后端服务对应一个rpc instance
+    rpc_ = frame_stub_->CreateRpc(net);
+    if (NULL == rpc_)
+    {
+        LOG(ERROR)<<"create rpc instace failed";
+        return -1;
+    }
+
+    return 0;
+}
+
+int ServerDemoApp::OnFini()
+{
+    if (rpc_ != NULL)
+    {
+        frame_stub_->DestroyRpc(&rpc_);
+        rpc_ = NULL;
+    }
+
+    if (backend_ != NULL)
+    {
+        frame_stub_->DestroyBackEnd(&backend_);
+        backend_ = NULL;
+    }
+
+    ::google::protobuf::ShutdownProtobufLibrary();
+
+    return 0;
+}
+
+int ServerDemoApp::OnStop()
+{
+    return 0;
+}
+int ServerDemoApp::OnResume()
+{
+    return 0;
+}
+
+int ServerDemoApp::OnUpdate()
+{
+    return 0;
+}
+int ServerDemoApp::OnReload()
+{
+    return 0;
+}
+
+int ServerDemoApp::OnRecvCtrl(int argc, char** argv)
+{
+    return 0;
+}
+
+int ServerDemoApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t size)
+{
+    static uint64_t msg_seq = 0;
+    LOG(INFO)<<"recv app msg size:"<<size;
+
+    // TODO parse msg from frontend
+
+    if (NULL == frame_stub_)
+    {
+        LOG(ERROR)<<"assert failed, null frame stub";
+        return -1;
+    }
+    frame_stub_->SendToFrontEnd(net, msg, size);
+
+    test_rpc::Ping* ping = new test_rpc::Ping();
+    ping->set_ping(100);
+    test_rpc::Pong* pong = new test_rpc::Pong();
+    pong->set_pong(0);
+    LOG(INFO)<<"start rpc call...";
+    frame_stub_->RpcCall(rpc_, ping, pong, PingPongCallBack);
+    return 0;
+}
+
+int ServerDemoApp::OnRecvBackEnd(EasyNet* net, int type, const char* msg, size_t size)
+{
+    return 0;
+}
+
+int ServerDemoApp::OnTimer(EasyTimer* timer, int timer_id)
+{
+    return 0;
+}
+
+int ServerDemoApp::OnReportRundata()
+{
+    return 0;
+}
+
+size_t ServerDemoApp::GetFrontEndMaxMsgSize()
+{
+    return 0;
+}
+
+size_t ServerDemoApp::GetBackEndMaxMsgSize()
+{
+    return 0;
+}
+
+const char* ServerDemoApp::GetAppVersion()
+{
+    return "1.0.0";
+}

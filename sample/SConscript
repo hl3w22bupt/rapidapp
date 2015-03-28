@@ -1,0 +1,15 @@
+import os
+Import('env')
+
+# demo
+os.system('echo \'genereate c++ code over protobuf [sample.proto]...\' && protoc --cpp_out=. sample.proto')
+
+#client
+sample_src = Glob('client_demo/*.cpp')
+sample_src += Glob('*.cc')
+env.Program('client_demo/test_client_demo', sample_src, LIBS=['rapidapp', 'event', 'glog', 'gflags', 'protobuf', 'pthread'])
+
+#server
+sample_src = Glob('server_demo/*.cpp')
+sample_src += Glob('*.cc')
+env.Program('server_demo/test_server_demo', sample_src, LIBS=['rapidapp', 'event', 'glog', 'gflags', 'protobuf', 'pthread'])

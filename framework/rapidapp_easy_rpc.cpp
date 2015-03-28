@@ -43,6 +43,7 @@ int EasyRpc::Init(magic_cube::CoroutineScheduler* scheduler, EasyNet* net)
 }
 
 int EasyRpc::RpcCall(const ::google::protobuf::Message* request,
+                     ::google::protobuf::Message* response,
                      ON_RPC_REPLY_FUNCTION callback)
 {
     if (NULL == request || NULL == callback)
@@ -56,6 +57,7 @@ int EasyRpc::RpcCall(const ::google::protobuf::Message* request,
     }
 
     request_ = request;
+    response_ = response;
 
     // 创建一个协程上下文
     RPC_CONTEXT context;
@@ -98,7 +100,7 @@ int EasyRpc::RpcFunction(void* arg)
     std::string buf;
     MessageGenerator::MessageToBinary(0, asyncid_seed++,
             the_handler->request_, &buf);
-    
+
     the_handler->net_->Send(buf.c_str(), buf.size());
 
     LOG(INFO)<<"rpc>>> send buf size:"<<buf.size()<<" to backend success";
@@ -107,7 +109,8 @@ int EasyRpc::RpcFunction(void* arg)
     the_handler->scheduler_->YieldCoroutine();
 
     // has been Resumed, async callback
-    rpc_ctx->callback(the_handler->response_);
+    rpc_ctx->callback(the_handler->request_,
+                      the_handler->response_);
 
     return 0;
 }
@@ -135,8 +138,8 @@ int EasyRpc::GetCoroutineIdxByAsyncId(uint64_t asyncid)
             return it->crid;
         }
     }
-    
-    return -1;    
+
+    return -1;
 }
 
 // 目前暂时认为每1个rpc request的reply是严格按顺序的，因此取队列最前面的。
@@ -149,21 +152,29 @@ int EasyRpc::Resume(const char* buffer, size_t size)
         return -1;
     }
 
+    /*
     const ::google::protobuf::Message* reply =
         MessageGenerator::SharedMessage(buffer, size);
     if (NULL == reply)
     {
         return -1;
     }
-    
+    */
+    if (MessageGenerator::BinaryToMessage(buffer, size, response_) != 0)
+    {
+        LOG(ERROR)<<"binary to message failed after Resume";
+        return -1;
+    }
+
     // Resume
     uint64_t asyncid = MessageGenerator::GetAsyncId();
     int crid = GetCoroutineIdxByAsyncId(asyncid);
-    scheduler_->ResumeCoroutine(crid);
+    scheduler_->ResumeCoroutine(crid);   // 唤醒协程
     if (!scheduler_->CoroutineBeenAlive(crid))
-    
-    response_ = reply;
-    
+    {
+        RemoveByCoroutineId(crid);
+    }
+
     return 0;
 }
 

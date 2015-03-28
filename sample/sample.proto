@@ -1,14 +1,13 @@
-package rapidapp_sample;
+package test_rpc;
 
-message EchoBody {
-    required uint64 seq = 1;
-    optional string echo = 2;
+message Ping {
+  required int32 ping = 1;
 }
 
-message Mesg {
-    required EchoBody body = 2;
+message Pong {
+  required int32 pong = 2;
 }
 
-service EchoService {
-  rpc echo(Mesg) returns(Mesg);
+service PingService {
+  rpc Test(Ping) returns (Pong);
 }

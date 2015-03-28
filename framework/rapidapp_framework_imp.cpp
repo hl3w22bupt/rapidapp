@@ -1307,7 +1307,9 @@ int AppFrameWork::DestroyRpc(EasyRpc** rpc)
     return 0;
 }
 
-int AppFrameWork::RpcCall(EasyRpc* rpc, const ::google::protobuf::Message* request,
+int AppFrameWork::RpcCall(EasyRpc* rpc,
+                          const ::google::protobuf::Message* request,
+                          ::google::protobuf::Message* response,
                           ON_RPC_REPLY_FUNCTION callback)
 {
     if (NULL == rpc || NULL == callback || NULL == request)
@@ -1316,7 +1318,7 @@ int AppFrameWork::RpcCall(EasyRpc* rpc, const ::google::protobuf::Message* reque
         return -1;
     }
 
-    return rpc->RpcCall(request, callback);
+    return rpc->RpcCall(request, response, callback);
 }
 
 void AppFrameWork::ScheduleUpdate()

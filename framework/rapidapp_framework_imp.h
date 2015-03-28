@@ -69,7 +69,9 @@ class AppFrameWork : public IFrameWork, public IWalkEach {
     public:
         virtual EasyRpc* CreateRpc(EasyNet* net);
         virtual int DestroyRpc(EasyRpc** rpc);
-        virtual int RpcCall(EasyRpc* rpc, const ::google::protobuf::Message* request,
+        virtual int RpcCall(EasyRpc* rpc,
+                            const ::google::protobuf::Message* request,
+                            ::google::protobuf::Message* response,
                             ON_RPC_REPLY_FUNCTION callback);
 
     public:

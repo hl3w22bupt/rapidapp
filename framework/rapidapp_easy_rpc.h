@@ -20,6 +20,7 @@ class EasyRpc {
     public:
         int Init(magic_cube::CoroutineScheduler* scheduler, EasyNet* net);
         int RpcCall(const ::google::protobuf::Message* request,
+                    ::google::protobuf::Message* response,
                     ON_RPC_REPLY_FUNCTION callback);
 
         inline bool IsActive() {
@@ -28,7 +29,7 @@ class EasyRpc {
 
     private:
         int Resume(const char* buffer, size_t size);
-        
+
     private:
         void RemoveByCoroutineId(int crid);
         int GetCoroutineIdxByAsyncId(uint64_t asyncid);
@@ -42,14 +43,14 @@ class EasyRpc {
     private:
         EasyNet* net_;
         const ::google::protobuf::Message* request_;
-        const ::google::protobuf::Message* response_;
+        ::google::protobuf::Message* response_;
 
     private:
         typedef struct {
             int crid;
             uint64_t asyncid;
         } CoroutinePair;
-        
+
         typedef  std::vector<CoroutinePair> CoroutineList;
         CoroutineList crid_list_;
 

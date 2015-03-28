@@ -21,11 +21,7 @@ SConscript('framework/SConscript')
 SConscript('server/connector/SConscript')
 
 #sample
-os.system('echo \'genereate c++ code over protobuf [sample.proto]...\' && cd sample && protoc --cpp_out=. sample.proto')
-sample_src = Glob('sample/*.cpp')
-sample_src += Glob('sample/*.cc')
-sample_src += Glob('./lib/librapidapp.a')
-env.Program('sample/app_demo', sample_src, LIBS=['event', 'glog', 'gflags', 'protobuf', 'pthread'])
+SConscript('sample/SConscript')
 
 #echosvr
 os.system('echo \'genereate c++ code over protobuf [echosvr.proto]...\' && cd tools/echosvr && protoc --cpp_out=. echosvr.proto')

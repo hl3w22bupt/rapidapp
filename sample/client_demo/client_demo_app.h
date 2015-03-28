@@ -1,14 +1,14 @@
-#ifndef RAPIDAPP_IMP_H_
-#define RAPIDAPP_IMP_H_
+#ifndef CLIENT_DEMO_APP_H_
+#define CLIENT_DEMO_APP_H_
 
 #include "rapidapp.h"
 
 using namespace rapidapp;
 
-class MyApp : public RapidApp {
+class ClientDemoApp : public RapidApp {
     public:
-        MyApp();
-        ~MyApp();
+        ClientDemoApp();
+        ~ClientDemoApp();
 
     public:
         virtual int OnInit(IFrameWork* app_framework);

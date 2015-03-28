@@ -36,6 +36,8 @@ class MessageGenerator {
         static int MessageToBinary(int32_t type, uint64_t asyncid,
                                    const ::google::protobuf::Message* message,
                                    std::string* out);
+        static int BinaryToMessage(const char* msg_bin, size_t msg_bin_size,
+                                   ::google::protobuf::Message* message);
     private:
         static rpc_protocol::RpcMessage rpc_msg_;
 };

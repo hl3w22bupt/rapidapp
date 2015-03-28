@@ -1,10 +1,10 @@
 #include "rapidapp.h"
-#include "rapidapp_imp.h"
+#include "server_demo_app.h"
 
 int main(int argc, char** argv)
 {
     AppLauncher launcher;
-    MyApp myapp;
+    ServerDemoApp myapp;
 
     launcher.Run(&myapp, argc, argv);
 
