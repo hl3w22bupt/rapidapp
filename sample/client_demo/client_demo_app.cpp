@@ -39,7 +39,7 @@ int ClientDemoApp::OnInit(IFrameWork* app_framework)
 
     frame_stub_ = app_framework;
 
-    const char* uri = "tcp://127.0.0.1:8081";
+    const char* uri = "tcp://127.0.0.1:7891";
     EasyNet* net = frame_stub_->CreateBackEnd(uri, 0);
     if (NULL == net)
     {

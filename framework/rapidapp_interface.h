@@ -2,6 +2,7 @@
 #define RAPIDAPP_INTERFACE_H_
 
 #include "rapidapp_framework.h"
+#include <google/protobuf/message.h>
 #include <cstdio>
 
 namespace rapidapp {
@@ -35,8 +36,19 @@ class RapidApp {
             return 0;
         }
 
-        virtual int OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t size) = 0;
-        virtual int OnRecvBackEnd(EasyNet* net, int type, const char* msg, size_t size) = 0;
+        // 基本消息事件
+        virtual int OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t size) {
+            return -1;
+        }
+        virtual int OnRecvBackEnd(EasyNet* net, int type, const char* msg, size_t size) {
+            return -1;
+        }
+
+        // RPC 消息事件
+        virtual int OnRpc(const ::google::protobuf::Message* request,
+                          ::google::protobuf::Message** response) {
+            return -1;
+        }
 
         virtual int OnTimer(EasyTimer* timer, int timer_id) = 0;
 

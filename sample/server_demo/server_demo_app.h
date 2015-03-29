@@ -22,8 +22,10 @@ class ServerDemoApp : public RapidApp {
 
         virtual int OnRecvCtrl(int argc, char** argv);
 
-        virtual int OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_t size);
         virtual int OnRecvBackEnd(EasyNet* net, int type, const char* msg, size_t size);
+
+        virtual int OnRpc(const ::google::protobuf::Message* request,
+                          ::google::protobuf::Message** response);
 
         virtual int OnTimer(EasyTimer* timer, int timer_id);
 
@@ -37,10 +39,6 @@ class ServerDemoApp : public RapidApp {
 
     private:
         IFrameWork* frame_stub_;
-
-    private:
-        EasyRpc* rpc_;
-        EasyNet* backend_;
 };
 
 #endif

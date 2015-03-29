@@ -26,6 +26,11 @@ enum {
     APP_RELOAD  = 3,
 };
 
+enum {
+    SVC_MODE_NORMAL = 1,
+    SVC_MODE_RPC    = 2,
+};
+
 struct AppSetting {
     int  fps;               // 每秒帧率
     int  max_idle;          // 前端最大空闲时间，-1为无空闲限制
@@ -192,8 +197,10 @@ class AppFrameWork : public IFrameWork, public IWalkEach {
 
         int SetPidFile();
         int GetRunningPid();
-
         int SetCtrlSockFile();
+
+        int InitListenerServiceMode();
+        int SetFpsTimer();
 
     private:
         struct event_base* event_base_;
@@ -225,7 +232,7 @@ class AppFrameWork : public IFrameWork, public IWalkEach {
         magic_cube::CoroutineScheduler* rpc_scheduler_;
 
     private:
-        FILE* pid_fp_;
+        int svc_mode_;
 };
 
 }

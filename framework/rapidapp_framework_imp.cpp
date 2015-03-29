@@ -1,5 +1,6 @@
 #include "rapidapp_framework_imp.h"
 #include "rapidapp_easy_rpc.h"
+#include "rapidapp_message_reflection.h"
 #include "utils/rap_net_uri.h"
 #include "utils/tcp_socket.h"
 #include <event2/buffer.h>
@@ -14,7 +15,7 @@
 #define GFLAGS_NS gflags
 #endif
 
-DEFINE_string(uri, "tcp:0.0.0.0:80", "server listen uri, format: [proto:ip:port]");
+DEFINE_string(uri, "tcp://0.0.0.0:80", "server listen uri, format: [proto://ip:port?mode], mode[normal|rpc]");
 DEFINE_string(log_file, "", "logging file name");
 DEFINE_int32(fps, 1000, "frame-per-second, MUST >= 1, associated with reload and timer");
 DEFINE_int32(max_idle, -1, "max idle time on frontend, time unit s, default no idle limit");
@@ -35,6 +36,10 @@ DEFINE_bool(reload, false, "trigger reload event according to pid file");
 namespace rapidapp {
 // global variable & function
 const int MAX_TCP_BACKLOG = 102400;
+
+#define SERVICE_MODE_NORMAL "normal"
+#define SERVICE_MODE_RPC    "rpc"
+#define SERVICE_MODE_SEPCHAR '?'
 
 #ifdef _DEBUG
 #define UDP_HOST "127.0.0.1"
@@ -94,7 +99,7 @@ AppFrameWork::AppFrameWork() : event_base_(NULL), internal_timer_(NULL), listene
                                  udp_ctrl_keeper_(NULL), ctrl_dispatcher_(),
                                  app_(NULL), schedule_update_(false), has_been_cleanup_(false),
                                  frontend_handler_mgr_(), backend_handler_mgr_(),
-                                 timer_mgr_(), rpc_scheduler_(NULL), pid_fp_(NULL)
+                                 timer_mgr_(), rpc_scheduler_(NULL), svc_mode_(SVC_MODE_NORMAL)
 {
     memset(&setting_, 0, sizeof(setting_));
 }
@@ -311,14 +316,14 @@ int AppFrameWork::InitLogging(int argc, char** argv)
 int AppFrameWork::SetPidFile()
 {
     // mode 'w+' will definitely truncate pid file, must set mode 'a'
-    pid_fp_ = fopen(setting_.pid_file_name, "a");
-    if (NULL == pid_fp_)
+    FILE* pid_fp = fopen(setting_.pid_file_name, "a");
+    if (NULL == pid_fp)
     {
         fprintf(stderr, "fopen file:%s failed\n", setting_.pid_file_name);
         return -1;
     }
 
-    int ret = fcntl(fileno(pid_fp_), F_SETFD, FD_CLOEXEC);
+    int ret = fcntl(fileno(pid_fp), F_SETFD, FD_CLOEXEC);
     if (-1 == ret)
     {
         fprintf(stderr, "set file:%s CLOEXEC failed\n", setting_.pid_file_name);
@@ -331,35 +336,36 @@ int AppFrameWork::SetPidFile()
     lock.l_whence = SEEK_SET;
     lock.l_len = 0;
     lock.l_pid = getpid();
-    ret = fcntl(fileno(pid_fp_), F_SETLK, &lock);
+    ret = fcntl(fileno(pid_fp), F_SETLK, &lock);
     if (-1 == ret)
     {
         fprintf(stderr, "try lock file:%s failed\n", setting_.pid_file_name);
         return -1;
     }
 
-    ftruncate(fileno(pid_fp_), 0);
+    ftruncate(fileno(pid_fp), 0);
     char pid[MAX_PID_FILE_NAME_LEN];
     snprintf(pid, sizeof(pid), "%d\n", getpid());
-    fputs(pid, pid_fp_);
-    fflush(pid_fp_);
+    fputs(pid, pid_fp);
+    fflush(pid_fp);
 
     return 0;
 }
 
 int AppFrameWork::GetRunningPid()
 {
-    pid_fp_ = fopen(setting_.pid_file_name, "r+");
-    if (NULL == pid_fp_)
+    FILE* pid_fp = fopen(setting_.pid_file_name, "r+");
+    if (NULL == pid_fp)
     {
         fprintf(stderr, "fopen file:%s failed\n", setting_.pid_file_name);
         return -1;
     }
 
-    int ret = fcntl(fileno(pid_fp_), F_SETFD, FD_CLOEXEC);
+    int ret = fcntl(fileno(pid_fp), F_SETFD, FD_CLOEXEC);
     if (-1 == ret)
     {
         fprintf(stderr, "set file:%s CLOEXEC failed\n", setting_.pid_file_name);
+        fclose(pid_fp);
         return -1;
     }
 
@@ -369,15 +375,18 @@ int AppFrameWork::GetRunningPid()
     lock.l_whence = SEEK_SET;
     lock.l_len = 0;
     lock.l_pid = getpid();
-    ret = fcntl(fileno(pid_fp_), F_SETLK, &lock);
+    ret = fcntl(fileno(pid_fp), F_SETLK, &lock);
     if (-1 != ret)
     {
+        fclose(pid_fp);
         return 0;
     }
 
     // pid file has been held by another process
     char pid[MAX_PID_FILE_NAME_LEN];
-    if (NULL == fgets(pid, sizeof(pid), pid_fp_))
+    char* p = fgets(pid, sizeof(pid), pid_fp);
+    fclose(pid_fp);
+    if (NULL == p)
     {
         fprintf(stderr, "fgets file:%s failed\n", setting_.pid_file_name);
         return -1;
@@ -444,6 +453,59 @@ int AppFrameWork::SetCtrlSockFile()
     return 0;
 }
 
+int AppFrameWork::SetFpsTimer()
+{
+    struct event* internal_timer_ = event_new(event_base_, -1, EV_PERSIST,
+                                              internal_timer_cb_func, this);
+    if (NULL == internal_timer_)
+    {
+        PLOG(ERROR)<<"create internal timer failed";
+        return -1;
+    }
+
+    // 可配置，通过此项配置控制后台服务的帧率
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = 1000000 / setting_.fps;
+    if (event_add(internal_timer_, &tv) != 0)
+    {
+        PLOG(ERROR)<<"add internal timer to event base failed";
+        return -1;
+    }
+
+    return 0;
+}
+
+int AppFrameWork::InitListenerServiceMode()
+{
+    struct sockaddr_in listen_sa;
+    int ret = tcpsocket_str2sockin(setting_.listen_uri, &listen_sa);
+    if (ret != 0)
+    {
+        PLOG(ERROR)<<"bad uri: "<<setting_.listen_uri;
+        return -1;
+    }
+
+    listener_ = evconnlistener_new_bind(
+         event_base_, socket_listen_cb_function, this,
+         LEV_OPT_CLOSE_ON_FREE|LEV_OPT_CLOSE_ON_EXEC|LEV_OPT_REUSEABLE,
+         MAX_TCP_BACKLOG, (const struct sockaddr*)&listen_sa,
+         sizeof(listen_sa));
+    if (NULL == listener_)
+    {
+        PLOG(ERROR)<<"create evlisten failed";
+        return -1;
+    }
+
+    char* p = strchr(setting_.listen_uri, SERVICE_MODE_SEPCHAR);
+    if (p != NULL && 0 == strcmp(p+1, SERVICE_MODE_RPC))
+    {
+        svc_mode_ = SVC_MODE_RPC;
+    }
+
+    return 0;
+}
+
 int AppFrameWork::InitNormalMode(RapidApp* app, int argc, char** argv)
 {
     int ret = 0;
@@ -501,8 +563,8 @@ int AppFrameWork::InitNormalMode(RapidApp* app, int argc, char** argv)
 
     event_base_ = evt_base;
 
-    // 打印libevent信息
 #ifdef _DEBUG
+    // 打印libevent信息
     const char** methods = event_get_supported_methods();
     fprintf(stderr, "libevent version:%s, supported method:",
             event_get_version());
@@ -514,26 +576,13 @@ int AppFrameWork::InitNormalMode(RapidApp* app, int argc, char** argv)
 #endif
 
     // 帧计时器
-    struct event* internal_timer_ = event_new(event_base_, -1, EV_PERSIST,
-                                              internal_timer_cb_func, this);
-    if (NULL == internal_timer_)
+    ret = SetFpsTimer();
+    if (ret != 0)
     {
-        PLOG(ERROR)<<"create internal timer failed";
         return -1;
     }
 
-    // 可配置，通过此项配置控制后台服务的帧率
-    struct timeval tv;
-    tv.tv_sec = 0;
-    tv.tv_usec = 1000000 / setting_.fps;
-    if (event_add(internal_timer_, &tv) != 0)
-    {
-        PLOG(ERROR)<<"add internal timer to event base failed";
-        return -1;
-    }
-
-    // ctrl udp socket
-    // 添加内部支持命令字
+    // ctrl udp socket - 添加内部支持命令字
     ctrl_dispatcher_.AddDefaultSupportedCommand();
     ret = SetCtrlSockFile();
     if (ret != 0)
@@ -543,25 +592,13 @@ int AppFrameWork::InitNormalMode(RapidApp* app, int argc, char** argv)
     }
 
     // tcp listener
-    struct sockaddr_in listen_sa;
-    ret = tcpsocket_str2sockin(setting_.listen_uri, &listen_sa);
+    ret = InitListenerServiceMode();
     if (ret != 0)
     {
-        PLOG(ERROR)<<"bad uri: "<<setting_.listen_uri;
         return -1;
     }
 
-    listener_ = evconnlistener_new_bind(
-         event_base_, socket_listen_cb_function, this,
-         LEV_OPT_CLOSE_ON_FREE|LEV_OPT_CLOSE_ON_EXEC|LEV_OPT_REUSEABLE,
-         MAX_TCP_BACKLOG, (const struct sockaddr*)&listen_sa,
-         sizeof(listen_sa));
-    if (NULL == listener_)
-    {
-        PLOG(ERROR)<<"create evlisten failed";
-        return -1;
-    }
-
+    // net mgr
     size_t size = 2 * app_->GetFrontEndMaxMsgSize();
     ret = frontend_handler_mgr_.Init(size);
     if (ret != 0)
@@ -578,6 +615,7 @@ int AppFrameWork::InitNormalMode(RapidApp* app, int argc, char** argv)
         return -1;
     }
 
+    // timer mgr
     ret = timer_mgr_.Init(DEFAULT_MAX_TIMER_NUM);
     if (ret != 0)
     {
@@ -585,6 +623,7 @@ int AppFrameWork::InitNormalMode(RapidApp* app, int argc, char** argv)
         return -1;
     }
 
+    // rpc schedule
     rpc_scheduler_ = new(std::nothrow) magic_cube::CoroutineScheduler(
                                                     FLAGS_max_cocurrent_rpc,
                                                     FLAGS_rpc_stack_size);
@@ -943,10 +982,32 @@ int AppFrameWork::OnFrontEndMsg(struct bufferevent* bev)
 
         LOG(INFO)<<"current msg len:"<<msglen - sizeof(uint32_t);
 
-        app_->OnRecvFrontEnd(easy_net, easy_net->net_type(),
-                             frontend_handler_mgr_.recv_buffer_.buffer\
-                             + elapsed_msglen + sizeof(uint32_t),
-                             msglen - sizeof(uint32_t));
+        if (SVC_MODE_RPC == svc_mode_)
+        {
+            const ::google::protobuf::Message* req =
+                MessageGenerator::SharedMessage(frontend_handler_mgr_.recv_buffer_.buffer\
+                                                + elapsed_msglen + sizeof(uint32_t),
+                                                msglen - sizeof(uint32_t));
+            if (NULL == req)
+            {
+                LOG(ERROR)<<"get shared message failed";
+                break;
+            }
+
+            ::google::protobuf::Message* resp = NULL;
+            app_->OnRpc(req, &resp);
+        }
+        else
+        {
+            int ret = app_->OnRecvFrontEnd(easy_net, easy_net->net_type(),
+                                           frontend_handler_mgr_.recv_buffer_.buffer\
+                                           + elapsed_msglen + sizeof(uint32_t),
+                                           msglen - sizeof(uint32_t));
+            if (ret != 0)
+            {
+                LOG(INFO)<<"OnRecvFrontEnd return "<<ret;
+            }
+        }
         ++(easy_net->curr_pkg_count_);
         elapsed_msglen += msglen;
     }
@@ -1058,10 +1119,14 @@ int AppFrameWork::OnBackEndMsg(struct bufferevent* bev)
         }
         else
         {
-            app_->OnRecvBackEnd(easy_net, easy_net->net_type(),
-                                backend_handler_mgr_.recv_buffer_.buffer \
-                                + elapsed_msglen + sizeof(uint32_t),
-                                msglen - sizeof(uint32_t));
+            int ret = app_->OnRecvBackEnd(easy_net, easy_net->net_type(),
+                                          backend_handler_mgr_.recv_buffer_.buffer \
+                                          + elapsed_msglen + sizeof(uint32_t),
+                                          msglen - sizeof(uint32_t));
+            if (ret != 0)
+            {
+                LOG(INFO)<<"OnRecvFrontEnd return "<<ret;
+            }
         }
         elapsed_msglen += msglen;
     }
