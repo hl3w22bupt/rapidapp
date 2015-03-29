@@ -81,6 +81,7 @@ class AppFrameWork : public IFrameWork, public IWalkEach {
 
     public:
         virtual void ScheduleUpdate();
+        virtual void UnScheduleUpdate();
 
     public:
         int DoSomething(EasyNet* net);

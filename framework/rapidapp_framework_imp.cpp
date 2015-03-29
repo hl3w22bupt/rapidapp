@@ -23,7 +23,8 @@ DEFINE_int32(max_pkg_speed, -1, "max pkg number per frame on frontend, default n
 DEFINE_int32(max_traffic_speed, -1, "max traffic per frame on frontend, default no limit");
 
 DEFINE_int32(max_cocurrent_rpc, 10240, "max cocurrent rpc number");
-DEFINE_int32(rpc_stack_size, 1024, "rpc stack size to save user context");
+// 堆栈过小 或 过大时都可能coredump
+DEFINE_int32(rpc_stack_size, 20480, "rpc stack size to save user context, default 20k");
 
 DEFINE_string(pid_file, "", "pid file name, default {appname}.pid");
 DEFINE_string(ctrl_file, "", "ctrl sock file name, default {appname}.sock");
@@ -995,7 +996,11 @@ int AppFrameWork::OnFrontEndMsg(struct bufferevent* bev)
             }
 
             ::google::protobuf::Message* resp = NULL;
-            app_->OnRpc(req, &resp);
+            int ret = app_->OnRpc(req, &resp);
+            if (ret != 0)
+            {
+                LOG(INFO)<<"OnRpc return "<<ret;
+            }
         }
         else
         {
@@ -1389,6 +1394,11 @@ int AppFrameWork::RpcCall(EasyRpc* rpc,
 void AppFrameWork::ScheduleUpdate()
 {
     schedule_update_ = true;
+}
+
+void AppFrameWork::UnScheduleUpdate()
+{
+    schedule_update_ = false;
 }
 
 // 前端net遍历操作

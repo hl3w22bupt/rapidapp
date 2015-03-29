@@ -80,6 +80,17 @@ int ServerDemoApp::OnRecvBackEnd(EasyNet* net, int type, const char* msg, size_t
 int ServerDemoApp::OnRpc(const ::google::protobuf::Message* request,
                          ::google::protobuf::Message** response)
 {
+    if (NULL == request || NULL == response)
+    {
+        return -1;
+    }
+
+    *response = NULL;
+
+    const std::string& msg_name = request->GetTypeName();
+
+    LOG(INFO)<<"recved msg[name:"<<msg_name<<"] in the way rpc";
+
     return 0;
 }
 

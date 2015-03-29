@@ -85,6 +85,10 @@ class EasyNet {
             return user_context_;
         }
 
+        inline bool network_is_ready() const {
+            return (NET_ESTABLISHED == state_);
+        }
+
     private:
         struct bufferevent* hevent_;    // net对应的bufferevent实例
         int net_type_;                  // 网络实体类型

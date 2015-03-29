@@ -45,6 +45,7 @@ class IFrameWork {
 
     public:
         virtual void ScheduleUpdate() = 0;
+        virtual void UnScheduleUpdate() = 0;
 };
 
 }

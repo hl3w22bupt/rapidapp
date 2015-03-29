@@ -73,6 +73,7 @@ void CoroutineScheduler::DestroyCoroutine(int uct_id)
     if (it->second != NULL)
     {
         free(it->second);
+        it->second = NULL;
     }
 
     coroutine_table_.erase(it);
@@ -164,11 +165,15 @@ int CoroutineScheduler::ResumeCoroutine(int uct_id)
             {
                 break;
             }
-        case COROUTINE_DONE:
+        default:
             {
-                DestroyCoroutine(uct_id);
-                break;
+                assert(0);
             }
+    }
+
+    if (COROUTINE_DONE == ctx->state)
+    {
+        DestroyCoroutine(uct_id);
     }
 
     return 0;

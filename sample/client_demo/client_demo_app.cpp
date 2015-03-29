@@ -12,8 +12,8 @@ int PingPongCallBack(const ::google::protobuf::Message* req,
         return -1;
     }
 
-    LOG(INFO)<<"req:"<<req->DebugString();
-    LOG(INFO)<<"res:"<<res->DebugString();
+    LOG(INFO)<<"rpc req:"<<req->DebugString();
+    LOG(INFO)<<"rpc res:"<<res->DebugString();
 
     const test_rpc::Ping* ping = dynamic_cast<const test_rpc::Ping*>(req);
     test_rpc::Pong* pong = dynamic_cast<test_rpc::Pong*>(res);
@@ -38,6 +38,7 @@ int ClientDemoApp::OnInit(IFrameWork* app_framework)
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
     frame_stub_ = app_framework;
+    app_framework->ScheduleUpdate();
 
     const char* uri = "tcp://127.0.0.1:7891";
     EasyNet* net = frame_stub_->CreateBackEnd(uri, 0);
@@ -90,10 +91,24 @@ int ClientDemoApp::OnResume()
 
 int ClientDemoApp::OnUpdate()
 {
+
+#ifdef _DEBUG
+    test_rpc::Ping* ping = new test_rpc::Ping();
+    ping->set_ping(100);
+    test_rpc::Pong* pong = new test_rpc::Pong();
+    pong->set_pong(0);
+    LOG(INFO)<<"start rpc call...";
+    frame_stub_->RpcCall(rpc_, ping, pong, PingPongCallBack);
+#endif
+
+    frame_stub_->UnScheduleUpdate();
+
     return 0;
 }
+
 int ClientDemoApp::OnReload()
 {
+    LOG(INFO)<<"Reload happened";
     return 0;
 }
 
@@ -116,12 +131,6 @@ int ClientDemoApp::OnRecvFrontEnd(EasyNet* net, int type, const char* msg, size_
     }
     frame_stub_->SendToFrontEnd(net, msg, size);
 
-    test_rpc::Ping* ping = new test_rpc::Ping();
-    ping->set_ping(100);
-    test_rpc::Pong* pong = new test_rpc::Pong();
-    pong->set_pong(0);
-    LOG(INFO)<<"start rpc call...";
-    frame_stub_->RpcCall(rpc_, ping, pong, PingPongCallBack);
     return 0;
 }
 

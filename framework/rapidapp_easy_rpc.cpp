@@ -97,11 +97,15 @@ int EasyRpc::RpcFunction(void* arg)
         return -1;
     }
 
-    std::string buf;
+    static std::string buf;
     MessageGenerator::MessageToBinary(0, asyncid_seed++,
             the_handler->request_, &buf);
 
-    the_handler->net_->Send(buf.c_str(), buf.size());
+    int ret = the_handler->net_->Send(buf.c_str(), buf.size());
+    if (ret != EASY_NET_OK)
+    {
+        LOG(ERROR)<<"send to rpc net failed. return "<<ret;
+    }
 
     LOG(INFO)<<"rpc>>> send buf size:"<<buf.size()<<" to backend success";
 
@@ -169,7 +173,11 @@ int EasyRpc::Resume(const char* buffer, size_t size)
     // Resume
     uint64_t asyncid = MessageGenerator::GetAsyncId();
     int crid = GetCoroutineIdxByAsyncId(asyncid);
-    scheduler_->ResumeCoroutine(crid);   // 唤醒协程
+    if (scheduler_->CoroutineBeenAlive(crid))
+    {
+        scheduler_->ResumeCoroutine(crid);   // 唤醒协程
+    }
+
     if (!scheduler_->CoroutineBeenAlive(crid))
     {
         RemoveByCoroutineId(crid);

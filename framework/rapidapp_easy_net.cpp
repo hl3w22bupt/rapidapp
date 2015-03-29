@@ -29,6 +29,8 @@ int EasyNet::Init(evutil_socket_t sock_fd, int type, struct event_base* ev_base)
 
     evutil_make_socket_nonblocking(sock_fd);
     evutil_make_socket_closeonexec(sock_fd);
+    tcpsocket_set_nodelay(sock_fd);
+
     struct bufferevent* bev =
         bufferevent_socket_new(ev_base, sock_fd,
                                BEV_OPT_CLOSE_ON_FREE);
@@ -75,6 +77,7 @@ int EasyNet::Connect(const char* uri, int type, struct event_base* ev_base)
         PLOG(ERROR)<<"create bufferevent for uri:"<<uri<<" failed";
         return -1;
     }
+    tcpsocket_set_nodelay(bufferevent_getfd(bev));
     bufferevent_enable(bev, EV_READ|EV_WRITE);
 
     // socket fd没有设置的情况下，调用connect会创建一个socket并且设置为非阻塞模式
@@ -156,16 +159,18 @@ int EasyNet::Send(const char* msg, size_t size)
     if (0 != bufferevent_write(hevent_, &msglen, sizeof(msglen)))
     {
         PLOG(ERROR)<<"write msglen to uri:"<<uri_<<"sock fd:"<<
-            bufferevent_getfd(hevent_)<<"failed";
+            bufferevent_getfd(hevent_)<<" failed";
         return EASY_NET_ERR_SEND_ERROR;
     }
 
     if (0 != bufferevent_write(hevent_, msg, size))
     {
         PLOG(ERROR)<<"write to uri:"<<uri_<<"sock fd:"<<
-            bufferevent_getfd(hevent_)<<"failed";
+            bufferevent_getfd(hevent_)<<" failed";
         return EASY_NET_ERR_SEND_ERROR;
     }
+
+    LOG(INFO)<<"write to uri:"<<uri_<<"sock fd:"<<bufferevent_getfd(hevent_)<<" successfully";
 
     return EASY_NET_OK;
 }

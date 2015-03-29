@@ -110,7 +110,7 @@ MessageGenerator::SharedMessage(const char* msg_bin, size_t msg_bin_size)
 
     if (!rpc_msg_.ParseFromArray(msg_bin, msg_bin_size))
     {
-        LOG(ERROR)<<"ParseFromArray failed, msg size:"<<msg_bin_size;
+        LOG(ERROR)<<"ParseFromArray failed, msg size:"<<msg_bin_size<<".\nrpc_msg:"<<rpc_msg_.DebugString();
         return NULL;
     }
 
@@ -153,16 +153,19 @@ int MessageGenerator::MessageToBinary(int32_t type, uint64_t asyncid,
         return -1;
     }
 
-    LOG(INFO)<<"message to serialize:"<<message->DebugString();
-    std::string buf;
+    LOG(INFO)<<"message to serialize\n"<<message->DebugString();
+    static std::string buf;
     message->SerializeToString(&buf);
+    LOG(INFO)<<"msg bin size:"<<buf.size();
 
     static rpc_protocol::RpcMessage rpc_message;
     rpc_message.set_magic(rpc_protocol::MAGIC_RPCSTAMP_V1);
     rpc_message.set_msg_type(type);
     rpc_message.set_msg_name(message_name);
     rpc_message.set_asyncid(asyncid);
-    rpc_message.set_msg_bin(buf);
+    rpc_message.set_msg_bin(buf.c_str(), buf.size());
+
+    LOG(INFO)<<"rpc message to serialize\n"<<rpc_message.DebugString();
 
     rpc_message.SerializeToString(out);
 
