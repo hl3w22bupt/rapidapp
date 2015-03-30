@@ -16,8 +16,8 @@ class MessageGenerator {
         virtual ~MessageGenerator();
 
     public:
-        static ::google::protobuf::Message* SpawnMessage(const char* msg_bin, size_t msg_bin_size);
-        static const ::google::protobuf::Message* SharedMessage(const char* msg_bin, size_t msg_bin_size);
+        static ::google::protobuf::Message* SpawnMessage(const char* data, size_t size);
+        static const ::google::protobuf::Message* SharedMessage(const char* data, size_t size);
 
         // 以下三个接口获取最新rpc反射包消息名、消息类型、以及消息async id
         static inline const char* GetMessageName() {
@@ -36,7 +36,7 @@ class MessageGenerator {
         static int MessageToBinary(int32_t type, uint64_t asyncid,
                                    const ::google::protobuf::Message* message,
                                    std::string* out);
-        static int BinaryToMessage(const char* msg_bin, size_t msg_bin_size,
+        static int BinaryToMessage(const char* data, size_t size,
                                    ::google::protobuf::Message* message);
     private:
         static rpc_protocol::RpcMessage rpc_msg_;

@@ -94,7 +94,7 @@ int ClientDemoApp::OnUpdate()
 
 #ifdef _DEBUG
     test_rpc::Ping* ping = new test_rpc::Ping();
-    ping->set_ping(100);
+    ping->set_ping(150);
     test_rpc::Pong* pong = new test_rpc::Pong();
     pong->set_pong(0);
     LOG(INFO)<<"start rpc call...";

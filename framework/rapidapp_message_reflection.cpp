@@ -56,23 +56,24 @@ MessageGenerator::~MessageGenerator()
 {}
 
 Message*
-MessageGenerator::SpawnMessage(const char* msg_bin, size_t msg_bin_size)
+MessageGenerator::SpawnMessage(const char* data, size_t size)
 {
-    if (NULL == msg_bin)
+    if (NULL == data)
     {
         LOG(ERROR)<<"null msg";
         return NULL;
     }
 
-    if (msg_bin_size <= 0)
+    if (size <= 0)
     {
-        LOG(ERROR)<<"binary msg size:"<<msg_bin_size<<" less than 0.";
+        LOG(ERROR)<<"binary msg size:"<<size<<" less than 0.";
         return NULL;
     }
 
-    if (!rpc_msg_.ParseFromArray(msg_bin, msg_bin_size))
+    rpc_msg_.Clear();
+    if (!rpc_msg_.ParseFromArray(data, size))
     {
-        LOG(ERROR)<<"ParseFromArray failed, msg size:"<<msg_bin_size;
+        LOG(ERROR)<<"ParseFromArray failed, msg size:"<<size;
         return NULL;
     }
 
@@ -83,6 +84,7 @@ MessageGenerator::SpawnMessage(const char* msg_bin, size_t msg_bin_size)
         return NULL;
     }
 
+    message->Clear();
     if (!message->ParseFromString(rpc_msg_.msg_bin()));
     {
         LOG(ERROR)<<"ParseFromString failed, msg bin size:"<<rpc_msg_.msg_bin().size();
@@ -94,25 +96,28 @@ MessageGenerator::SpawnMessage(const char* msg_bin, size_t msg_bin_size)
 }
 
 const Message*
-MessageGenerator::SharedMessage(const char* msg_bin, size_t msg_bin_size)
+MessageGenerator::SharedMessage(const char* data, size_t size)
 {
-    if (NULL == msg_bin)
+    if (NULL == data)
     {
         LOG(ERROR)<<"null msg";
         return NULL;
     }
 
-    if (msg_bin_size <= 0)
+    if (size <= 0)
     {
-        LOG(ERROR)<<"binary msg size:"<<msg_bin_size<<" less than 0.";
+        LOG(ERROR)<<"binary msg size:"<<size<<" less than 0.";
         return NULL;
     }
 
-    if (!rpc_msg_.ParseFromArray(msg_bin, msg_bin_size))
+    rpc_msg_.Clear();
+    if (!rpc_msg_.ParseFromArray(data, size))
     {
-        LOG(ERROR)<<"ParseFromArray failed, msg size:"<<msg_bin_size<<".\nrpc_msg:"<<rpc_msg_.DebugString();
+        LOG(ERROR)<<"ParseFromArray failed, msg size:"<<size;
         return NULL;
     }
+
+    LOG(INFO)<<"rpc msg:"<<rpc_msg_.DebugString();
 
     Message* message = const_cast<Message*>(DefaultInstance(rpc_msg_.msg_name()));
     if (NULL == message)
@@ -121,11 +126,14 @@ MessageGenerator::SharedMessage(const char* msg_bin, size_t msg_bin_size)
         return NULL;
     }
 
+    message->Clear();
     if (!message->ParseFromString(rpc_msg_.msg_bin()));
     {
         LOG(ERROR)<<"ParseFromString failed, msg bin size:"<<rpc_msg_.msg_bin().size();
         return NULL;
     }
+
+    LOG(INFO)<<"msg recved:"<<message->DebugString();
 
     return message;
 }
@@ -172,18 +180,18 @@ int MessageGenerator::MessageToBinary(int32_t type, uint64_t asyncid,
     return 0;
 }
 
-int MessageGenerator::BinaryToMessage(const char* msg_bin, size_t msg_bin_size,
+int MessageGenerator::BinaryToMessage(const char* data, size_t size,
                                       ::google::protobuf::Message* message)
 {
-    if (NULL == msg_bin)
+    if (NULL == data)
     {
         LOG(ERROR)<<"null msg";
         return -1;
     }
 
-    if (msg_bin_size <= 0)
+    if (size <= 0)
     {
-        LOG(ERROR)<<"binary msg size:"<<msg_bin_size<<" less than 0.";
+        LOG(ERROR)<<"binary msg size:"<<size<<" less than 0.";
         return -1;
     }
 
@@ -193,9 +201,10 @@ int MessageGenerator::BinaryToMessage(const char* msg_bin, size_t msg_bin_size,
         return -1;
     }
 
-    if (!rpc_msg_.ParseFromArray(msg_bin, msg_bin_size))
+    rpc_msg_.Clear();
+    if (!rpc_msg_.ParseFromArray(data, size))
     {
-        LOG(ERROR)<<"ParseFromArray failed, msg size:"<<msg_bin_size;
+        LOG(ERROR)<<"ParseFromArray failed, msg size:"<<size;
         return -1;
     }
 
@@ -206,6 +215,7 @@ int MessageGenerator::BinaryToMessage(const char* msg_bin, size_t msg_bin_size,
         return -1;
     }
 
+    message->Clear();
     if (!message->ParseFromString(rpc_msg_.msg_bin()));
     {
         LOG(ERROR)<<"ParseFromString failed, msg bin size:"<<rpc_msg_.msg_bin().size();

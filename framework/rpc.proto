@@ -4,11 +4,12 @@ enum RpcMagic {
     MAGIC_RPCSTAMP_V1 = 0x8118;
 }
 
+// required字段lost之后会ParseFrom**失败
 message RpcMessage {
     required int32 magic = 1[default=0x8118];
-    required int64 sequence = 2;
-    required int32 msg_type = 3;
-    required uint64 asyncid = 4;
-    required string msg_name = 5;
+    required int32 msg_type = 2;
+    required uint64 asyncid = 3;
+    required string msg_name = 4;
+    optional int64 sequence = 5;
     optional bytes msg_bin = 6;
 }
