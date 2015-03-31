@@ -1,6 +1,6 @@
 0. net abstract for tcp, udp, ipc and so on
 1. redis proxy encapsulating component
-2. rpc improvement
+2. rpc improvement - doing
 3. OM & monitor
 
 
