@@ -1,11 +1,11 @@
 package test_rpc;
 
 message Ping {
-  required int32 ping = 1;
+  required fixed32 ping = 1;
 }
 
 message Pong {
-  required int32 pong = 2;
+  required fixed32 pong = 1;
 }
 
 service PingService {

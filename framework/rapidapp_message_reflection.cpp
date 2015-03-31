@@ -77,6 +77,8 @@ MessageGenerator::SpawnMessage(const char* data, size_t size)
         return NULL;
     }
 
+    LOG(INFO)<<"rpc msg:"<<rpc_msg_.DebugString();
+
     Message* message = NewInstance(rpc_msg_.msg_name());
     if (NULL == message)
     {
