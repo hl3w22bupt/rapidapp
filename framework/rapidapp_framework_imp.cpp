@@ -985,10 +985,10 @@ int AppFrameWork::OnFrontEndMsg(struct bufferevent* bev)
 
         if (SVC_MODE_RPC == svc_mode_)
         {
-            const ::google::protobuf::Message* req =
-                MessageGenerator::SharedMessage(frontend_handler_mgr_.recv_buffer_.buffer\
-                                                + elapsed_msglen + sizeof(uint32_t),
-                                                msglen - sizeof(uint32_t));
+            ::google::protobuf::Message* req =
+                MessageGenerator::SpawnMessage(frontend_handler_mgr_.recv_buffer_.buffer\
+                                               + elapsed_msglen + sizeof(uint32_t),
+                                               msglen - sizeof(uint32_t));
             if (NULL == req)
             {
                 LOG(ERROR)<<"get shared message failed";
@@ -1001,6 +1001,8 @@ int AppFrameWork::OnFrontEndMsg(struct bufferevent* bev)
             {
                 LOG(INFO)<<"OnRpc return "<<ret;
             }
+
+            MessageGenerator::ReleaseMessage(req);
         }
         else
         {

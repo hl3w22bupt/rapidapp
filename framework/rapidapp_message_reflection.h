@@ -17,6 +17,7 @@ class MessageGenerator {
 
     public:
         static ::google::protobuf::Message* SpawnMessage(const char* data, size_t size);
+        static void ReleaseMessage(::google::protobuf::Message* message);
         static const ::google::protobuf::Message* SharedMessage(const char* data, size_t size);
 
         // 以下三个接口获取最新rpc反射包消息名、消息类型、以及消息async id

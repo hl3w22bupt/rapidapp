@@ -77,7 +77,7 @@ MessageGenerator::SpawnMessage(const char* data, size_t size)
         return NULL;
     }
 
-    LOG(INFO)<<"rpc msg:"<<rpc_msg_.DebugString();
+    LOG(INFO)<<"rpc stamp: {\n"<<rpc_msg_.DebugString()<<"}";
 
     Message* message = NewInstance(rpc_msg_.msg_name());
     if (NULL == message)
@@ -87,14 +87,28 @@ MessageGenerator::SpawnMessage(const char* data, size_t size)
     }
 
     message->Clear();
-    if (!message->ParseFromString(rpc_msg_.msg_bin()));
+    // 曾经因为这样写这个判断语句，导致以为ParseFromString失败，定位了好几天
+    // if (!message->ParseFromString(rpc_msg_.msg_bin()));
+    // !!!!多了一个分号，oh my god!!!!
+    if (!message->ParseFromString(rpc_msg_.msg_bin()))
     {
         LOG(ERROR)<<"ParseFromString failed, msg bin size:"<<rpc_msg_.msg_bin().size();
         delete message;
         return NULL;
     }
 
+    LOG(INFO)<<"msg: {\n"<<message->DebugString()<<"}";
+
     return message;
+}
+
+void MessageGenerator::ReleaseMessage(Message* message)
+{
+    if (message != NULL)
+    {
+        message->Clear();
+        delete message;
+    }
 }
 
 const Message*
@@ -119,7 +133,7 @@ MessageGenerator::SharedMessage(const char* data, size_t size)
         return NULL;
     }
 
-    LOG(INFO)<<"rpc msg:"<<rpc_msg_.DebugString();
+    LOG(INFO)<<"rpc stamp: {\n"<<rpc_msg_.DebugString()<<"}";
 
     Message* message = const_cast<Message*>(DefaultInstance(rpc_msg_.msg_name()));
     if (NULL == message)
@@ -129,13 +143,16 @@ MessageGenerator::SharedMessage(const char* data, size_t size)
     }
 
     message->Clear();
-    if (!message->ParseFromString(rpc_msg_.msg_bin()));
+    // 曾经因为这样写这个判断语句，导致以为ParseFromString失败，定位了好几天
+    // if (!message->ParseFromString(rpc_msg_.msg_bin()));
+    // !!!!多了一个分号，oh my god!!!!
+    if (!message->ParseFromString(rpc_msg_.msg_bin()))
     {
         LOG(ERROR)<<"ParseFromString failed, msg bin size:"<<rpc_msg_.msg_bin().size();
         return NULL;
     }
 
-    LOG(INFO)<<"msg recved:"<<message->DebugString();
+    LOG(INFO)<<"msg: {\n"<<message->DebugString()<<"}";
 
     return message;
 }
@@ -163,8 +180,8 @@ int MessageGenerator::MessageToBinary(int32_t type, uint64_t asyncid,
         return -1;
     }
 
-    LOG(INFO)<<"message to serialize\n"<<message->DebugString();
-    static std::string buf;
+    LOG(INFO)<<"message to serialize: {\n"<<message->DebugString()<<"}";
+    std::string buf;
     message->SerializeToString(&buf);
     LOG(INFO)<<"msg bin size:"<<buf.size();
 
@@ -175,7 +192,7 @@ int MessageGenerator::MessageToBinary(int32_t type, uint64_t asyncid,
     rpc_message.set_asyncid(asyncid);
     rpc_message.set_msg_bin(buf.c_str(), buf.size());
 
-    LOG(INFO)<<"rpc message to serialize\n"<<rpc_message.DebugString();
+    LOG(INFO)<<"rpc message to serialize: {\n"<<rpc_message.DebugString()<<"}";
 
     rpc_message.SerializeToString(out);
 
@@ -218,7 +235,10 @@ int MessageGenerator::BinaryToMessage(const char* data, size_t size,
     }
 
     message->Clear();
-    if (!message->ParseFromString(rpc_msg_.msg_bin()));
+    // 曾经因为这样写这个判断语句，导致以为ParseFromString失败，定位了好几天
+    // if (!message->ParseFromString(rpc_msg_.msg_bin()));
+    // !!!!多了一个分号，oh my god!!!!
+    if (!message->ParseFromString(rpc_msg_.msg_bin()))
     {
         LOG(ERROR)<<"ParseFromString failed, msg bin size:"<<rpc_msg_.msg_bin().size();
         return -1;
