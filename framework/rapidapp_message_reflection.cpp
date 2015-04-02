@@ -227,6 +227,8 @@ int MessageGenerator::BinaryToMessage(const char* data, size_t size,
         return -1;
     }
 
+    LOG(INFO)<<"rpc stamp: {\n"<<rpc_msg_.DebugString()<<"}";
+
     const std::string& type_name = message->GetTypeName();
     if (type_name != rpc_msg_.msg_name())
     {
@@ -243,6 +245,8 @@ int MessageGenerator::BinaryToMessage(const char* data, size_t size,
         LOG(ERROR)<<"ParseFromString failed, msg bin size:"<<rpc_msg_.msg_bin().size();
         return -1;
     }
+
+    LOG(INFO)<<"msg: {\n"<<message->DebugString()<<"}";
 
     return 0;
 }

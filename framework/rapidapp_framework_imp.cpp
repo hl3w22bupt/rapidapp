@@ -100,7 +100,8 @@ AppFrameWork::AppFrameWork() : event_base_(NULL), internal_timer_(NULL), listene
                                  udp_ctrl_keeper_(NULL), ctrl_dispatcher_(),
                                  app_(NULL), schedule_update_(false), has_been_cleanup_(false),
                                  frontend_handler_mgr_(), backend_handler_mgr_(),
-                                 timer_mgr_(), rpc_scheduler_(NULL), svc_mode_(SVC_MODE_NORMAL)
+                                 timer_mgr_(), rpc_scheduler_(NULL), rpc_svc_mgr_(NULL),
+                                 svc_mode_(SVC_MODE_NORMAL)
 {
     memset(&setting_, 0, sizeof(setting_));
 }
@@ -502,6 +503,7 @@ int AppFrameWork::InitListenerServiceMode()
     if (p != NULL && 0 == strcmp(p+1, SERVICE_MODE_RPC))
     {
         svc_mode_ = SVC_MODE_RPC;
+        LOG(INFO)<<"<<<<<< work in [rpc] mode >>>>>>";
     }
 
     return 0;
@@ -721,6 +723,12 @@ int AppFrameWork::Init(RapidApp* app, int argc, char** argv)
 
 int AppFrameWork::CleanUp()
 {
+    if (rpc_svc_mgr_ != NULL)
+    {
+        delete rpc_svc_mgr_;
+        rpc_svc_mgr_ = NULL;
+    }
+
     if (rpc_scheduler_ != NULL)
     {
         delete rpc_scheduler_;
@@ -935,6 +943,70 @@ int AppFrameWork::OnFrontEndConnect(evutil_socket_t sock, struct sockaddr *addr)
     return 0;
 }
 
+int AppFrameWork::OnFrontEndRpcMsg(EasyNet* easy_net, const char* data, size_t size)
+{
+    int ret = 0;
+
+    ::google::protobuf::Message* req =
+        MessageGenerator::SpawnMessage(data, size);
+    if (NULL == req)
+    {
+        LOG(ERROR)<<"get shared message failed";
+        return -1;
+    }
+
+    ::google::protobuf::Message* resp = NULL;
+    // 注册请求回调模式时，不触发OnRpc，以后关闭OnRpc
+    if (rpc_svc_mgr_ != NULL)
+    {
+        // 这里出现问题，直接丢包，不能影响其它业务包正常处理
+        IRpcService* rpc_svc_obj = rpc_svc_mgr_->GetRpcService(req->GetTypeName());
+        if (NULL == rpc_svc_obj)
+        {
+            LOG(ERROR)<<"can NOT find callback by request name:"<<req->GetTypeName();
+            return 0;
+        }
+
+        resp = rpc_svc_obj->NewResponse();
+        if (NULL == resp)
+        {
+            LOG(ERROR)<<"NewResponse by name:"<<req->GetTypeName()<<" failed";
+            return 0;
+        }
+
+        ret = rpc_svc_obj->OnRpcCall(req, resp);
+        if (ret != 0)
+        {
+            LOG(ERROR)<<"OnRpcCall by name:"<<req->GetTypeName()<<" failed";
+            return 0;
+        }
+    }
+    else
+    {
+        ret = app_->OnRpc(req, &resp);
+        if (ret != 0)
+        {
+            LOG(INFO)<<"OnRpc return "<<ret;
+            return 0;
+        }
+    }
+
+    assert(resp != NULL);
+    std::string rsp_out;
+    ret = MessageGenerator::MessageToBinary(0, 0, resp, &rsp_out);
+    if (ret != 0)
+    {
+        return 0;
+    }
+
+    SendToFrontEnd(easy_net, rsp_out.c_str(), rsp_out.size());
+
+    delete resp;
+    MessageGenerator::ReleaseMessage(req);
+
+    return 1;
+}
+
 int AppFrameWork::OnFrontEndMsg(struct bufferevent* bev)
 {
     assert(bev != NULL);
@@ -985,24 +1057,14 @@ int AppFrameWork::OnFrontEndMsg(struct bufferevent* bev)
 
         if (SVC_MODE_RPC == svc_mode_)
         {
-            ::google::protobuf::Message* req =
-                MessageGenerator::SpawnMessage(frontend_handler_mgr_.recv_buffer_.buffer\
-                                               + elapsed_msglen + sizeof(uint32_t),
-                                               msglen - sizeof(uint32_t));
-            if (NULL == req)
-            {
-                LOG(ERROR)<<"get shared message failed";
-                break;
-            }
-
-            ::google::protobuf::Message* resp = NULL;
-            int ret = app_->OnRpc(req, &resp);
+            int ret = OnFrontEndRpcMsg(easy_net,
+                                       frontend_handler_mgr_.recv_buffer_.buffer\
+                                       + elapsed_msglen + sizeof(uint32_t),
+                                       msglen - sizeof(uint32_t));
             if (ret != 0)
             {
-                LOG(INFO)<<"OnRpc return "<<ret;
+                LOG(INFO)<<"OnFrontEndRpcMsg return "<<ret;
             }
-
-            MessageGenerator::ReleaseMessage(req);
         }
         else
         {
@@ -1391,6 +1453,30 @@ int AppFrameWork::RpcCall(EasyRpc* rpc,
     }
 
     return rpc->RpcCall(request, response, callback);
+}
+
+int AppFrameWork::RegisterRpcService(IRpcService* rpc_svc)
+{
+    if (SVC_MODE_RPC != svc_mode_)
+    {
+        LOG(ERROR)<<"RpcService register work only in rpc mode";
+        return -1;
+    }
+
+    if (rpc_svc != NULL)
+    {
+        if (NULL == rpc_svc_mgr_)
+        {
+            rpc_svc_mgr_ = new(std::nothrow) RpcServerMgr();
+            if (NULL == rpc_svc_mgr_)
+            {
+                LOG(ERROR)<<"new rpc service mgr failed";
+                return -1;
+            }
+        }
+
+        rpc_svc_mgr_->AddRpcService(rpc_svc);
+    }
 }
 
 void AppFrameWork::ScheduleUpdate()

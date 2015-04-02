@@ -2,8 +2,26 @@
 #define RAPIDAPP_FRAMEWORK_H_
 
 #include "rapidapp_defines.h"
+#include <google/protobuf/message.h>
 
 namespace rapidapp {
+
+class IRpcService {
+    public:
+        IRpcService(){}
+        virtual ~IRpcService() {}
+
+    public:
+        virtual const std::string RpcRequestName() {
+            return "";
+        }
+
+        virtual ::google::protobuf::Message* NewResponse() {
+            return NULL;
+        }
+
+        virtual int OnRpcCall(const ::google::protobuf::Message* req, ::google::protobuf::Message* resp) = 0;
+};
 
 class EasyTimer;
 class EasyNet;
@@ -36,14 +54,19 @@ class IFrameWork {
         virtual void DestroyTimer(EasyTimer** timer) = 0;
 
     public:
+        // rpc 相关
+        // rpc client
         virtual EasyRpc* CreateRpc(EasyNet* net) = 0;
         virtual int DestroyRpc(EasyRpc** rpc) = 0;
         virtual int RpcCall(EasyRpc* rpc,
                             const ::google::protobuf::Message* request,
                             ::google::protobuf::Message* response,
                             ON_RPC_REPLY_FUNCTION callback) = 0;
+        // rpc server
+        virtual int RegisterRpcService(IRpcService* rpc_svc) = 0;
 
     public:
+        // 帧驱动回调
         virtual void ScheduleUpdate() = 0;
         virtual void UnScheduleUpdate() = 0;
 };

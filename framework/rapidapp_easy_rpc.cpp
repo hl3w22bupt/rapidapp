@@ -60,10 +60,16 @@ int EasyRpc::RpcCall(const ::google::protobuf::Message* request,
     response_ = response;
 
     // 创建一个协程上下文
-    RPC_CONTEXT context;
-    context.rpc_stub = this;
-    context.callback = callback;
-    int cid = scheduler_->CreateCoroutine(RpcFunction, &context);
+    RPC_CONTEXT* context  = new(std::nothrow) RPC_CONTEXT();
+    if (NULL == context)
+    {
+        LOG(ERROR)<<"new async rpc context failed. net:"<<net_->uri();
+        return -1;
+    }
+
+    context->rpc_stub = this;
+    context->callback = callback;
+    int cid = scheduler_->CreateCoroutine(RpcFunction, context);
     if (cid < 0)
     {
         LOG(ERROR)<<"create coroutine failed, net:"<<net_->uri();
@@ -107,7 +113,7 @@ int EasyRpc::RpcFunction(void* arg)
         LOG(ERROR)<<"send to rpc net failed. return "<<ret;
     }
 
-    LOG(INFO)<<"rpc>>> send buf size:"<<buf.size()<<" to backend success";
+    LOG(INFO)<<"<<<rpc>>> send buf size:"<<buf.size()<<" to backend success";
 
     // Yield
     the_handler->scheduler_->YieldCoroutine();
@@ -115,6 +121,8 @@ int EasyRpc::RpcFunction(void* arg)
     // has been Resumed, async callback
     rpc_ctx->callback(the_handler->request_,
                       the_handler->response_);
+
+    delete rpc_ctx;
 
     return 0;
 }

@@ -5,6 +5,18 @@
 
 using namespace rapidapp;
 
+class PingPongService : public IRpcService {
+    public:
+        PingPongService();
+        ~PingPongService();
+
+    public:
+        virtual const std::string RpcRequestName();
+        virtual ::google::protobuf::Message* NewResponse();
+        virtual int OnRpcCall(const ::google::protobuf::Message* req,
+                              ::google::protobuf::Message* resp);
+};
+
 class ServerDemoApp : public RapidApp {
     public:
         ServerDemoApp();

@@ -7,6 +7,7 @@
 #include "rapidapp_easy_net.h"
 #include "rapidapp_timer_mgr.h"
 #include "rapidapp_easy_rpc.h"
+#include "rapidapp_rpc_mgr.h"
 #include "rapidapp_ctrl_cmd_keyword.h"
 #include "event2/event.h"
 #include "event2/listener.h"
@@ -78,6 +79,8 @@ class AppFrameWork : public IFrameWork, public IWalkEach {
                             const ::google::protobuf::Message* request,
                             ::google::protobuf::Message* response,
                             ON_RPC_REPLY_FUNCTION callback);
+
+        virtual int RegisterRpcService(IRpcService* rpc_svc);
 
     public:
         virtual void ScheduleUpdate();
@@ -187,6 +190,8 @@ class AppFrameWork : public IFrameWork, public IWalkEach {
         int OnBackEndMsg(struct bufferevent* bev);
         int OnBackEndSocketEvent(struct bufferevent* bev, short events);
 
+        int OnFrontEndRpcMsg(EasyNet* easy_net, const char* data, size_t size);
+
     private:
         int InitNormalMode(RapidApp* app, int argc, char** argv);
 
@@ -231,6 +236,7 @@ class AppFrameWork : public IFrameWork, public IWalkEach {
 
     private:
         magic_cube::CoroutineScheduler* rpc_scheduler_;
+        RpcServerMgr* rpc_svc_mgr_;
 
     private:
         int svc_mode_;
