@@ -964,6 +964,7 @@ int AppFrameWork::OnFrontEndRpcMsg(EasyNet* easy_net, const char* data, size_t s
         if (NULL == rpc_svc_obj)
         {
             LOG(ERROR)<<"can NOT find callback by request name:"<<req->GetTypeName();
+            MessageGenerator::ReleaseMessage(req);
             return 0;
         }
 
@@ -971,6 +972,7 @@ int AppFrameWork::OnFrontEndRpcMsg(EasyNet* easy_net, const char* data, size_t s
         if (NULL == resp)
         {
             LOG(ERROR)<<"NewResponse by name:"<<req->GetTypeName()<<" failed";
+            MessageGenerator::ReleaseMessage(req);
             return 0;
         }
 
@@ -978,6 +980,8 @@ int AppFrameWork::OnFrontEndRpcMsg(EasyNet* easy_net, const char* data, size_t s
         if (ret != 0)
         {
             LOG(ERROR)<<"OnRpcCall by name:"<<req->GetTypeName()<<" failed";
+            delete resp;
+            MessageGenerator::ReleaseMessage(req);
             return 0;
         }
     }
@@ -987,6 +991,7 @@ int AppFrameWork::OnFrontEndRpcMsg(EasyNet* easy_net, const char* data, size_t s
         if (ret != 0)
         {
             LOG(INFO)<<"OnRpc return "<<ret;
+            MessageGenerator::ReleaseMessage(req);
             return 0;
         }
     }
@@ -998,7 +1003,6 @@ int AppFrameWork::OnFrontEndRpcMsg(EasyNet* easy_net, const char* data, size_t s
     {
         return 0;
     }
-
     SendToFrontEnd(easy_net, rsp_out.c_str(), rsp_out.size());
 
     delete resp;
@@ -1061,9 +1065,11 @@ int AppFrameWork::OnFrontEndMsg(struct bufferevent* bev)
                                        frontend_handler_mgr_.recv_buffer_.buffer\
                                        + elapsed_msglen + sizeof(uint32_t),
                                        msglen - sizeof(uint32_t));
-            if (ret != 0)
+            if (ret < 0)
             {
-                LOG(INFO)<<"OnFrontEndRpcMsg return "<<ret;
+                LOG(INFO)<<"OnFrontEndRpcMsg return "<<ret<<", Close FrontEnd:"<<easy_net->uri();
+                frontend_handler_mgr_.RemoveHandler(easy_net);
+                return -1;
             }
         }
         else

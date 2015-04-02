@@ -20,7 +20,8 @@ class IRpcService {
             return NULL;
         }
 
-        virtual int OnRpcCall(const ::google::protobuf::Message* req, ::google::protobuf::Message* resp) = 0;
+        virtual int OnRpcCall(const ::google::protobuf::Message* req,
+                              ::google::protobuf::Message* resp) = 0;
 };
 
 class EasyTimer;
