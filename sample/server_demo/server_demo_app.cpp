@@ -28,7 +28,7 @@ PingPongService::OnRpcCall(const ::google::protobuf::Message* req,
 {
     if (NULL == req || NULL == resp)
     {
-        LOG(ERROR)<"assert failed, OnRpcCall arguments is null";
+        LOG(ERROR)<<"assert failed, OnRpcCall arguments is null";
         return -1;
     }
 
