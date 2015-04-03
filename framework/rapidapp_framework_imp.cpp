@@ -997,18 +997,24 @@ int AppFrameWork::OnFrontEndRpcMsg(EasyNet* easy_net, const char* data, size_t s
     }
 
     assert(resp != NULL);
+    
+    int ret_value = 0;
     std::string rsp_out;
     ret = MessageGenerator::MessageToBinary(0, 0, resp, &rsp_out);
     if (ret != 0)
     {
-        return 0;
+        ret_value = 0;
     }
-    SendToFrontEnd(easy_net, rsp_out.c_str(), rsp_out.size());
+    else
+    {
+        ret_value = 1;
+        SendToFrontEnd(easy_net, rsp_out.c_str(), rsp_out.size());
+    }
 
     delete resp;
     MessageGenerator::ReleaseMessage(req);
 
-    return 1;
+    return ret_value;
 }
 
 int AppFrameWork::OnFrontEndMsg(struct bufferevent* bev)
