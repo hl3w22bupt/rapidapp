@@ -586,6 +586,7 @@ int AppFrameWork::InitNormalMode(RapidApp* app, int argc, char** argv)
     }
 
     // ctrl udp socket - 添加内部支持命令字
+    // TODO 后门控制协议方式定制，json格式
     ctrl_dispatcher_.AddDefaultSupportedCommand();
     ret = SetCtrlSockFile();
     if (ret != 0)
@@ -997,7 +998,7 @@ int AppFrameWork::OnFrontEndRpcMsg(EasyNet* easy_net, const char* data, size_t s
     }
 
     assert(resp != NULL);
-    
+
     int ret_value = 0;
     std::string rsp_out;
     ret = MessageGenerator::MessageToBinary(0, 0, resp, &rsp_out);
