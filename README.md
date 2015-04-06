@@ -1,7 +1,7 @@
 rapidapp framework library
 ========
 
-a rapid platform-crossed server c++ application framework which is based on libevent
+a rapid platform-crossed c++ application server framework which is based on libevent
 
 DEPENDENCE
 - libevent: 2.0.21-stable
@@ -12,17 +12,11 @@ DEPENDENCE
 
 Features
 ========
-1. Fast, Cross-Platform
-
-2. Easy
-
-3. System Transparent
-
-4. Eventable
-
-5. Backdoor Support
-
-6. Standard Start/Stop/Reload Management
+- Fast, Easy, Eventable, Cross-Platform
+- System Transparent
+- Backdoor Support
+- Standard Start/Stop/Reload Management
+- Async RPC Support
 
 
 connector
@@ -32,12 +26,18 @@ it uses protobuf to serialize and deserialize.
 
 Features
 ========
-1. client connection management
+- client connection management
+- speed limit
+- overload defend
+- encryption & authentication
+- stateless & distribution support
 
-2. speed limit
+Examples
+========
+- see sample/ for server development
+- see server/connector/client_api and server/connector/server_api
 
-3. overload defend
-
-4. encryption & authentication
-
-5. stateless & distribution support
+How To Compile
+========
+- python and scons are needed
+- run command 'scons -u' to compile, more pls run command 'scons -uh'
