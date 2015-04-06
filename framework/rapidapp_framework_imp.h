@@ -87,6 +87,9 @@ class AppFrameWork : public IFrameWork, public IWalkEach {
         virtual void UnScheduleUpdate();
 
     public:
+        virtual struct event_base* get_event_base();
+
+    public:
         int DoSomething(EasyNet* net);
 
     // 事件回调

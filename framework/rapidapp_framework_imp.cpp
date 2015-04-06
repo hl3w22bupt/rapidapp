@@ -1502,6 +1502,11 @@ void AppFrameWork::UnScheduleUpdate()
     schedule_update_ = false;
 }
 
+struct event_base* AppFrameWork::get_event_base()
+{
+    return event_base_;
+}
+
 // 前端net遍历操作
 // 返回值!0 遍历后删除，0 遍历不删除
 int AppFrameWork::DoSomething(EasyNet* net)

@@ -2,6 +2,7 @@
 #define RAPIDAPP_FRAMEWORK_H_
 
 #include "rapidapp_defines.h"
+#include <event2/event.h>
 #include <google/protobuf/message.h>
 
 namespace rapidapp {
@@ -31,6 +32,11 @@ class IFrameWork {
     public:
         IFrameWork(){}
         ~IFrameWork(){}
+
+    public:
+        // 如果有其他第三方api需要搭配libevent进行网络IO事件机制处理，
+        // 可能需要使用event_base指针，所以这里提供这样一个接口
+        virtual struct event_base* get_event_base() = 0;
 
     public:
         // type用于区别后端服务类型。如果不需要区分后端服务请填0
