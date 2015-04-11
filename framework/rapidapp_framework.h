@@ -63,7 +63,7 @@ class IFrameWork {
     public:
         // rpc 相关
         // rpc client
-        virtual EasyRpc* CreateRpc(EasyNet* net) = 0;
+        virtual EasyRpc* CreateRpc(const char* url, int type) = 0;
         virtual int DestroyRpc(EasyRpc** rpc) = 0;
         virtual int RpcCall(EasyRpc* rpc,
                             const ::google::protobuf::Message* request,

@@ -1420,7 +1420,7 @@ void AppFrameWork::DestroyTimer(EasyTimer** timer)
     *timer = NULL;
 }
 
-EasyRpc* AppFrameWork::CreateRpc(EasyNet* net)
+EasyRpc* AppFrameWork::CreateRpcByEasyNet(EasyNet* net)
 {
     EasyRpc* rpc = new(std::nothrow) EasyRpc();
     if (NULL == rpc)
@@ -1441,6 +1441,24 @@ EasyRpc* AppFrameWork::CreateRpc(EasyNet* net)
     return rpc;
 }
 
+EasyRpc* AppFrameWork::CreateRpc(const char* url, int type)
+{
+    EasyNet* backend = CreateBackEnd(url, type);
+    if (NULL == backend)
+    {
+        LOG(ERROR)<<"CreateRpc by url:"<<url<<" failed";
+        return NULL;
+    }
+
+    EasyRpc* rpc = CreateRpcByEasyNet(backend);
+    if (NULL == rpc)
+    {
+        DestroyBackEnd(&backend);
+    }
+
+    return rpc;
+}
+
 int AppFrameWork::DestroyRpc(EasyRpc** rpc)
 {
     if (NULL == rpc || NULL == *rpc)
@@ -1448,6 +1466,8 @@ int AppFrameWork::DestroyRpc(EasyRpc** rpc)
         return -1;
     }
 
+    EasyNet* backend = (*rpc)->net();
+    DestroyBackEnd(&backend);
     delete *rpc;
     *rpc = NULL;
 

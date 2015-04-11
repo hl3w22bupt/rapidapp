@@ -27,6 +27,10 @@ class EasyRpc {
             return (!crid_list_.empty());
         }
 
+        inline EasyNet* net() {
+            return net_;
+        }
+
     private:
         int Resume(const char* buffer, size_t size);
 

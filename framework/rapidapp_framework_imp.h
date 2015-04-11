@@ -73,7 +73,7 @@ class AppFrameWork : public IFrameWork, public IWalkEach {
         virtual void DestroyTimer(EasyTimer** timer);
 
     public:
-        virtual EasyRpc* CreateRpc(EasyNet* net);
+        virtual EasyRpc* CreateRpc(const char* url, int type);
         virtual int DestroyRpc(EasyRpc** rpc);
         virtual int RpcCall(EasyRpc* rpc,
                             const ::google::protobuf::Message* request,
@@ -195,6 +195,7 @@ class AppFrameWork : public IFrameWork, public IWalkEach {
 
         int OnFrontEndRpcMsg(EasyNet* easy_net, const char* data, size_t size);
 
+        EasyRpc* CreateRpcByEasyNet(EasyNet* net);
     private:
         int InitNormalMode(RapidApp* app, int argc, char** argv);
 

@@ -40,7 +40,6 @@ class ClientDemoApp : public RapidApp {
 
     private:
         EasyRpc* rpc_;
-        EasyNet* backend_;
 };
 
 #endif

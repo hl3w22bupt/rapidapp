@@ -41,17 +41,9 @@ int ClientDemoApp::OnInit(IFrameWork* app_framework)
     app_framework->ScheduleUpdate();
 
     const char* uri = "tcp://127.0.0.1:7891";
-    EasyNet* net = frame_stub_->CreateBackEnd(uri, 0);
-    if (NULL == net)
-    {
-        LOG(ERROR)<<"CreateBackEnd "<<uri<<" failed";
-        return -1;
-    }
-    backend_ = net;
-
     // 一个transport 对应 一个protocol
     // 因而这里一个后端服务对应一个rpc instance
-    rpc_ = frame_stub_->CreateRpc(net);
+    rpc_ = frame_stub_->CreateRpc(uri, 0);
     if (NULL == rpc_)
     {
         LOG(ERROR)<<"create rpc instace failed";
@@ -67,12 +59,6 @@ int ClientDemoApp::OnFini()
     {
         frame_stub_->DestroyRpc(&rpc_);
         rpc_ = NULL;
-    }
-
-    if (backend_ != NULL)
-    {
-        frame_stub_->DestroyBackEnd(&backend_);
-        backend_ = NULL;
     }
 
     ::google::protobuf::ShutdownProtobufLibrary();
