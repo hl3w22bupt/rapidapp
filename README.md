@@ -1,7 +1,8 @@
 rapidapp framework library
 ========
 
-a rapid platform-crossed c++ application server framework which is based on libevent
+a rapid platform-crossed c++ application server framework which is based on libevent.
+I hoped that anyone who used rapidapp could build up server rapidly.
 
 DEPENDENCE
 - libevent: 2.0.21-stable
@@ -12,11 +13,11 @@ DEPENDENCE
 
 Features
 ========
-- Fast, Easy, Eventable, Cross-Platform
-- System Transparent
+- Fast, Easy, Cross-Platform I/O Event reactor
+- Timer Management
 - Backdoor Support
-- Standard Start/Stop/Reload Management
-- Async RPC Support
+- Standard Start/Stop/Reload Process-Management
+- Async RPC Support based on ProtoBuf Message Reflection
 
 
 connector
