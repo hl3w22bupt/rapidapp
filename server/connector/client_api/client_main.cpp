@@ -1,5 +1,6 @@
 #include "connector_client_api.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <glog/logging.h>
 
 using namespace hmoon_connector_api;

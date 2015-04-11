@@ -1,13 +1,9 @@
 #ifndef _CONNECTOR_CLIENT_API_H_
 #define _CONNECTOR_CLIENT_API_H_
 
-#include "../client.pb.h"
-#include "utils/tsocket_util.h"
 #include <string>
 
 namespace hmoon_connector_api {
-
-using namespace tsocket_util;
 
 enum {
     NOT_ENCRYPT = 0,  // 不加密 - 适用于早期测试阶段
@@ -64,6 +60,8 @@ class ILoggable {
         // 格式化到此buffer后，再调用Log记录
         virtual void Log(int level, const char* log){};
 };
+
+class ConnectorClientProtocolImp;
 
 // 异步Connector协议处理类
 class ConnectorClientProtocol {
@@ -124,24 +122,6 @@ class ConnectorClientProtocol {
         ///        !0: failed
         int PopMessage();
 
-    // 为了编程方便，同时考虑到短期类成员变量变化不频繁，
-    // 所有类的非public成员都不采用pimpl实现
-    private:
-        int Connect(const std::string& server_uri);
-        int CheckConnect();
-        void Close();
-
-    private:
-        int HandShake_SYN();
-        int HandShake_TRY_ACK();
-        int HandShake_AUTH();
-        int HandShake_TRY_READY();
-        int HandShake_TRY_DONE();
-
-    private:
-        int TryToRecvFromPeerAndParse();
-        int SerializeAndSendToPeer();
-
     private:
         ConnectorClientProtocol();
         ~ConnectorClientProtocol();
@@ -149,31 +129,7 @@ class ConnectorClientProtocol {
         ConnectorClientProtocol& operator=(const ConnectorClientProtocol&);
 
     private:
-        IProtocolEventListener* protocol_event_listener_;
-        ILoggable* logger_;
-
-    private:
-        std::string appid_;
-        std::string openid_;
-        std::string token_;
-        std::string server_uri_;
-        int encrypt_mode_;
-        int auth_type_;
-
-    private:
-        std::string encrypt_skey_;
-        int64_t passport_;
-
-    private:
-        TcpSocketUtil tcp_sock_;
-        int session_state_;
-
-    private:
-        uint64_t seqno_;
-
-    private:
-        connector_client::CSMsg up_msg_;
-        connector_client::CSMsg down_msg_;
+        ConnectorClientProtocolImp* imp_;
 };
 
 class IWorkerThreadListener {
@@ -184,6 +140,8 @@ class IWorkerThreadListener {
     public:
         virtual void OnWorkerThreadExit(){};
 };
+
+class ConnectorClientProtocolThreadImp;
 
 // 独占线程的异步Connector协议处理类
 class ConnectorClientProtocolThread {
@@ -229,20 +187,13 @@ class ConnectorClientProtocolThread {
         int PopMessageFromRecvQ(char* buf_ptr, size_t* buflen_ptr);
 
     private:
-        int MainLoop(IProtocolEventListener* protocol_evlistener,
-                     ILoggable* logger);
-
-    private:
         ConnectorClientProtocolThread();
         ~ConnectorClientProtocolThread();
         ConnectorClientProtocolThread(const ConnectorClientProtocolThread&);
         ConnectorClientProtocolThread& operator=(const ConnectorClientProtocol&);
 
     private:
-        ConnectorClientProtocol* ccproto_;
-        IWorkerThreadListener* wt_listener_;
-        ILoggable* logger_;
-        bool exit_;
+        ConnectorClientProtocolThreadImp* imp_;
 };
 
 }
