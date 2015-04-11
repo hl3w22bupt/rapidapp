@@ -11,7 +11,7 @@ connector_src += Glob('../../lib/librapidapp.a')
 env.Program('connector_svr', connector_src, LIBS=['event', 'glog', 'gflags', 'protobuf', 'pthread'])
 
 #connector client
-connapi_src = Glob('client_api/connector_client_api.cpp')
+connapi_src = Glob('client_api/connector_client_api*.cpp')
 connapi_src += Glob('*.cc')
 client_lib = env.StaticLibrary('client_api/cconnapi', connapi_src)
 Install('../../lib', client_lib)

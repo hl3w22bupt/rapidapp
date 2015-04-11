@@ -151,7 +151,7 @@ class ConnectorClientProtocolThreadImp {
                      ILoggable* logger);
 
     private:
-        ConnectorClientProtocolImp* ccproto_;
+        ConnectorClientProtocol* ccproto_;
         IWorkerThreadListener* wt_listener_;
         ILoggable* logger_;
         bool exit_;

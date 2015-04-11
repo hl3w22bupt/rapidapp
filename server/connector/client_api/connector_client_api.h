@@ -75,6 +75,13 @@ class ConnectorClientProtocol {
             return new ConnectorClientProtocol;
         }
 
+        static void Destroy(ConnectorClientProtocol** ccp) {
+            if (ccp != NULL && *ccp != NULL) {
+                delete *ccp;
+                *ccp = NULL;
+            }
+        }
+
     public:
         /// @brief  发起TCP会话
         ///
@@ -154,6 +161,13 @@ class ConnectorClientProtocolThread {
 
         static ConnectorClientProtocolThread* Create() {
             return new ConnectorClientProtocolThread;
+        }
+
+        static void Destroy(ConnectorClientProtocolThread** ccpt) {
+            if (ccpt != NULL && *ccpt != NULL) {
+                delete *ccpt;
+                *ccpt = NULL;
+            }
         }
 
     public:

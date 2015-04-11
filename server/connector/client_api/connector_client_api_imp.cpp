@@ -565,7 +565,12 @@ ConnectorClientProtocolThreadImp::ConnectorClientProtocolThreadImp() : ccproto_(
 {}
 
 ConnectorClientProtocolThreadImp::~ConnectorClientProtocolThreadImp()
-{}
+{
+    if (ccproto_ != NULL)
+    {
+        ConnectorClientProtocol::Destroy(&ccproto_);
+    }
+}
 
 int ConnectorClientProtocolThreadImp::StartThread(IProtocolEventListener* protocol_evlistener,
                                                IWorkerThreadListener* thread_listener,
@@ -581,7 +586,7 @@ int ConnectorClientProtocolThreadImp::StartThread(IProtocolEventListener* protoc
 
     wt_listener_ = thread_listener;
     logger_ = logger;
-    ccproto_ = ConnectorClientProtocolImp::Create();
+    ccproto_ = ConnectorClientProtocol::Create();
     boost::thread protocol_thread(boost::bind(&ConnectorClientProtocolThreadImp::MainLoop,
                                               this, protocol_evlistener, logger));
     protocol_thread.detach();
