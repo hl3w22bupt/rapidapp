@@ -22,15 +22,12 @@ PingPongService::NewResponse()
     return new(std::nothrow) test_rpc::Pong();
 }
 
-int
+void
 PingPongService::OnRpcCall(const ::google::protobuf::Message* req,
-                            ::google::protobuf::Message* resp)
+                           ::google::protobuf::Message* resp,
+                           IRpcClosure* closure)
 {
-    if (NULL == req || NULL == resp)
-    {
-        LOG(ERROR)<<"assert failed, OnRpcCall arguments is null";
-        return -1;
-    }
+    assert(req != NULL && resp != NULL && closure != NULL);
 
     LOG(INFO)<<"recved message ["<<req->GetTypeName()<<"]";
 
@@ -38,7 +35,7 @@ PingPongService::OnRpcCall(const ::google::protobuf::Message* req,
     test_rpc::Pong* pong = dynamic_cast<test_rpc::Pong*>(resp);
     pong->set_pong(ping->ping() + 1);
 
-    return 0;
+    closure->Done();
 }
 
 ServerDemoApp::ServerDemoApp()
@@ -97,30 +94,6 @@ int ServerDemoApp::OnRecvCtrl(int argc, char** argv)
 
 int ServerDemoApp::OnRecvBackEnd(EasyNet* net, int type, const char* msg, size_t size)
 {
-    return 0;
-}
-
-// RegisterRpcService之后，OnRpc不会被触发，后续会干掉OnRpc这种模式
-int ServerDemoApp::OnRpc(const ::google::protobuf::Message* request,
-                         ::google::protobuf::Message** response)
-{
-    if (NULL == request || NULL == response)
-    {
-        return -1;
-    }
-
-    *response = NULL;
-
-    const std::string& msg_name = request->GetTypeName();
-
-    LOG(INFO)<<"recved msg[name:"<<msg_name<<"] in the way rpc";
-
-#ifdef _DEBUG
-    test_rpc::Pong* pong = new(std::nothrow) test_rpc::Pong();
-    pong->set_pong(151);
-    *response = pong;
-#endif
-
     return 0;
 }
 

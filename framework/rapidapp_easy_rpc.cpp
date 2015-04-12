@@ -6,6 +6,85 @@
 
 namespace rapidapp {
 
+EasyRpcClosure::EasyRpcClosure() : user_data_(NULL), req_(NULL), rsp_(NULL), net_(NULL), is_done_(false)
+{}
+
+EasyRpcClosure::~EasyRpcClosure()
+{}
+
+int EasyRpcClosure::Set(EasyNet* net,
+                        ::google::protobuf::Message* req,
+                        ::google::protobuf::Message* rsp)
+{
+    if (NULL == net || NULL == req || NULL == rsp)
+    {
+        return -1;
+    }
+
+    net_ = net;
+    req_ = req;
+    rsp_ = rsp;
+
+    return 0;
+}
+
+void EasyRpcClosure::Done()
+{
+    LOG(INFO)<<"EasyRpc Done";
+
+    if (net_ != NULL && rsp_ != NULL && req_ != NULL)
+    {
+        std::string rsp_out;
+        int ret = MessageGenerator::MessageToBinary(0, 0, rsp_, &rsp_out);
+        if (0 == ret)
+        {
+            LOG(INFO)<<"send to rpc client";
+            net_->Send(rsp_out.c_str(), rsp_out.size());
+        }
+        else
+        {
+            LOG(ERROR)<<"MessageToBinary failed";
+        }
+
+        delete rsp_;
+        rsp_ = NULL;
+
+        MessageGenerator::ReleaseMessage(req_);
+        req_ = NULL;
+    }
+
+    is_done_ = true;
+    delete this;
+}
+
+bool EasyRpcClosure::IsDone()
+{
+    return is_done_;
+}
+
+void EasyRpcClosure::set_userdata(void* data)
+{
+    user_data_ = data;
+}
+
+void* EasyRpcClosure::userdata() const
+{
+    return user_data_;
+}
+
+::google::protobuf::Message* EasyRpcClosure::request()
+{
+    return req_;
+}
+
+::google::protobuf::Message* EasyRpcClosure::response()
+{
+    return rsp_;
+}
+
+// EasyRpc
+//
+//
 typedef struct RpcCallContext {
     ON_RPC_REPLY_FUNCTION callback;
     EasyRpc* rpc_stub;

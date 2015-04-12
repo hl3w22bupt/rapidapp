@@ -44,12 +44,6 @@ class RapidApp {
             return -1;
         }
 
-        // RPC 消息事件
-        virtual int OnRpc(const ::google::protobuf::Message* request,
-                          ::google::protobuf::Message** response) {
-            return -1;
-        }
-
         virtual int OnTimer(EasyTimer* timer, int timer_id) = 0;
 
     public:

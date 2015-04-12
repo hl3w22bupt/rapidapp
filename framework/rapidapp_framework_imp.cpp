@@ -957,65 +957,51 @@ int AppFrameWork::OnFrontEndRpcMsg(EasyNet* easy_net, const char* data, size_t s
     }
 
     ::google::protobuf::Message* resp = NULL;
-    // 注册请求回调模式时，不触发OnRpc，以后关闭OnRpc
-    if (rpc_svc_mgr_ != NULL)
+    if (NULL == rpc_svc_mgr_)
     {
-        // 这里出现问题，直接丢包，不能影响其它业务包正常处理
-        IRpcService* rpc_svc_obj = rpc_svc_mgr_->GetRpcService(req->GetTypeName());
-        if (NULL == rpc_svc_obj)
-        {
-            LOG(ERROR)<<"can NOT find callback by request name:"<<req->GetTypeName();
-            MessageGenerator::ReleaseMessage(req);
-            return 0;
-        }
-
-        resp = rpc_svc_obj->NewResponse();
-        if (NULL == resp)
-        {
-            LOG(ERROR)<<"NewResponse by name:"<<req->GetTypeName()<<" failed";
-            MessageGenerator::ReleaseMessage(req);
-            return 0;
-        }
-
-        ret = rpc_svc_obj->OnRpcCall(req, resp);
-        if (ret != 0)
-        {
-            LOG(ERROR)<<"OnRpcCall by name:"<<req->GetTypeName()<<" failed";
-            delete resp;
-            MessageGenerator::ReleaseMessage(req);
-            return 0;
-        }
-    }
-    else
-    {
-        ret = app_->OnRpc(req, &resp);
-        if (ret != 0)
-        {
-            LOG(INFO)<<"OnRpc return "<<ret;
-            MessageGenerator::ReleaseMessage(req);
-            return 0;
-        }
+        LOG(ERROR)<<"start as rpc service mode, but NOT RegisterRpcService anyway";
+        return -1;
     }
 
-    assert(resp != NULL);
-
-    int ret_value = 0;
-    std::string rsp_out;
-    ret = MessageGenerator::MessageToBinary(0, 0, resp, &rsp_out);
-    if (ret != 0)
+    // 这里出现问题，直接丢包，不能影响其它业务包正常处理
+    IRpcService* rpc_svc_obj = rpc_svc_mgr_->GetRpcService(req->GetTypeName());
+    if (NULL == rpc_svc_obj)
     {
-        ret_value = 0;
-    }
-    else
-    {
-        ret_value = 1;
-        SendToFrontEnd(easy_net, rsp_out.c_str(), rsp_out.size());
+        LOG(ERROR)<<"can NOT find callback by request name:"<<req->GetTypeName();
+        MessageGenerator::ReleaseMessage(req);
+        return 0;
     }
 
-    delete resp;
-    MessageGenerator::ReleaseMessage(req);
+    resp = rpc_svc_obj->NewResponse();
+    if (NULL == resp)
+    {
+        LOG(ERROR)<<"NewResponse by name:"<<req->GetTypeName()<<" failed";
+        MessageGenerator::ReleaseMessage(req);
+        return 0;
+    }
 
-    return ret_value;
+    EasyRpcClosure* closure = new(std::nothrow) EasyRpcClosure();
+    if (NULL == closure)
+    {
+        delete resp;
+        MessageGenerator::ReleaseMessage(req);
+
+        return 0;
+    }
+
+    if (closure->Set(easy_net, req, resp) != 0)
+    {
+        LOG(ERROR)<<"assert failed, net, req, resp must be non-null";
+        delete closure;
+        delete resp;
+        MessageGenerator::ReleaseMessage(req);
+
+        return 0;
+    }
+
+    rpc_svc_obj->OnRpcCall(req, resp, closure);
+
+    return 1;
 }
 
 int AppFrameWork::OnFrontEndMsg(struct bufferevent* bev)

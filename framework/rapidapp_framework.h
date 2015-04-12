@@ -3,27 +3,8 @@
 
 #include "rapidapp_defines.h"
 #include <event2/event.h>
-#include <google/protobuf/message.h>
 
 namespace rapidapp {
-
-class IRpcService {
-    public:
-        IRpcService(){}
-        virtual ~IRpcService() {}
-
-    public:
-        virtual const std::string RpcRequestName() {
-            return "";
-        }
-
-        virtual ::google::protobuf::Message* NewResponse() {
-            return NULL;
-        }
-
-        virtual int OnRpcCall(const ::google::protobuf::Message* req,
-                              ::google::protobuf::Message* resp) = 0;
-};
 
 class EasyTimer;
 class EasyNet;

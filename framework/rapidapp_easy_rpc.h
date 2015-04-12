@@ -8,9 +8,38 @@
 
 namespace rapidapp {
 
-// 基于C/S模型的rpc调用，在目前框架中，rpc请求服务端为backend服务
 class EasyNet;
 class AppFrameWork;
+
+class EasyRpcClosure : public IRpcClosure{
+    public:
+        EasyRpcClosure();
+        ~EasyRpcClosure();
+
+    public:
+        virtual void Done();
+        virtual bool IsDone();
+
+        virtual void set_userdata(void* data);
+        virtual void* userdata() const;
+        virtual ::google::protobuf::Message* request();
+        virtual ::google::protobuf::Message* response();
+
+    public:
+        int Set(EasyNet* net,
+                ::google::protobuf::Message* req,
+                ::google::protobuf::Message* rsp);
+
+    private:
+        void* user_data_;
+        ::google::protobuf::Message* req_;
+        ::google::protobuf::Message* rsp_;
+        EasyNet* net_;
+
+        bool is_done_;
+};
+
+// 基于C/S模型的rpc调用，在目前框架中，rpc请求服务端为backend服务
 class EasyRpc {
     public:
         EasyRpc();
