@@ -151,7 +151,7 @@ int EasyRpc::RpcCall(const ::google::protobuf::Message* request,
     int cid = scheduler_->CreateCoroutine(RpcFunction, context);
     if (cid < 0)
     {
-        LOG(ERROR)<<"create coroutine failed, net:"<<net_->uri();
+        LOG(ERROR)<<"create coroutine failed return "<<cid<<", net:"<<net_->uri();
         return -1;
     }
 
@@ -189,7 +189,7 @@ int EasyRpc::RpcFunction(void* arg)
     int ret = the_handler->net_->Send(buf.c_str(), buf.size());
     if (ret != EASY_NET_OK)
     {
-        LOG(ERROR)<<"send to rpc net failed. return "<<ret;
+        LOG(ERROR)<<"send to rpc net:"<<the_handler->net_->uri()<<" failed. return "<<ret;
     }
 
     LOG(INFO)<<"<<<rpc>>> send buf size:"<<buf.size()<<" to backend success";

@@ -328,8 +328,6 @@ int ConnectorSession::HandShake_StartSession()
     if (StartToBackEnd(back_net) != 0)
     {
         LOG(ERROR)<<"start to backend failed";
-        assert(frame_stub_ != NULL && net_stub_ != NULL);
-        frame_stub_->DestroyFrontEnd(&net_stub_);
         return -1;
     }
 

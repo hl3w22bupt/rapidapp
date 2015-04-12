@@ -41,7 +41,7 @@ int CoroutineScheduler::CreateCoroutine(coroutine_func func, void* arg)
 
     if (coroutine_table_.size() >= coroutine_max_)
     {
-        return -1;
+        return -2;
     }
 
     static int cid_seed = 0;
@@ -49,7 +49,7 @@ int CoroutineScheduler::CreateCoroutine(coroutine_func func, void* arg)
     COROUTINECTX* ctx = static_cast<COROUTINECTX*>(calloc(1, sizeof(COROUTINECTX) + stack_size_));
     if (NULL == ctx)
     {
-        return -1;
+        return -3;
     }
 
     ctx->state = COROUTINE_READY;

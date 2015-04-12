@@ -1116,11 +1116,15 @@ int AppFrameWork::OnFrontEndSocketEvent(struct bufferevent* bev, short events)
 
     if (events & BEV_EVENT_EOF)
     {
-        PLOG(INFO)<<"peer close connection actively";
         EasyNet* net = frontend_handler_mgr_.GetHandlerByEvent(bev);
         if (net != NULL)
         {
             app_->OnFrontEndClose(net, net->net_type());
+            PLOG(INFO)<<"peer[uri:"<<net->uri()<<"] close connection actively";
+        }
+        else
+        {
+            PLOG(INFO)<<"peer close connection actively";
         }
 
         frontend_handler_mgr_.RemoveHandlerByEvent(bev);
@@ -1234,7 +1238,16 @@ int AppFrameWork::OnBackEndSocketEvent(struct bufferevent* bev, short events)
 
     if (events & BEV_EVENT_EOF)
     {
-        LOG(INFO)<<"peer close connection actively";
+        EasyNet* net = backend_handler_mgr_.GetHandlerByEvent(bev);
+        if (net != NULL)
+        {
+            LOG(INFO)<<"backend-peer[uri:"<<net->uri()<<"] close connection actively";
+        }
+        else
+        {
+            LOG(INFO)<<"peer close connection actively";
+        }
+
         backend_handler_mgr_.ChangeNetStateByEvent(bev,NET_BEEN_CLOSED);
         return 0;
     }

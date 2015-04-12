@@ -4,6 +4,8 @@
 
 namespace rapidapp {
 
+// TODO 连接异常时重试功能
+
 const int kDefaultUpSize = 1024 * 1024;  // 1M
 const int kSingleRoundLoopNum = 1024;
 
