@@ -21,7 +21,7 @@ int PingPongCallBack(const ::google::protobuf::Message* req,
 
     if (status != 0)
     {
-        LOG(ERROR)<<"RpcCall failed";
+        LOG(ERROR)<<"RpcCall failed, status:"<<status;
     }
 
     return 0;
