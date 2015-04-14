@@ -35,7 +35,8 @@ void EasyRpcClosure::Done()
     if (net_ != NULL && rsp_ != NULL && req_ != NULL)
     {
         std::string rsp_out;
-        int ret = MessageGenerator::MessageToBinary(0, 0, rsp_, &rsp_out);
+        int ret = MessageGenerator::MessageToBinary(0, MessageGenerator::GetAsyncId(),
+                                                    rsp_, &rsp_out);
         if (0 == ret)
         {
             LOG(INFO)<<"send to rpc client";
