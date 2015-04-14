@@ -211,6 +211,10 @@ int EasyRpc::RpcFunction(void* arg)
         LOG(ERROR)<<"ParseFromString[size:%d] failed"<<msg_bin.size();
         status = -1;
     }
+    else
+    {
+        LOG(INFO)<<"recv msg:\n"<<rpc_ctx->response->DebugString();
+    }
     rpc_ctx->callback(rpc_ctx->request,
                       rpc_ctx->response,
                       rpc_ctx->arg, status);
