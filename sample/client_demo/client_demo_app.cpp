@@ -6,7 +6,7 @@
 
 int PingPongCallBack(const ::google::protobuf::Message* req,
                      ::google::protobuf::Message* res,
-                     void* arg)
+                     void* arg, int status)
 {
     if (NULL == req || NULL == res)
     {
@@ -18,6 +18,11 @@ int PingPongCallBack(const ::google::protobuf::Message* req,
 
     const test_rpc::Ping* ping = dynamic_cast<const test_rpc::Ping*>(req);
     test_rpc::Pong* pong = dynamic_cast<test_rpc::Pong*>(res);
+
+    if (status != 0)
+    {
+        LOG(ERROR)<<"RpcCall failed";
+    }
 
     return 0;
 }

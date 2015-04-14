@@ -203,15 +203,17 @@ int EasyRpc::RpcFunction(void* arg)
     // has been Resumed, async callback
     assert(rpc_ctx->request != NULL);
     assert(rpc_ctx->response != NULL);
-    // TODO 增加callback状态码。成功 or 失败
+
+    int status = 0;
     const std::string& msg_bin = MessageGenerator::GetBinaryString();
     if (!rpc_ctx->response->ParseFromString(msg_bin))
     {
         LOG(ERROR)<<"ParseFromString[size:%d] failed"<<msg_bin.size();
+        status = -1;
     }
     rpc_ctx->callback(rpc_ctx->request,
                       rpc_ctx->response,
-                      rpc_ctx->arg);
+                      rpc_ctx->arg, status);
 
     delete rpc_ctx;
 
