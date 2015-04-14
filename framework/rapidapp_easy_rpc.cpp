@@ -213,7 +213,7 @@ int EasyRpc::RpcFunction(void* arg)
     }
     else
     {
-        LOG(INFO)<<"recv msg:\n"<<rpc_ctx->response->DebugString();
+        LOG(INFO)<<"recv msg: {\n"<<rpc_ctx->response->DebugString()<<"}";
     }
     rpc_ctx->callback(rpc_ctx->request,
                       rpc_ctx->response,
