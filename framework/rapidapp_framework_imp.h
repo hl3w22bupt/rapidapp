@@ -78,7 +78,8 @@ class AppFrameWork : public IFrameWork, public IWalkEach {
         virtual int RpcCall(EasyRpc* rpc,
                             const ::google::protobuf::Message* request,
                             ::google::protobuf::Message* response,
-                            ON_RPC_REPLY_FUNCTION callback);
+                            ON_RPC_REPLY_FUNCTION callback,
+                            void* arg);
 
         virtual int RegisterRpcService(IRpcService* rpc_svc);
 

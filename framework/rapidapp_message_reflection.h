@@ -33,10 +33,15 @@ class MessageGenerator {
             return rpc_msg_.asyncid();
         }
 
+        static inline const std::string& GetBinaryString() {
+            return rpc_msg_.msg_bin();
+        }
 
+        // 直接打包/解包至rpc网络序
         static int MessageToBinary(int32_t type, uint64_t asyncid,
                                    const ::google::protobuf::Message* message,
                                    std::string* out);
+        static int UnpackToRpcMsg(const char* data, size_t size);
         static int BinaryToMessage(const char* data, size_t size,
                                    ::google::protobuf::Message* message);
     private:

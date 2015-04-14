@@ -88,12 +88,14 @@ void* EasyRpcClosure::userdata() const
 typedef struct RpcCallContext {
     ON_RPC_REPLY_FUNCTION callback;
     EasyRpc* rpc_stub;
+    const ::google::protobuf::Message* request;
+    ::google::protobuf::Message* response;
+    void* arg;
 } RPC_CONTEXT;
 
 uint64_t EasyRpc::asyncid_seed = 0;
 
-EasyRpc::EasyRpc() : scheduler_(NULL), net_(NULL),
-                    request_(NULL), response_(NULL), crid_list_()
+EasyRpc::EasyRpc() : scheduler_(NULL), net_(NULL), crid_list_()
 {}
 
 EasyRpc::~EasyRpc()
@@ -123,7 +125,8 @@ int EasyRpc::Init(magic_cube::CoroutineScheduler* scheduler, EasyNet* net)
 
 int EasyRpc::RpcCall(const ::google::protobuf::Message* request,
                      ::google::protobuf::Message* response,
-                     ON_RPC_REPLY_FUNCTION callback)
+                     ON_RPC_REPLY_FUNCTION callback,
+                     void* arg)
 {
     if (NULL == request || NULL == callback)
     {
@@ -135,9 +138,6 @@ int EasyRpc::RpcCall(const ::google::protobuf::Message* request,
         return -1;
     }
 
-    request_ = request;
-    response_ = response;
-
     // 创建一个协程上下文
     RPC_CONTEXT* context  = new(std::nothrow) RPC_CONTEXT();
     if (NULL == context)
@@ -146,8 +146,11 @@ int EasyRpc::RpcCall(const ::google::protobuf::Message* request,
         return -1;
     }
 
+    context->request = request;
+    context->response = response;
     context->rpc_stub = this;
     context->callback = callback;
+    context->arg = arg;
     int cid = scheduler_->CreateCoroutine(RpcFunction, context);
     if (cid < 0)
     {
@@ -184,7 +187,7 @@ int EasyRpc::RpcFunction(void* arg)
 
     static std::string buf;
     MessageGenerator::MessageToBinary(0, asyncid_seed++,
-            the_handler->request_, &buf);
+            rpc_ctx->request, &buf);
 
     int ret = the_handler->net_->Send(buf.c_str(), buf.size());
     if (ret != EASY_NET_OK)
@@ -198,8 +201,17 @@ int EasyRpc::RpcFunction(void* arg)
     the_handler->scheduler_->YieldCoroutine();
 
     // has been Resumed, async callback
-    rpc_ctx->callback(the_handler->request_,
-                      the_handler->response_);
+    assert(rpc_ctx->request != NULL);
+    assert(rpc_ctx->response != NULL);
+    // TODO 增加callback状态码。成功 or 失败
+    const std::string& msg_bin = MessageGenerator::GetBinaryString();
+    if (!rpc_ctx->response->ParseFromString(msg_bin))
+    {
+        LOG(ERROR)<<"ParseFromString[size:%d] failed"<<msg_bin.size();
+    }
+    rpc_ctx->callback(rpc_ctx->request,
+                      rpc_ctx->response,
+                      rpc_ctx->arg);
 
     delete rpc_ctx;
 
@@ -251,9 +263,9 @@ int EasyRpc::Resume(const char* buffer, size_t size)
         return -1;
     }
     */
-    if (MessageGenerator::BinaryToMessage(buffer, size, response_) != 0)
+    if (MessageGenerator::UnpackToRpcMsg(buffer, size) != 0)
     {
-        LOG(ERROR)<<"binary to message failed after Resume";
+        LOG(ERROR)<<"unpack to rpc msg failed after Resume";
         return -1;
     }
 

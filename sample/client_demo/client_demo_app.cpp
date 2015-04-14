@@ -5,7 +5,8 @@
 #include <google/protobuf/io/coded_stream.h>
 
 int PingPongCallBack(const ::google::protobuf::Message* req,
-                     ::google::protobuf::Message* res)
+                     ::google::protobuf::Message* res,
+                     void* arg)
 {
     if (NULL == req || NULL == res)
     {
@@ -84,7 +85,7 @@ int ClientDemoApp::OnUpdate()
     test_rpc::Pong* pong = new test_rpc::Pong();
     pong->set_pong(0);
     LOG(INFO)<<"start rpc call...";
-    frame_stub_->RpcCall(rpc_, ping, pong, PingPongCallBack);
+    frame_stub_->RpcCall(rpc_, ping, pong, PingPongCallBack, NULL);
 #endif
 
     frame_stub_->UnScheduleUpdate();

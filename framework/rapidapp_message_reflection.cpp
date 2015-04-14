@@ -58,26 +58,11 @@ MessageGenerator::~MessageGenerator()
 Message*
 MessageGenerator::SpawnMessage(const char* data, size_t size)
 {
-    if (NULL == data)
+    if (UnpackToRpcMsg(data, size) != 0)
     {
-        LOG(ERROR)<<"null msg";
+        LOG(ERROR)<<"unpack to rpc msg failed";
         return NULL;
     }
-
-    if (size <= 0)
-    {
-        LOG(ERROR)<<"binary msg size:"<<size<<" less than 0.";
-        return NULL;
-    }
-
-    rpc_msg_.Clear();
-    if (!rpc_msg_.ParseFromArray(data, size))
-    {
-        LOG(ERROR)<<"ParseFromArray failed, msg size:"<<size;
-        return NULL;
-    }
-
-    LOG(INFO)<<"rpc stamp: {\n"<<rpc_msg_.DebugString()<<"}";
 
     Message* message = NewInstance(rpc_msg_.msg_name());
     if (NULL == message)
@@ -114,26 +99,11 @@ void MessageGenerator::ReleaseMessage(Message* message)
 const Message*
 MessageGenerator::SharedMessage(const char* data, size_t size)
 {
-    if (NULL == data)
+    if (UnpackToRpcMsg(data, size) != 0)
     {
-        LOG(ERROR)<<"null msg";
+        LOG(ERROR)<<"unpack to rpc msg failed";
         return NULL;
     }
-
-    if (size <= 0)
-    {
-        LOG(ERROR)<<"binary msg size:"<<size<<" less than 0.";
-        return NULL;
-    }
-
-    rpc_msg_.Clear();
-    if (!rpc_msg_.ParseFromArray(data, size))
-    {
-        LOG(ERROR)<<"ParseFromArray failed, msg size:"<<size;
-        return NULL;
-    }
-
-    LOG(INFO)<<"rpc stamp: {\n"<<rpc_msg_.DebugString()<<"}";
 
     Message* message = const_cast<Message*>(DefaultInstance(rpc_msg_.msg_name()));
     if (NULL == message)
@@ -199,8 +169,7 @@ int MessageGenerator::MessageToBinary(int32_t type, uint64_t asyncid,
     return 0;
 }
 
-int MessageGenerator::BinaryToMessage(const char* data, size_t size,
-                                      ::google::protobuf::Message* message)
+int MessageGenerator::UnpackToRpcMsg(const char* data, size_t size)
 {
     if (NULL == data)
     {
@@ -214,12 +183,6 @@ int MessageGenerator::BinaryToMessage(const char* data, size_t size,
         return -1;
     }
 
-    if (NULL == message)
-    {
-        LOG(ERROR)<<"null message";
-        return -1;
-    }
-
     rpc_msg_.Clear();
     if (!rpc_msg_.ParseFromArray(data, size))
     {
@@ -228,6 +191,24 @@ int MessageGenerator::BinaryToMessage(const char* data, size_t size,
     }
 
     LOG(INFO)<<"rpc stamp: {\n"<<rpc_msg_.DebugString()<<"}";
+
+    return 0;
+}
+
+int MessageGenerator::BinaryToMessage(const char* data, size_t size,
+                                      ::google::protobuf::Message* message)
+{
+    if (NULL == message)
+    {
+        LOG(ERROR)<<"null message";
+        return -1;
+    }
+
+    if (UnpackToRpcMsg(data, size) != 0)
+    {
+        LOG(ERROR)<<"unpack to rpc msg failed";
+        return -1;
+    }
 
     const std::string& type_name = message->GetTypeName();
     if (type_name != rpc_msg_.msg_name())

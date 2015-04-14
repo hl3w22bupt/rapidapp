@@ -1476,7 +1476,8 @@ int AppFrameWork::DestroyRpc(EasyRpc** rpc)
 int AppFrameWork::RpcCall(EasyRpc* rpc,
                           const ::google::protobuf::Message* request,
                           ::google::protobuf::Message* response,
-                          ON_RPC_REPLY_FUNCTION callback)
+                          ON_RPC_REPLY_FUNCTION callback,
+                          void* arg)
 {
     if (NULL == rpc || NULL == callback || NULL == request)
     {
@@ -1484,7 +1485,7 @@ int AppFrameWork::RpcCall(EasyRpc* rpc,
         return -1;
     }
 
-    return rpc->RpcCall(request, response, callback);
+    return rpc->RpcCall(request, response, callback, arg);
 }
 
 int AppFrameWork::RegisterRpcService(IRpcService* rpc_svc)

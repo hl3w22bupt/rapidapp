@@ -16,7 +16,8 @@ enum {
 
 // rpc callback
 typedef int (*ON_RPC_REPLY_FUNCTION)(const ::google::protobuf::Message* request,
-                                     ::google::protobuf::Message* response);
+                                     ::google::protobuf::Message* response,
+                                     void* arg);
 
 class IRpcClosure {
     public:

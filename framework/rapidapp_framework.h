@@ -49,7 +49,8 @@ class IFrameWork {
         virtual int RpcCall(EasyRpc* rpc,
                             const ::google::protobuf::Message* request,
                             ::google::protobuf::Message* response,
-                            ON_RPC_REPLY_FUNCTION callback) = 0;
+                            ON_RPC_REPLY_FUNCTION callback,
+                            void* arg) = 0;
         // rpc server
         virtual int RegisterRpcService(IRpcService* rpc_svc) = 0;
 

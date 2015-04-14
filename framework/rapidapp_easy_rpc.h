@@ -50,7 +50,8 @@ class EasyRpc {
         int Init(magic_cube::CoroutineScheduler* scheduler, EasyNet* net);
         int RpcCall(const ::google::protobuf::Message* request,
                     ::google::protobuf::Message* response,
-                    ON_RPC_REPLY_FUNCTION callback);
+                    ON_RPC_REPLY_FUNCTION callback,
+                    void* arg);
 
         inline bool IsActive() {
             return (!crid_list_.empty());
@@ -75,8 +76,6 @@ class EasyRpc {
 
     private:
         EasyNet* net_;
-        const ::google::protobuf::Message* request_;
-        ::google::protobuf::Message* response_;
 
     private:
         typedef struct {
