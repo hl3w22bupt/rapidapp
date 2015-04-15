@@ -252,8 +252,6 @@ int EasyRpc::GetCoroutineIdxByAsyncId(uint64_t asyncid)
     return -1;
 }
 
-// 目前暂时认为每1个rpc request的reply是严格按顺序的，因此取队列最前面的。
-// 可以认为目前是不可用状态，后续通过协议封装异步rpc call id
 int EasyRpc::Resume(const char* buffer, size_t size)
 {
     assert(scheduler_ != NULL);
@@ -262,14 +260,6 @@ int EasyRpc::Resume(const char* buffer, size_t size)
         return -1;
     }
 
-    /*
-    const ::google::protobuf::Message* reply =
-        MessageGenerator::SharedMessage(buffer, size);
-    if (NULL == reply)
-    {
-        return -1;
-    }
-    */
     if (MessageGenerator::UnpackToRpcMsg(buffer, size) != 0)
     {
         LOG(ERROR)<<"unpack to rpc msg failed after Resume";
