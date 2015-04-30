@@ -263,9 +263,16 @@ int ConnectorClientProtocolImp::HandShake_TRY_ACK()
     int ret = TryToRecvFromPeerAndParse();
     if (ret != 0)
     {
-        CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR,
-                                 "error when try to recv ack");
-        return ret;
+        if (ret != CONNECTOR_ERR_NO_MORE_PKG)
+        {
+            CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR,
+                                     "error when try to recv ack");
+            return ret;
+        }
+        else
+        {
+            return 0;
+        }
     }
 
     if (down_msg_.mutable_head()->bodyid() != connector_client::SYNACK)
