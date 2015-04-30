@@ -267,12 +267,9 @@ int ConnectorClientProtocolImp::HandShake_TRY_ACK()
         {
             CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR,
                                      "error when try to recv ack");
-            return ret;
         }
-        else
-        {
-            return 0;
-        }
+
+        return ret;
     }
 
     if (down_msg_.mutable_head()->bodyid() != connector_client::SYNACK)
