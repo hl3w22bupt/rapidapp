@@ -18,7 +18,7 @@ Install('../../lib', client_lib)
 
 clientsrc = Glob('client_api/client_main.cpp')
 env.Program('connector_client_test', clientsrc, OBJPREFIX='cclient_',
-            LIBS=['cconnapi', 'rapidapp', 'event', 'glog', 'gflags', 'protobuf', 'pthread', 'boost_thread'])
+            LIBS=['cconnapi', 'rapidapp', 'event', 'glog', 'gflags', 'protobuf', 'pthread', 'boost_thread', 'boost_system'])
 
 #connector svr api
 os.system('cd server_api/ && echo \'genereate c++ code over protobuf [game_data.proto]...\' && protoc --cpp_out=. game_data.proto')
