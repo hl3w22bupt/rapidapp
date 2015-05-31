@@ -5,11 +5,11 @@ RUN apt-get update
 #RUN apt-get upgrade
 #USER hul
 #install dev:base
-#RUN apt-get install g++
+RUN apt-get install -y g++
 RUN apt-get install -y vim
-#RUN apt-get install -y ctags
-#RUN apt-get install -y cscope
-#RUN apt-get install -y python
+RUN apt-get install -y ctags
+RUN apt-get install -y cscope
+RUN apt-get install -y python
 RUN apt-get install -y scons
 RUN apt-get install -y git
 #install deps
@@ -21,6 +21,10 @@ RUN apt-get install -y zlib1g-dev
 RUN apt-get install -y libprotobuf-dev
 RUN apt-get install -y protobuf-compiler
 
+#compile src
+RUN scons -u debug=0
+
+#set env
 ENV LANG en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
 CMD echo "welcome to rapidapp dev"
