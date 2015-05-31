@@ -5,9 +5,9 @@ MAINTAINER hul <hl3w22bupt@gmail.com>
 #install dev:base
 #RUN apt-get install g++
 RUN apt-get install -y vim
-RUN apt-get install -y ctags
-RUN apt-get install -y cscope
-RUN apt-get install -y python
+#RUN apt-get install -y ctags
+#RUN apt-get install -y cscope
+#RUN apt-get install -y python
 RUN apt-get install -y scons
 RUN apt-get install -y git
 #install deps
