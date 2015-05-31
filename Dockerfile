@@ -11,7 +11,7 @@ RUN apt-get install -y vim
 RUN apt-get install -y scons
 RUN apt-get install -y git
 #install deps
-RUN apt-get install -y libprotobuf-dec
+RUN apt-get install -y libprotobuf-dev
 RUN apt-get install -y protobuf-compiler
 RUN apt-get install -y libevent-dev
 RUN apt-get install -y libgflags-dev
