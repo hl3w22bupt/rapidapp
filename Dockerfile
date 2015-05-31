@@ -27,7 +27,7 @@ RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
 COPY . /usr/src/app
 
-RUN cd /usr/src/app && scons -u debug=0
+RUN cd /usr/src/app && scons -u debug=0 gflags_ver=2
 
 #set env
 ENV LANG en_US.UTF-8
