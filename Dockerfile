@@ -2,7 +2,7 @@
 FROM ubuntu
 MAINTAINER hul <hl3w22bupt@gmail.com>
 RUN apt-get update
-RUN apt-get upgrade
+#RUN apt-get upgrade
 #USER hul
 #install dev:base
 #RUN apt-get install g++
