@@ -1,6 +1,7 @@
 #Dockerfile
 FROM ubuntu
 MAINTAINER hul <hl3w22bupt@gmail.com>
+
 RUN apt-get update
 #RUN apt-get upgrade
 #USER hul
@@ -22,7 +23,11 @@ RUN apt-get install -y libprotobuf-dev
 RUN apt-get install -y protobuf-compiler
 
 #compile src
-RUN scons -u debug=0
+RUN mkdir -p /usr/src/app
+WORKDIR /usr/src/app
+COPY . /usr/src/app
+
+RUN cd /usr/src/app && scons -u debug=0
 
 #set env
 ENV LANG en_US.UTF-8
