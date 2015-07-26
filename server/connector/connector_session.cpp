@@ -205,10 +205,13 @@ int ConnectorSession::StartToBackEnd(EasyNet* back_net)
 
     std::string up_buff;
     msg.SerializeToString(&up_buff);
-    int ret = frame_stub_->SendToBackEnd(back_net, up_buff.c_str(), up_buff.size());
+    int ret = frame_stub_->SendToBackEnd(back_net,
+                                         up_buff.c_str(),
+                                         up_buff.size());
     if (ret != 0)
     {
-        LOG(INFO)<<"send to backend uri: "<<net_stub_->uri()<<" failed";
+        PLOG(INFO)<<"send to backend uri: "<<
+            net_stub_->uri()<<" failed."<<" return "<<ret;
         return -1;
     }
 

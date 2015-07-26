@@ -170,7 +170,8 @@ int EasyNet::Send(const char* msg, size_t size)
         return EASY_NET_ERR_SEND_ERROR;
     }
 
-    LOG(INFO)<<"write to uri:"<<uri_<<", sock fd:"<<bufferevent_getfd(hevent_)<<" successfully";
+    LOG(INFO)<<"write to uri:"<<uri_<<", sock fd:"<<
+        bufferevent_getfd(hevent_)<<" successfully";
 
     return EASY_NET_OK;
 }

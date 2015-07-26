@@ -1338,7 +1338,7 @@ int AppFrameWork::SendToBackEnd(EasyNet* net, const char* buf, size_t buf_size)
     int ret = net->Send(buf, buf_size);
     if (ret != EASY_NET_OK)
     {
-        LOG(ERROR)<<"send buf size:"<<buf_size<<" to backend failed";
+        PLOG(ERROR)<<"send buf size:"<<buf_size<<" to backend failed";
     }
 
     if (EASY_NET_ERR_NOT_YET_ESTABLISHED == ret)
