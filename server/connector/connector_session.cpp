@@ -252,7 +252,8 @@ int ConnectorSession::StopToBackEnd(EasyNet* back_net)
     int ret = frame_stub_->SendToBackEnd(back_net, up_buff.c_str(), up_buff.size());
     if (ret != 0)
     {
-        LOG(INFO)<<"send to backend uri: "<<back_net->uri()<<" failed";
+        LOG(INFO)<<"send to backend uri: "<<back_net->uri()<<
+            " failed. return "<<ret;
         return -1;
     }
 
@@ -272,7 +273,8 @@ int ConnectorSession::SendDataToBackEnd(const char* data, size_t len)
     int ret = frame_stub_->SendToBackEnd(back_net, data, len);
     if (ret != 0)
     {
-        LOG(INFO)<<"send to backend uri: "<<back_net->uri()<<" failed";
+        LOG(INFO)<<"send to backend uri: "<<back_net->uri()<<
+            " failed. return "<<ret;
         return -1;
     }
 
