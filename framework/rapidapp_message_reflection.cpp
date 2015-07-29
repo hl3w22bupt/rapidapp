@@ -155,7 +155,7 @@ int MessageGenerator::MessageToBinary(int32_t type, uint64_t asyncid,
     message->SerializeToString(&buf);
     LOG(INFO)<<"msg bin size:"<<buf.size();
 
-    static rpc_protocol::RpcMessage rpc_message;
+    rpc_protocol::RpcMessage rpc_message;
     rpc_message.set_magic(rpc_protocol::MAGIC_RPCSTAMP_V1);
     rpc_message.set_msg_type(type);
     rpc_message.set_msg_name(message_name);
@@ -166,6 +166,22 @@ int MessageGenerator::MessageToBinary(int32_t type, uint64_t asyncid,
 
     rpc_message.SerializeToString(out);
 
+    return 0;
+}
+
+int MessageGenerator::RpcErrorToBinary(uint64_t asyncid,
+                                       std::string* out)
+{
+    rpc_protocol::RpcMessage rpc_message;
+    rpc_message.set_magic(rpc_protocol::MAGIC_RPCSTAMP_V1);
+    rpc_message.set_msg_type(rpc_protocol::RPC_TYPE_ERROR);
+    rpc_message.set_msg_name("");
+    rpc_message.set_asyncid(asyncid);
+    rpc_message.set_msg_bin(NULL, 0);
+
+    LOG(INFO)<<"rpc message to serialize: {\n"<<rpc_message.DebugString()<<"}";
+
+    rpc_message.SerializeToString(out);
     return 0;
 }
 

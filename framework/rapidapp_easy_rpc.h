@@ -20,6 +20,8 @@ class EasyRpcClosure : public IRpcClosure{
         virtual void Done();
         virtual bool IsDone();
 
+        virtual void Cancel();
+
         virtual void set_userdata(void* data);
         virtual void* userdata() const;
         virtual ::google::protobuf::Message* request();
@@ -27,11 +29,13 @@ class EasyRpcClosure : public IRpcClosure{
 
     public:
         int Set(EasyNet* net,
+                uint64_t asyncid,
                 ::google::protobuf::Message* req,
                 ::google::protobuf::Message* rsp);
 
     private:
         void* user_data_;
+        uint64_t async_id_;
         ::google::protobuf::Message* req_;
         ::google::protobuf::Message* rsp_;
         EasyNet* net_;

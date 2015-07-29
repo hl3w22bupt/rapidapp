@@ -989,7 +989,7 @@ int AppFrameWork::OnFrontEndRpcMsg(EasyNet* easy_net, const char* data, size_t s
         return 0;
     }
 
-    if (closure->Set(easy_net, req, resp) != 0)
+    if (closure->Set(easy_net, MessageGenerator::GetAsyncId(), req, resp) != 0)
     {
         LOG(ERROR)<<"assert failed, net, req, resp must be non-null";
         delete closure;

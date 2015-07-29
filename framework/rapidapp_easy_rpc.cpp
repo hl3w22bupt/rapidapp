@@ -13,6 +13,7 @@ EasyRpcClosure::~EasyRpcClosure()
 {}
 
 int EasyRpcClosure::Set(EasyNet* net,
+                        uint64_t asyncid,
                         ::google::protobuf::Message* req,
                         ::google::protobuf::Message* rsp)
 {
@@ -21,6 +22,7 @@ int EasyRpcClosure::Set(EasyNet* net,
         return -1;
     }
 
+    async_id_ = asyncid;
     net_ = net;
     req_ = req;
     rsp_ = rsp;
@@ -35,8 +37,8 @@ void EasyRpcClosure::Done()
     if (net_ != NULL && rsp_ != NULL && req_ != NULL)
     {
         std::string rsp_out;
-        int ret = MessageGenerator::MessageToBinary(0, MessageGenerator::GetAsyncId(),
-                                                    rsp_, &rsp_out);
+        int ret = MessageGenerator::MessageToBinary(rpc_protocol::RPC_TYPE_RESPONSE,
+                                                    async_id_, rsp_, &rsp_out);
         if (0 == ret)
         {
             LOG(INFO)<<"send to rpc client";
@@ -45,6 +47,35 @@ void EasyRpcClosure::Done()
         else
         {
             LOG(ERROR)<<"MessageToBinary failed";
+        }
+
+        delete rsp_;
+        rsp_ = NULL;
+
+        MessageGenerator::ReleaseMessage(req_);
+        req_ = NULL;
+    }
+
+    is_done_ = true;
+    delete this;
+}
+
+void EasyRpcClosure::Cancel()
+{
+    LOG(INFO)<<"EasyRpc has been Cancelled";
+
+    if (net_ != NULL && rsp_ != NULL && req_ != NULL)
+    {
+        std::string rsp_out;
+        int ret = MessageGenerator::RpcErrorToBinary(async_id_, &rsp_out);
+        if (0 == ret)
+        {
+            LOG(INFO)<<"send error asyncid["<<async_id_<<"] to rpc client";
+            net_->Send(rsp_out.c_str(), rsp_out.size());
+        }
+        else
+        {
+            LOG(ERROR)<<"RpcErrorToBinary failed";
         }
 
         delete rsp_;
@@ -187,8 +218,9 @@ int EasyRpc::RpcFunction(void* arg)
     }
 
     static std::string buf;
-    MessageGenerator::MessageToBinary(0, asyncid_seed++,
-            rpc_ctx->request, &buf);
+    MessageGenerator::MessageToBinary(rpc_protocol::RPC_TYPE_REQUEST,
+                                      asyncid_seed++,
+                                      rpc_ctx->request, &buf);
 
     int ret = the_handler->net_->Send(buf.c_str(), buf.size());
     if (ret != EASY_NET_OK)
@@ -206,16 +238,25 @@ int EasyRpc::RpcFunction(void* arg)
     assert(rpc_ctx->response != NULL);
 
     int status = 0;
-    const std::string& msg_bin = MessageGenerator::GetBinaryString();
-    if (!rpc_ctx->response->ParseFromString(msg_bin))
+    int32_t rpc_type = MessageGenerator::GetMessageType();
+    if (rpc_protocol::RPC_TYPE_ERROR == rpc_type)
     {
-        LOG(ERROR)<<"ParseFromString[size:%d] failed"<<msg_bin.size();
         status = -1;
     }
     else
     {
-        LOG(INFO)<<"recv msg: {\n"<<rpc_ctx->response->DebugString()<<"}";
+        const std::string& msg_bin = MessageGenerator::GetBinaryString();
+        if (!rpc_ctx->response->ParseFromString(msg_bin))
+        {
+            LOG(ERROR)<<"ParseFromString[size:%d] failed"<<msg_bin.size();
+            status = -1;
+        }
+        else
+        {
+            LOG(INFO)<<"recv msg: {\n"<<rpc_ctx->response->DebugString()<<"}";
+        }
     }
+
     rpc_ctx->callback(rpc_ctx->request,
                       rpc_ctx->response,
                       rpc_ctx->arg, status);

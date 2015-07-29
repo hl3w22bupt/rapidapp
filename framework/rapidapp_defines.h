@@ -28,6 +28,8 @@ class IRpcClosure {
         virtual void Done() = 0;
         virtual bool IsDone() = 0;
 
+        virtual void Cancel() = 0;
+
         virtual void set_userdata(void* data) = 0;
         virtual void* userdata() const = 0;
         virtual ::google::protobuf::Message* request() = 0;

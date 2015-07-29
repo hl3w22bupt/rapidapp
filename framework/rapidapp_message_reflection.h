@@ -44,6 +44,10 @@ class MessageGenerator {
         static int UnpackToRpcMsg(const char* data, size_t size);
         static int BinaryToMessage(const char* data, size_t size,
                                    ::google::protobuf::Message* message);
+
+        // rpc error msg
+        static int RpcErrorToBinary(uint64_t asyncid,
+                                    std::string* out);
     private:
         static rpc_protocol::RpcMessage rpc_msg_;
 };
