@@ -45,6 +45,7 @@ int ConnectorApp::SetUpAndCheckConfig()
     if (0 != fseek(fp, 0, SEEK_END))
     {
         PLOG(ERROR)<<"fseek failed";
+        fclose(fp);
         return -1;
     }
 

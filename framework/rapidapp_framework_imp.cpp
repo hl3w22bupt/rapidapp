@@ -34,6 +34,8 @@ DEFINE_bool(stop, false, "stop the daemon according to pid file");
 DEFINE_bool(restart, false, "restart the daemon according to pid file");
 DEFINE_bool(reload, false, "trigger reload event according to pid file");
 
+DEFINE_string(cfg_file, "", "conf file name, default null");
+
 namespace rapidapp {
 // global variable & function
 const int MAX_TCP_BACKLOG = 102400;
@@ -641,6 +643,56 @@ int AppFrameWork::InitNormalMode(RapidApp* app, int argc, char** argv)
     return 0;
 }
 
+int AppFrameWork::GetConfString()
+{
+    // 不需要配置功能
+    if (0 == FLAGS_cfg_file.length())
+    {
+        return 0;
+    }
+
+    LOG(INFO)<<"initialize from conf file: "<<FLAGS_cfg_file;
+
+    FILE* fp = fopen(FLAGS_cfg_file.c_str(), "r");
+    if (NULL == fp)
+    {
+        PLOG(ERROR)<<"open cfg file: "<<FLAGS_cfg_file<<" failed";
+        return -1;
+    }
+
+    if (0 != fseek(fp, 0, SEEK_END))
+    {
+        PLOG(ERROR)<<"fseek failed";
+        fclose(fp);
+        return -1;
+    }
+
+    long filesize = ftell(fp);
+    char* conf = static_cast<char*>(calloc(1, filesize));
+    if (NULL == conf)
+    {
+        LOG(ERROR)<<"calloc size: "<<filesize<<" failed";
+        fclose(fp);
+        return -1;
+    }
+
+    rewind(fp);
+    fread(conf, filesize, 1, fp);
+    if (ferror(fp))
+    {
+        LOG(ERROR)<<"fgets failed";
+        free(conf);
+        fclose(fp);
+        return -1;
+    }
+
+    cfg_.assign(conf, filesize);
+    free(conf);
+    fclose(fp);
+
+    return 0;
+}
+
 int AppFrameWork::Init(RapidApp* app, int argc, char** argv)
 {
     if (NULL == app)
@@ -655,6 +707,13 @@ int AppFrameWork::Init(RapidApp* app, int argc, char** argv)
     if (ret != 0)
     {
         fprintf(stderr, "ParseCmdLine failed, argc:%d", argc);
+        return -1;
+    }
+
+    ret = GetConfString();
+    if (ret != 0)
+    {
+        fprintf(stderr, "read cfg from file[%s] failed\n", FLAGS_cfg_file.c_str());
         return -1;
     }
 
@@ -1525,6 +1584,11 @@ void AppFrameWork::UnScheduleUpdate()
 struct event_base* AppFrameWork::get_event_base()
 {
     return event_base_;
+}
+
+const std::string& AppFrameWork::GetCfg() const
+{
+    return cfg_;
 }
 
 // 前端net遍历操作

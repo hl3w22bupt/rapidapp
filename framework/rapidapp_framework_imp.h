@@ -89,6 +89,7 @@ class AppFrameWork : public IFrameWork, public IWalkEach {
 
     public:
         virtual struct event_base* get_event_base();
+        virtual const std::string& GetCfg() const;
 
     public:
         int DoSomething(EasyNet* net);
@@ -200,6 +201,7 @@ class AppFrameWork : public IFrameWork, public IWalkEach {
     private:
         int InitNormalMode(RapidApp* app, int argc, char** argv);
 
+        int GetConfString();
         void InitSignalHandle();
         void MakeDaemon();
         int InitLogging(int argc, char** argv);
@@ -219,6 +221,9 @@ class AppFrameWork : public IFrameWork, public IWalkEach {
         struct evconnlistener* listener_;
         struct bufferevent* udp_ctrl_keeper_;   // command control mode
         AppControlDispatcher ctrl_dispatcher_;
+
+    private:
+        std::string cfg_;
 
     private:
         RapidApp* app_;

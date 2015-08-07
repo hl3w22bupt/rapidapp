@@ -58,6 +58,9 @@ class IFrameWork {
         // 帧驱动回调
         virtual void ScheduleUpdate() = 0;
         virtual void UnScheduleUpdate() = 0;
+
+    public:
+        virtual const std::string& GetCfg() const = 0;
 };
 
 }
