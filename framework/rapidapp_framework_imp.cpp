@@ -529,6 +529,13 @@ int AppFrameWork::InitNormalMode(RapidApp* app, int argc, char** argv)
         return -1;
     }
 
+    ret = GetConfString();
+    if (ret != 0)
+    {
+        fprintf(stderr, "read cfg from file[%s] failed\n", FLAGS_cfg_file.c_str());
+        return -1;
+    }
+
     // set pid file
     ret = SetPidFile();
     if (ret != 0)
@@ -707,13 +714,6 @@ int AppFrameWork::Init(RapidApp* app, int argc, char** argv)
     if (ret != 0)
     {
         fprintf(stderr, "ParseCmdLine failed, argc:%d", argc);
-        return -1;
-    }
-
-    ret = GetConfString();
-    if (ret != 0)
-    {
-        fprintf(stderr, "read cfg from file[%s] failed\n", FLAGS_cfg_file.c_str());
         return -1;
     }
 
