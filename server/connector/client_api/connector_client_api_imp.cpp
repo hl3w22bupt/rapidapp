@@ -1,7 +1,8 @@
 #include "connector_client_api_imp.h"
 #include "utils/tcp_socket.h"
-#include <boost/thread.hpp>
-#include <boost/bind.hpp>
+//#include <boost/thread.hpp>
+//#include <boost/bind.hpp>
+#include <pthread.h>
 #include <iostream>
 #include <cassert>
 
@@ -91,7 +92,7 @@ void ConnectorClientProtocolImp::Close()
 }
 
 int ConnectorClientProtocolImp::Start(IProtocolEventListener* protocol_evlistener,
-                                   ILoggable* logger)
+                                      ILoggable* logger)
 {
     if (NULL == protocol_evlistener)
     {
@@ -576,9 +577,25 @@ ConnectorClientProtocolThreadImp::~ConnectorClientProtocolThreadImp()
     }
 }
 
+void* ConnectorClientProtocolThreadImp::connector_thread_function(void* arg)
+{
+    if (NULL == arg)
+    {
+        return NULL;
+    }
+
+    ConnectorClientProtocolThreadImp* thread_handler =
+        static_cast<ConnectorClientProtocolThreadImp*>(arg);
+    assert(thread_handler != NULL);
+
+    thread_handler->MainLoop();
+
+    return NULL;
+}
+
 int ConnectorClientProtocolThreadImp::StartThread(IProtocolEventListener* protocol_evlistener,
-                                               IWorkerThreadListener* thread_listener,
-                                               ILoggable* logger)
+                                                  IWorkerThreadListener* thread_listener,
+                                                  ILoggable* logger)
 {
     if (NULL == protocol_evlistener ||
         NULL == thread_listener)
@@ -590,10 +607,13 @@ int ConnectorClientProtocolThreadImp::StartThread(IProtocolEventListener* protoc
 
     wt_listener_ = thread_listener;
     logger_ = logger;
+    protocol_evtlistener_ = protocol_evlistener;
     ccproto_ = ConnectorClientProtocol::Create();
-    boost::thread protocol_thread(boost::bind(&ConnectorClientProtocolThreadImp::MainLoop,
-                                              this, protocol_evlistener, logger));
-    protocol_thread.detach();
+    pthread_t protocol_thread;
+    pthread_create(&protocol_thread, NULL, connector_thread_function, this);
+    pthread_detach(protocol_thread);
+    //boost::thread protocol_thread(boost::bind(&ConnectorClientProtocolThreadImp::MainLoop, this));
+    //protocol_thread.detach();
 
     return 0;
 }
@@ -604,14 +624,13 @@ int ConnectorClientProtocolThreadImp::TerminateThread()
     return 0;
 }
 
-int ConnectorClientProtocolThreadImp::MainLoop(IProtocolEventListener* protocol_evlistener,
-                                            ILoggable* logger)
+int ConnectorClientProtocolThreadImp::MainLoop()
 {
-    assert(ccproto_ != NULL && wt_listener_ != NULL);
+    assert(ccproto_ != NULL && wt_listener_ != NULL && protocol_evtlistener_ != NULL);
     assert(!exit_);
 
     // 1. Start Connection
-    int ret = ccproto_->Start(protocol_evlistener, logger);
+    int ret = ccproto_->Start(protocol_evtlistener_, logger_);
     if (ret != 0)
     {
         wt_listener_->OnWorkerThreadExit();
@@ -640,14 +659,14 @@ int ConnectorClientProtocolThreadImp::MainLoop(IProtocolEventListener* protocol_
 }
 
 int ConnectorClientProtocolThreadImp::PushMessageToSendQ(const char* data,
-                                                      size_t size)
+                                                         size_t size)
 {
     assert(ccproto_ != NULL);
     return ccproto_->PushMessage(data, size);
 }
 
 int ConnectorClientProtocolThreadImp::PopMessageFromRecvQ(char* buf_ptr,
-                                                       size_t* buflen_ptr)
+                                                          size_t* buflen_ptr)
 {
     if (NULL == buf_ptr || NULL == buflen_ptr || 0 == *buflen_ptr)
     {

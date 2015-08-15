@@ -147,12 +147,15 @@ class ConnectorClientProtocolThreadImp {
         int PopMessageFromRecvQ(char* buf_ptr, size_t* buflen_ptr);
 
     private:
-        int MainLoop(IProtocolEventListener* protocol_evlistener,
-                     ILoggable* logger);
+        static void* connector_thread_function(void* arg);
+
+    private:
+        int MainLoop();
 
     private:
         ConnectorClientProtocol* ccproto_;
         IWorkerThreadListener* wt_listener_;
+        IProtocolEventListener* protocol_evtlistener_;
         ILoggable* logger_;
         bool exit_;
 };
