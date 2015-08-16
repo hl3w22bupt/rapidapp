@@ -1,4 +1,5 @@
 #include "tcp_socket.h"
+#include <string.h>
 
 #define TCP_SOCKET_PORT_SEP ':'
 #define TCP_SOCKET_ADDR_LEN 128
@@ -651,7 +652,7 @@ int tcpsocket_send(TSOCKET a_iSock, const char* a_pszBuff, int a_iLen, int a_iTi
 #endif
 
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__IOS__)
-    iRet = send(a_iSock, a_pszBuff, a_iLen, MSG_NOSIGNAL);
+    iRet = send(a_iSock, a_pszBuff, a_iLen, 0);
 #else
     iRet = send(a_iSock, a_pszBuff, a_iLen, 0);
 #endif
