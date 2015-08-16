@@ -16,6 +16,7 @@ connapi_src += Glob('*.cc')
 client_lib = env.StaticLibrary('client_api/cconnapi', connapi_src)
 Install('../../lib', client_lib)
 
+env.Append(CPPPATH=['./', '../../utils/'])
 clientsrc = Glob('client_api/client_main.cpp')
 env.Program('connector_client_test', clientsrc, OBJPREFIX='cclient_',
             LIBS=['cconnapi', 'rapidapp', 'event', 'glog', 'gflags', 'protobuf', 'pthread', 'boost_thread', 'boost_system'])

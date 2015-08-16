@@ -2,8 +2,8 @@
 #define _CONNECTOR_CLIENT_API_IMP_H_
 
 #include "connector_client_api.h"
-#include "../client.pb.h"
-#include "utils/tsocket_util.h"
+#include "client.pb.h"
+#include "tsocket_util.h"
 #include <string>
 
 namespace hmoon_connector_api {

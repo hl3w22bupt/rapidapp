@@ -1,5 +1,5 @@
 #include "connector_client_api_imp.h"
-#include "utils/tcp_socket.h"
+#include "tcp_socket.h"
 //#include <boost/thread.hpp>
 //#include <boost/bind.hpp>
 #include <pthread.h>
