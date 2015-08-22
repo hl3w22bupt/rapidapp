@@ -516,6 +516,20 @@ int ConnectorClientProtocolImp::PeekMessage(const char** buf_ptr, int* buflen_pt
         return -1;
     }
 
+    if (!tcp_sock_.HasNewPkg())
+    {
+        if (tcp_sock_.GetRecvBufLen() != 0)
+        {
+            CONNECTOR_CLIENT_API_LOG(logger_, LOG_ERROR, "pkg not complete yet");
+        }
+        else
+        {
+            CONNECTOR_CLIENT_API_LOG(logger_, LOG_DEBUG, "no more pkg avaiable");
+        }
+
+        return CONNECTOR_ERR_NO_MORE_PKG;
+    }
+
     const char* buf = NULL;
     int buflen = 0;
     int ret = tcp_sock_.PeekFromRecvQ(&buf, &buflen);
