@@ -15,6 +15,9 @@ class ConnectorApiImp : public IProtocolEventListener, public IWorkerThreadListe
         void Stop();
         void Resume();
 
+    private:
+        ConnectorApiImp();
+
     public:
         virtual void OnGetSettings(std::string& appid, std::string& openid,
                                    std::string& token,
@@ -31,9 +34,24 @@ class ConnectorApiImp : public IProtocolEventListener, public IWorkerThreadListe
     public:
         virtual void OnWorkerThreadExit();
 
+    public:
+        inline bool ok() const {
+            return state_ok_;
+        }
+
+        inline bool thread_exited() const {
+            return exit_;
+        }
+
+        inline bool has_pkg() const {
+            return has_pkg_;
+        }
+
     private:
       bool exit_;
       bool state_ok_;
+
+      bool has_pkg_;
 };
 
 // Logger
@@ -49,6 +67,13 @@ class Logger : public ILoggable {
 };
 
 Logger g_logger;
+
+ConnectorApiImp::ConnectorApiImp()
+{
+    exit_ = false;
+    state_ok_ = false;
+    has_pkg_ = false;
+}
 
 int ConnectorApiImp::Start()
 {
@@ -77,9 +102,10 @@ void ConnectorApiImp::OnGetSettings(std::string& appid,
     token = "TOKEN3388";
     encrypt_mode = NOT_ENCRYPT;
     auth_type = NONE_AUTHENTICATION;
-    server_uri = "tcp://127.0.0.1:8888";
+    server_uri = "tcp://172.16.11.135:8888";
 }
 
+// TODO Dispatch Event
 int ConnectorApiImp::OnHandShakeSucceed()
 {
     state_ok_ = true;
@@ -109,12 +135,8 @@ int ConnectorApiImp::OnQueuing()
 
 int ConnectorApiImp::OnIncoming()
 {
-    static char data[10240];
-    size_t len = sizeof(data) - 1;
-    ConnectorClientProtocolThread::Default().PopMessageFromRecvQ(data, &len);
-    data[len] = '\0';
-    cocos2d::log("recv message %s\n", data);
-
+    has_pkg_ = true;
+    // TODO dispatch event
     return 0;
 }
 
@@ -138,6 +160,7 @@ int ConnectorApi::Resume()
 
 void ConnectorApi::Stop()
 {
+    ConnectorClientProtocolThread::Default().TerminateThread();
 }
 
 int ConnectorApi::Send(const std::string& bin)
@@ -149,6 +172,11 @@ int ConnectorApi::Send(const std::string& bin)
 
 int ConnectorApi::Recv(std::string& bin)
 {
+    if (!ConnectorApiImp::GetInstance().has_pkg())
+    {
+        return 0;
+    }
+
     char data[10240];
     size_t len = sizeof(data);
     ConnectorClientProtocolThread::Default().PopMessageFromRecvQ(data, &len);
