@@ -28,3 +28,12 @@ os.system('echo \'genereate c++ code over protobuf [echosvr.proto]...\' && cd to
 tools_echosvr_src = Glob('tools/echosvr/*.cpp')
 tools_echosvr_src += Glob('./lib/librapidapp.a')
 env.Program('tools/echo_svr', tools_echosvr_src, LIBS=['event', 'glog', 'gflags', 'protobuf', 'pthread'])
+
+#install to sdk
+env.Install('sdk/', 'utils/tsocket_util.cpp')
+env.Install('sdk/', 'utils/tsocket_util.h')
+env.Install('sdk/', 'utils/tcp_socket.c')
+env.Install('sdk/', 'utils/tcp_socket.h')
+env.Install('sdk/', Glob('server/connector/client_api/cocos_lua/cocos_connector.*'))
+env.Install('sdk/', Glob('server/connector/client_api/connector_client_api*.cpp'))
+env.Install('sdk/', Glob('server/connector/client_api/connector_client_api*.h'))

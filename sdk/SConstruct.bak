@@ -1,0 +1,24 @@
+import platform
+import os
+
+env = Environment(CCFLAGS='-g -pg',
+                 CPPPATH=[os.path.abspath('./')])
+i386 = ARGUMENTS.get('i386', 0)
+Help('i386=[0|1]')
+
+if int(i386) != 0:
+  env.Append(CCFLAGS=' -m32')
+
+sys = platform.system()
+if sys != "Darwin":
+    env.Append(CCFLAGS=' -Werror')
+else:
+    env.Append(CCFLAGS=' ')
+#env.Append(CCFLAGS=' -stdlib=libstdc++ -Wno-error=c++11-narrowing')
+
+src = Glob('*.c')
+src += Glob('*.cc')
+src += Glob('connector*.cpp')
+src += Glob('tsocket*.cpp')
+
+lib = env.StaticLibrary('cocos_connector', src)
