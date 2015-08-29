@@ -664,7 +664,7 @@ int ConnectorClientProtocolThreadImp::MainLoop()
         {
             // 当前空闲
             // 客户端api，可以硬编码
-            usleep(10 * 1000);
+            usleep(1 * 1000);
         }
     }
 
