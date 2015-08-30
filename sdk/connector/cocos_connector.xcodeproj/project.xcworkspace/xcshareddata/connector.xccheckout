@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>3A0C077D-AC86-4F71-A1D1-5F5A0B0CC11D</string>
+	<key>IDESourceControlProjectName</key>
+	<string>project</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>F5451600B1927E40010A838BBA61DBCAF7C572BC</key>
+		<string>https://git.coding.net/hl3w22bupt/rapidapp.git</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>sdk/connector/connector.xcodeproj/project.xcworkspace</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>F5451600B1927E40010A838BBA61DBCAF7C572BC</key>
+		<string>../../../..</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>https://git.coding.net/hl3w22bupt/rapidapp.git</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>111</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>F5451600B1927E40010A838BBA61DBCAF7C572BC</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>F5451600B1927E40010A838BBA61DBCAF7C572BC</string>
+			<key>IDESourceControlWCCName</key>
+			<string>rapidapp</string>
+		</dict>
+	</array>
+</dict>
+</plist>
